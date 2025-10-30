@@ -14,6 +14,7 @@ O **Fiz Plantão** é uma solução prática para médicos registrarem e acompan
   - [ ] Registro de local do plantão
   - [ ] Data e hora do plantão
   - [ ] Duração do plantão (12h ou 24h)
+  - [ ] Valor do pagamento
   - [ ] Data de previsão de pagamento
 - [ ] **Listagem de Plantões**
   - [ ] Visualização em cards
@@ -55,6 +56,7 @@ Tela de Cadastro/Edição
 ├── Campo: Local
 ├── Campo: Data e Hora
 ├── Seletor: Duração (12h/24h)
+├── Campo: Valor do Pagamento
 ├── Campo: Previsão de Pagamento
 └── Botões: Salvar/Cancelar
 ```
@@ -93,6 +95,7 @@ flutter run
 | local             | String   | Local do plantão             |
 | dataHora          | DateTime | Data e hora do plantão       |
 | duracao           | Enum     | 12h ou 24h                   |
+| valor             | Double   | Valor do pagamento (R$)      |
 | previsaoPagamento | DateTime | Data prevista para pagamento |
 | criadoEm          | DateTime | Data de criação do registro  |
 | atualizadoEm      | DateTime | Data da última atualização   |
