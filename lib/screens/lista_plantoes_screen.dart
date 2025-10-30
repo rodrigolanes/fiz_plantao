@@ -334,6 +334,8 @@ class _ListaPlantoesScreenState extends State<ListaPlantoesScreen> {
             ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: locaisAtivos.isEmpty ? null : () => _navegarParaCadastro(),
+        backgroundColor: locaisAtivos.isEmpty ? Colors.grey[300] : null,
+        foregroundColor: locaisAtivos.isEmpty ? Colors.grey[500] : null,
         icon: const Icon(Icons.add),
         label: const Text('Novo Plantão'),
       ),
