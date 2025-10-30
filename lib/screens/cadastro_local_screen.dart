@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../widgets/primary_action_buttons.dart';
 import '../models/local.dart';
 
 class CadastroLocalScreen extends StatefulWidget {
@@ -92,28 +93,10 @@ class _CadastroLocalScreenState extends State<CadastroLocalScreen> {
               },
             ),
             const SizedBox(height: 32),
-            Row(
-              children: [
-                Expanded(
-                  child: OutlinedButton(
-                    onPressed: () => Navigator.of(context).pop(),
-                    child: const Padding(
-                      padding: EdgeInsets.all(16),
-                      child: Text('Cancelar'),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: ElevatedButton(
-                    onPressed: _salvar,
-                    child: const Padding(
-                      padding: EdgeInsets.all(16),
-                      child: Text('Salvar'),
-                    ),
-                  ),
-                ),
-              ],
+            PrimaryActionButtons(
+              onCancel: () => Navigator.of(context).pop(),
+              onSave: _salvar,
+              saveEnabled: true,
             ),
           ],
         ),

@@ -4,6 +4,7 @@ class Local {
   final String nome;
   final DateTime criadoEm;
   final DateTime atualizadoEm;
+  final bool ativo; // soft delete flag
 
   Local({
     required this.id,
@@ -11,6 +12,7 @@ class Local {
     required this.nome,
     required this.criadoEm,
     required this.atualizadoEm,
+    this.ativo = true,
   });
 
   Local copyWith({
@@ -19,6 +21,7 @@ class Local {
     String? nome,
     DateTime? criadoEm,
     DateTime? atualizadoEm,
+    bool? ativo,
   }) {
     return Local(
       id: id ?? this.id,
@@ -26,6 +29,7 @@ class Local {
       nome: nome ?? this.nome,
       criadoEm: criadoEm ?? this.criadoEm,
       atualizadoEm: atualizadoEm ?? this.atualizadoEm,
+      ativo: ativo ?? this.ativo,
     );
   }
 

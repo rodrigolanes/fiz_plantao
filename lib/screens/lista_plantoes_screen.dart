@@ -3,6 +3,7 @@ import 'package:intl/intl.dart';
 import '../models/plantao.dart';
 import '../models/local.dart';
 import 'cadastro_plantao_screen.dart';
+import 'lista_locais_screen.dart';
 
 class ListaPlantoesScreen extends StatefulWidget {
   const ListaPlantoesScreen({super.key});
@@ -18,34 +19,29 @@ class _ListaPlantoesScreenState extends State<ListaPlantoesScreen> {
   @override
   void initState() {
     super.initState();
-    _inicializarLocais();
   }
 
-  void _inicializarLocais() {
-    // Locais de exemplo (posteriormente virão do banco de dados)
-    _locais.addAll([
-      Local(
-        id: '1',
-        apelido: 'HSL',
-        nome: 'Hospital São Lucas',
-        criadoEm: DateTime.now(),
-        atualizadoEm: DateTime.now(),
+  Future<void> _gerenciarLocais() async {
+    final listaAtualizada = await Navigator.of(context).push<List<Local>>(
+      MaterialPageRoute(
+        builder: (context) => ListaLocaisScreen(locaisIniciais: _locais),
       ),
-      Local(
-        id: '2',
-        apelido: 'HGE',
-        nome: 'Hospital Geral do Estado',
-        criadoEm: DateTime.now(),
-        atualizadoEm: DateTime.now(),
-      ),
-      Local(
-        id: '3',
-        apelido: 'UPA Centro',
-        nome: 'UPA 24h Centro',
-        criadoEm: DateTime.now(),
-        atualizadoEm: DateTime.now(),
-      ),
-    ]);
+    );
+    if (listaAtualizada != null && mounted) {
+      setState(() {
+        _locais
+          ..clear()
+          ..addAll(listaAtualizada);
+        // Se algum plantão referenciava local inativo/removido, filtramos logicamente
+        for (var i = 0; i < _plantoes.length; i++) {
+          final p = _plantoes[i];
+          final localAtivo = _locais.any((l) => l.id == p.local.id && l.ativo);
+          if (!localAtivo) {
+            _plantoes[i] = p.copyWith(ativo: false, atualizadoEm: DateTime.now());
+          }
+        }
+      });
+    }
   }
 
   String _formatarDataHora(DateTime dateTime) {
@@ -61,11 +57,18 @@ class _ListaPlantoesScreenState extends State<ListaPlantoesScreen> {
   }
 
   Future<void> _navegarParaCadastro([Plantao? plantao]) async {
+    final ativos = _locais.where((l) => l.ativo).toList();
+    if (ativos.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Cadastre um local ativo antes de criar um plantão.')),
+      );
+      return; // FAB já está desabilitado, mas proteção adicional
+    }
     final resultado = await Navigator.of(context).push<Plantao>(
       MaterialPageRoute(
         builder: (context) => CadastroPlantaoScreen(
           plantao: plantao,
-          locais: _locais,
+          locais: ativos,
         ),
       ),
     );
@@ -75,13 +78,11 @@ class _ListaPlantoesScreenState extends State<ListaPlantoesScreen> {
         if (plantao == null) {
           // Novo plantão
           _plantoes.add(resultado);
-          _plantoes.sort((a, b) => b.dataHora.compareTo(a.dataHora));
         } else {
           // Edição
           final index = _plantoes.indexWhere((p) => p.id == plantao.id);
           if (index != -1) {
             _plantoes[index] = resultado;
-            _plantoes.sort((a, b) => b.dataHora.compareTo(a.dataHora));
           }
         }
       });
@@ -114,7 +115,14 @@ class _ListaPlantoesScreenState extends State<ListaPlantoesScreen> {
           TextButton(
             onPressed: () {
               setState(() {
-                _plantoes.removeWhere((p) => p.id == plantao.id);
+                final index = _plantoes.indexWhere((p) => p.id == plantao.id);
+                if (index != -1) {
+                  final atual = _plantoes[index];
+                  _plantoes[index] = atual.copyWith(
+                    ativo: false,
+                    atualizadoEm: DateTime.now(),
+                  );
+                }
               });
               Navigator.of(context).pop();
               ScaffoldMessenger.of(context).showSnackBar(
@@ -143,24 +151,28 @@ class _ListaPlantoesScreenState extends State<ListaPlantoesScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final locaisAtivos = _locais.where((l) => l.ativo).toList();
+    final plantoesAtivos = _plantoes.where((p) => p.ativo && p.local.ativo).toList()
+      ..sort((a, b) => b.dataHora.compareTo(a.dataHora));
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Meus Plantões'),
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
       ),
-      body: _plantoes.isEmpty
+      body: (plantoesAtivos.isEmpty)
           ? Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Icon(
-                    Icons.medical_services_outlined,
+                    locaisAtivos.isEmpty ? Icons.location_off : Icons.medical_services_outlined,
                     size: 64,
                     color: Colors.grey[400],
                   ),
                   const SizedBox(height: 16),
                   Text(
-                    'Nenhum plantão cadastrado',
+                    locaisAtivos.isEmpty ? 'Nenhum local cadastrado' : 'Nenhum plantão cadastrado',
                     style: TextStyle(
                       fontSize: 18,
                       color: Colors.grey[600],
@@ -168,20 +180,33 @@ class _ListaPlantoesScreenState extends State<ListaPlantoesScreen> {
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    'Clique no botão + para adicionar',
+                    locaisAtivos.isEmpty
+                        ? 'Crie seu primeiro local para cadastrar plantões.'
+                        : 'Clique no botão + para adicionar',
+                    textAlign: TextAlign.center,
                     style: TextStyle(
                       fontSize: 14,
                       color: Colors.grey[500],
                     ),
                   ),
+                  const SizedBox(height: 24),
+                  if (locaisAtivos.isEmpty)
+                    ElevatedButton.icon(
+                      onPressed: _gerenciarLocais,
+                      icon: const Icon(Icons.add_location_alt),
+                      label: const Text('Cadastrar Local'),
+                      style: ElevatedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+                      ),
+                    ),
                 ],
               ),
             )
           : ListView.builder(
               padding: const EdgeInsets.all(16),
-              itemCount: _plantoes.length,
+              itemCount: plantoesAtivos.length,
               itemBuilder: (context, index) {
-                final plantao = _plantoes[index];
+                final plantao = plantoesAtivos[index];
                 final statusColor = _getStatusColor(plantao.previsaoPagamento);
 
                 return Card(
@@ -258,8 +283,6 @@ class _ListaPlantoesScreenState extends State<ListaPlantoesScreen> {
                               Expanded(
                                 child: Row(
                                   children: [
-                                    const Icon(Icons.attach_money, size: 16),
-                                    const SizedBox(width: 8),
                                     Text(
                                       _formatarValor(plantao.valor),
                                       style: const TextStyle(
@@ -276,7 +299,7 @@ class _ListaPlantoesScreenState extends State<ListaPlantoesScreen> {
                                   vertical: 4,
                                 ),
                                 decoration: BoxDecoration(
-                                  color: statusColor.withOpacity(0.2),
+                                  color: statusColor.withValues(alpha: 0.2),
                                   borderRadius: BorderRadius.circular(12),
                                   border: Border.all(color: statusColor),
                                 ),
@@ -310,9 +333,9 @@ class _ListaPlantoesScreenState extends State<ListaPlantoesScreen> {
               },
             ),
       floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => _navegarParaCadastro(),
+        onPressed: locaisAtivos.isEmpty ? null : () => _navegarParaCadastro(),
         icon: const Icon(Icons.add),
-        label: const Text('Novo'),
+        label: const Text('Novo Plantão'),
       ),
     );
   }

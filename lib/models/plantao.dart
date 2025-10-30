@@ -17,6 +17,7 @@ class Plantao {
   final DateTime previsaoPagamento;
   final DateTime criadoEm;
   final DateTime atualizadoEm;
+  final bool ativo; // soft delete flag
 
   Plantao({
     required this.id,
@@ -27,6 +28,7 @@ class Plantao {
     required this.previsaoPagamento,
     required this.criadoEm,
     required this.atualizadoEm,
+    this.ativo = true,
   });
 
   Plantao copyWith({
@@ -38,6 +40,7 @@ class Plantao {
     DateTime? previsaoPagamento,
     DateTime? criadoEm,
     DateTime? atualizadoEm,
+    bool? ativo,
   }) {
     return Plantao(
       id: id ?? this.id,
@@ -48,6 +51,7 @@ class Plantao {
       previsaoPagamento: previsaoPagamento ?? this.previsaoPagamento,
       criadoEm: criadoEm ?? this.criadoEm,
       atualizadoEm: atualizadoEm ?? this.atualizadoEm,
+      ativo: ativo ?? this.ativo,
     );
   }
 }

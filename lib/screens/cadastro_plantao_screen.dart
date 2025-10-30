@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import '../widgets/primary_action_buttons.dart';
 import 'package:intl/intl.dart';
 import '../models/plantao.dart';
 import '../models/local.dart';
@@ -57,15 +58,26 @@ class _CadastroPlantaoScreenState extends State<CadastroPlantaoScreen> {
   }
 
   Future<void> _navegarParaGerenciarLocais() async {
-    await Navigator.of(context).push(
+    final listaAtualizada = await Navigator.of(context).push<List<Local>>(
       MaterialPageRoute(
-        builder: (context) => const ListaLocaisScreen(),
+        builder: (context) => ListaLocaisScreen(locaisIniciais: _locaisDisponiveis),
       ),
     );
-    // Aqui você precisará recarregar os locais do banco de dados
-    // Por enquanto, apenas atualizamos a tela
-    if (mounted) {
-      setState(() {});
+    if (listaAtualizada != null && mounted) {
+      setState(() {
+        _locaisDisponiveis = listaAtualizada;
+        // Se o local selecionado foi removido, limpar seleção
+        if (_localSelecionado != null &&
+            !_locaisDisponiveis.any((l) => l.id == _localSelecionado!.id)) {
+          _localSelecionado = null;
+        } else if (_localSelecionado != null) {
+          // Atualiza referência caso tenha sido editado
+          _localSelecionado = _locaisDisponiveis.firstWhere(
+            (l) => l.id == _localSelecionado!.id,
+            orElse: () => _localSelecionado!,
+          );
+        }
+      });
     }
   }
 
@@ -148,12 +160,16 @@ class _CadastroPlantaoScreenState extends State<CadastroPlantaoScreen> {
       }
 
       final agora = DateTime.now();
+      // Converte texto com vírgula para double (pt-BR)
+      final valorTexto = _valorController.text.trim().replaceAll('.', '').replaceAll(',', '.');
+      final valorDouble = double.parse(valorTexto);
+
       final plantao = Plantao(
         id: widget.plantao?.id ?? DateTime.now().millisecondsSinceEpoch.toString(),
         local: _localSelecionado!,
         dataHora: _dataHoraSelecionada!,
         duracao: _duracaoSelecionada,
-        valor: double.parse(_valorController.text.replaceAll(',', '.')),
+        valor: valorDouble,
         previsaoPagamento: _previsaoPagamentoSelecionada!,
         criadoEm: widget.plantao?.criadoEm ?? agora,
         atualizadoEm: agora,
@@ -181,7 +197,7 @@ class _CadastroPlantaoScreenState extends State<CadastroPlantaoScreen> {
               children: [
                 Expanded(
                   child: DropdownButtonFormField<Local>(
-                    value: _localSelecionado,
+                    initialValue: _localSelecionado,
                     decoration: const InputDecoration(
                       labelText: 'Local',
                       border: OutlineInputBorder(),
@@ -233,7 +249,7 @@ class _CadastroPlantaoScreenState extends State<CadastroPlantaoScreen> {
             ),
             const SizedBox(height: 16),
             DropdownButtonFormField<Duracao>(
-              value: _duracaoSelecionada,
+              initialValue: _duracaoSelecionada,
               decoration: const InputDecoration(
                 labelText: 'Duração',
                 border: OutlineInputBorder(),
@@ -260,16 +276,21 @@ class _CadastroPlantaoScreenState extends State<CadastroPlantaoScreen> {
                 labelText: 'Valor (R\$)',
                 border: OutlineInputBorder(),
                 prefixIcon: Icon(Icons.attach_money),
+                helperText: 'Use vírgula para decimais. Ex: 1.234,56',
               ),
               keyboardType: const TextInputType.numberWithOptions(decimal: true),
               inputFormatters: [
-                FilteringTextInputFormatter.allow(RegExp(r'^\d+\.?\d{0,2}')),
+                FilteringTextInputFormatter.allow(RegExp(r'[0-9.,]')),
+                _MoedaPtBrFormatter(),
               ],
               validator: (value) {
                 if (value == null || value.isEmpty) {
                   return 'Por favor, informe o valor';
                 }
-                final valorNum = double.tryParse(value.replaceAll(',', '.'));
+                // Normaliza para double
+                final texto = value.trim();
+                final normalizado = texto.replaceAll('.', '').replaceAll(',', '.');
+                final valorNum = double.tryParse(normalizado);
                 if (valorNum == null || valorNum <= 0) {
                   return 'Informe um valor válido';
                 }
@@ -294,32 +315,61 @@ class _CadastroPlantaoScreenState extends State<CadastroPlantaoScreen> {
               },
             ),
             const SizedBox(height: 32),
-            Row(
-              children: [
-                Expanded(
-                  child: OutlinedButton(
-                    onPressed: () => Navigator.of(context).pop(),
-                    child: const Padding(
-                      padding: EdgeInsets.all(16),
-                      child: Text('Cancelar'),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: ElevatedButton(
-                    onPressed: _salvar,
-                    child: const Padding(
-                      padding: EdgeInsets.all(16),
-                      child: Text('Salvar'),
-                    ),
-                  ),
-                ),
-              ],
+            PrimaryActionButtons(
+              onCancel: () => Navigator.of(context).pop(),
+              onSave: _salvar,
+              saveEnabled: true,
             ),
           ],
         ),
       ),
     );
+  }
+}
+
+// Formata entrada de moeda estilo pt-BR enquanto digita.
+class _MoedaPtBrFormatter extends TextInputFormatter {
+  @override
+  TextEditingValue formatEditUpdate(TextEditingValue oldValue, TextEditingValue newValue) {
+    final text = newValue.text;
+    if (text.isEmpty) {
+      return newValue.copyWith(text: '');
+    }
+    // Remove tudo exceto dígitos
+    final digits = text.replaceAll(RegExp(r'[^0-9]'), '');
+    // Limita tamanho para evitar overflow absurdo (ex: > 15 dígitos)
+    final limited = digits.length > 15 ? digits.substring(0, 15) : digits;
+    // Constrói com separadores: últimos 2 dígitos são decimais
+    String centavos;
+    String inteiros;
+    if (limited.length <= 2) {
+      inteiros = '0';
+      centavos = limited.padLeft(2, '0');
+    } else {
+      inteiros = limited.substring(0, limited.length - 2);
+      centavos = limited.substring(limited.length - 2);
+    }
+    // Remove zeros à esquerda da parte inteira (mantém '0' se resultado vazio)
+    inteiros = inteiros.replaceFirst(RegExp(r'^0+'), '');
+    if (inteiros.isEmpty) {
+      inteiros = '0';
+    }
+    // Adiciona pontos a cada 3 dígitos da parte inteira
+    final inteirosComPontos = _addThousandsSeparator(inteiros);
+    final resultado = '$inteirosComPontos,$centavos';
+    return TextEditingValue(
+      text: resultado,
+      selection: TextSelection.collapsed(offset: resultado.length),
+    );
+  }
+
+  String _addThousandsSeparator(String value) {
+    final buf = StringBuffer();
+    final chars = value.split('').reversed.toList();
+    for (int i = 0; i < chars.length; i++) {
+      if (i != 0 && i % 3 == 0) buf.write('.');
+      buf.write(chars[i]);
+    }
+    return buf.toString().split('').reversed.join();
   }
 }

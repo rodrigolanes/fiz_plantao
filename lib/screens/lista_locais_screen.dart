@@ -3,42 +3,22 @@ import '../models/local.dart';
 import 'cadastro_local_screen.dart';
 
 class ListaLocaisScreen extends StatefulWidget {
-  const ListaLocaisScreen({super.key});
+  const ListaLocaisScreen({super.key, this.locaisIniciais = const []});
+
+  final List<Local> locaisIniciais;
 
   @override
   State<ListaLocaisScreen> createState() => _ListaLocaisScreenState();
 }
 
 class _ListaLocaisScreenState extends State<ListaLocaisScreen> {
-  final List<Local> _locais = [];
+  late List<Local> _locais;
 
   @override
   void initState() {
     super.initState();
-    // Adicionar alguns locais de exemplo (posteriormente virá do banco)
-    _locais.addAll([
-      Local(
-        id: '1',
-        apelido: 'HSL',
-        nome: 'Hospital São Lucas',
-        criadoEm: DateTime.now(),
-        atualizadoEm: DateTime.now(),
-      ),
-      Local(
-        id: '2',
-        apelido: 'HGE',
-        nome: 'Hospital Geral do Estado',
-        criadoEm: DateTime.now(),
-        atualizadoEm: DateTime.now(),
-      ),
-      Local(
-        id: '3',
-        apelido: 'UPA Centro',
-        nome: 'UPA 24h Centro',
-        criadoEm: DateTime.now(),
-        atualizadoEm: DateTime.now(),
-      ),
-    ]);
+    // Inicializa com lista recebida; não adiciona locais exemplo
+    _locais = List.from(widget.locaisIniciais);
   }
 
   Future<void> _navegarParaCadastro([Local? local]) async {
@@ -86,7 +66,14 @@ class _ListaLocaisScreenState extends State<ListaLocaisScreen> {
           TextButton(
             onPressed: () {
               setState(() {
-                _locais.removeWhere((l) => l.id == local.id);
+                final index = _locais.indexWhere((l) => l.id == local.id);
+                if (index != -1) {
+                  final atual = _locais[index];
+                  _locais[index] = atual.copyWith(
+                    ativo: false,
+                    atualizadoEm: DateTime.now(),
+                  );
+                }
               });
               Navigator.of(context).pop();
               ScaffoldMessenger.of(context).showSnackBar(
@@ -100,14 +87,23 @@ class _ListaLocaisScreenState extends State<ListaLocaisScreen> {
     );
   }
 
+
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    final ativos = _locais.where((l) => l.ativo).toList();
+    return PopScope(
+      canPop: true,
+      onPopInvokedWithResult: (didPop, result) {
+        if (!didPop) {
+          Navigator.of(context).pop<List<Local>>(_locais);
+        }
+      },
+      child: Scaffold(
       appBar: AppBar(
         title: const Text('Locais'),
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
       ),
-      body: _locais.isEmpty
+      body: ativos.isEmpty
           ? Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -138,9 +134,9 @@ class _ListaLocaisScreenState extends State<ListaLocaisScreen> {
             )
           : ListView.builder(
               padding: const EdgeInsets.all(16),
-              itemCount: _locais.length,
+              itemCount: ativos.length,
               itemBuilder: (context, index) {
-                final local = _locais[index];
+                final local = ativos[index];
                 return Card(
                   margin: const EdgeInsets.only(bottom: 12),
                   child: ListTile(
@@ -178,9 +174,10 @@ class _ListaLocaisScreenState extends State<ListaLocaisScreen> {
                 );
               },
             ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () => _navegarParaCadastro(),
-        child: const Icon(Icons.add),
+        floatingActionButton: FloatingActionButton(
+          onPressed: () => _navegarParaCadastro(),
+          child: const Icon(Icons.add),
+        ),
       ),
     );
   }
