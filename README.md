@@ -10,20 +10,44 @@ O **Fiz Plantão** é uma solução prática para médicos registrarem e acompan
 
 ### Funcionalidades Principais
 
-- [ ] **Cadastro de Plantões**
-  - [ ] Registro de local do plantão
-  - [ ] Data e hora do plantão
-  - [ ] Duração do plantão (12h ou 24h)
-  - [ ] Valor do pagamento
-  - [ ] Data de previsão de pagamento
-- [ ] **Listagem de Plantões**
-  - [ ] Visualização em cards
-  - [ ] Exibição de informações principais em cada card
-  - [ ] Botão "Novo" no topo da tela
-  - [ ] Ícone de edição (lápis) em cada card
-- [ ] **Edição de Plantões**
-  - [ ] Editar informações de plantões existentes
-  - [ ] Atualização de dados via ícone de lápis
+- [x] **Cadastro de Locais**
+
+  - [x] Cadastro de apelido do local
+  - [x] Cadastro de nome completo do local
+  - [x] Validação de campos obrigatórios
+
+- [x] **Listagem de Locais**
+
+  - [x] Visualização em cards
+  - [x] Exibição de apelido e nome completo
+  - [x] Botão "Novo" para adicionar locais
+  - [x] Ícones de edição e exclusão em cada card
+
+- [x] **Cadastro de Plantões**
+  - [x] Seleção de local via dropdown
+  - [x] Data e hora do plantão
+  - [x] Duração do plantão (12h ou 24h)
+
+### Funcionalidades Futuras (Backlog)
+
+- [ ] Persistência de dados (banco de dados local)
+- [ ] Filtros de busca na listagem
+- [ ] Estatísticas e relatórios
+- [ ] Gráficos de rendimentos
+- [ ] Notificações de pagamento
+- [ ] Histórico de plantões anteriores
+- [ ] Exportação de dados (PDF/Excel)
+- [ ] Temas claro/escuro
+- [ ] Sincronização em nuvem
+- [ ] Backup automáticomais recentes primeiro)
+- [x] **Edição de Plantões**
+
+  - [x] Editar informações de plantões existentes
+  - [x] Atualização de dados via ícone de lápis
+
+- [x] **Exclusão de Plantões**
+  - [x] Confirmação antes de excluir
+  - [x] Feedback visual após exclusão
 
 ### Funcionalidades Futuras (Backlog)
 
@@ -40,49 +64,80 @@ O **Fiz Plantão** é uma solução prática para médicos registrarem e acompan
 
 - **Flutter** - Framework principal
 - **Dart** - Linguagem de programação
-- Android & iOS - Plataformas suportadas
 
 ## 📱 Estrutura do Aplicativo
 
-```
-Tela Principal (Listagem)
-├── Botão "Novo Plantão" (topo)
+````
+Tela Principal (Listagem de Plantões)
+├── Botão "Novo Plantão" (flutuante)
 └── Lista de Cards
     └── Card do Plantão
-        ├── Informações do plantão
-        └── Ícone de edição (lápis)
+        ├── Local (apelido e nome)
+        ├── Data e hora do plantão
+        ├── Duração (12h/24h)
+        ├── Valor
+        ├── Status de pagamento (com cor)
+        └── Ícones de edição e exclusão
 
-Tela de Cadastro/Edição
-├── Campo: Local
+Tela de Cadastro/Edição de Plantão
+├── Dropdown: Local (com botão de gerenciar)
 ├── Campo: Data e Hora
 ├── Seletor: Duração (12h/24h)
 ├── Campo: Valor do Pagamento
 ├── Campo: Previsão de Pagamento
 └── Botões: Salvar/Cancelar
-```
+
+Tela de Listagem de Locais
+├── Botão "Novo Local" (flutuante)
+└── Lista de Cards
+    └── Card do Local
+        ├── Apelido
+        ├── Nome completo
+        └── Ícones de edição e exclusão
+
+Tela de Cadastro/Edição de Local
+├── Campo: Apelido
+├── Campo: Nome Completo
+└── Botões: Salvar/Cancelar
+``` Campo: Previsão de Pagamento
+└── Botões: Salvar/Cancelar
+````
 
 ## 🚀 Como Executar
 
 ### Pré-requisitos
 
 - Flutter SDK instalado
-- Android Studio ou VS Code
-- Emulador ou dispositivo físico
 
-### Instalação
+## 📝 Modelo de Dados
 
-```bash
-# Clone o repositório
-git clone https://github.com/rodrigolanes/fiz_plantao.git
+### Local
 
-# Entre no diretório
-cd fiz_plantao
+| Campo        | Tipo     | Descrição                   |
+| ------------ | -------- | --------------------------- |
+| id           | String   | Identificador único         |
+| apelido      | String   | Nome curto (ex: HSL)        |
+| nome         | String   | Nome completo do local      |
+| criadoEm     | DateTime | Data de criação do registro |
+| atualizadoEm | DateTime | Data da última atualização  |
 
-# Instale as dependências
-flutter pub get
+### Plantão
+
+| Campo             | Tipo     | Descrição                    |
+| ----------------- | -------- | ---------------------------- |
+| id                | String   | Identificador único          |
+| local             | Local    | Objeto Local completo        |
+| dataHora          | DateTime | Data e hora do plantão       |
+| duracao           | Enum     | 12h ou 24h                   |
+| valor             | Double   | Valor do pagamento (R$)      |
+| previsaoPagamento | DateTime | Data prevista para pagamento |
+| criadoEm          | DateTime | Data de criação do registro  |
+| atualizadoEm      | DateTime | Data da última atualização   |
 
 # Execute o aplicativo
+
 flutter run
+
 ```
 
 ## 📝 Modelo de Dados
@@ -115,3 +170,4 @@ Este projeto está sob a licença MIT.
 ---
 
 **Status do Projeto:** 🚧 Em Desenvolvimento
+```

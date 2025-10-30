@@ -31,6 +31,13 @@ class _ListaLocaisScreenState extends State<ListaLocaisScreen> {
         criadoEm: DateTime.now(),
         atualizadoEm: DateTime.now(),
       ),
+      Local(
+        id: '3',
+        apelido: 'UPA Centro',
+        nome: 'UPA 24h Centro',
+        criadoEm: DateTime.now(),
+        atualizadoEm: DateTime.now(),
+      ),
     ]);
   }
 
