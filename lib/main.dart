@@ -1,8 +1,25 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
-import 'screens/lista_plantoes_screen.dart';
+import 'package:hive_flutter/hive_flutter.dart';
+import 'models/local.dart';
+import 'models/plantao.dart';
+import 'screens/splash_screen.dart';
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  
+  // Inicializa o Hive
+  await Hive.initFlutter();
+  
+  // Registra os adaptadores
+  Hive.registerAdapter(LocalAdapter());
+  Hive.registerAdapter(PlantaoAdapter());
+  Hive.registerAdapter(DuracaoAdapter());
+  
+  // Abre as boxes
+  await Hive.openBox<Local>('locais');
+  await Hive.openBox<Plantao>('plantoes');
+  
   runApp(const MyApp());
 }
 
@@ -56,7 +73,7 @@ class MyApp extends StatelessWidget {
       supportedLocales: const [
         Locale('pt', 'BR'),
       ],
-      home: const ListaPlantoesScreen(),
+      home: const SplashScreen(),
     );
   }
 }

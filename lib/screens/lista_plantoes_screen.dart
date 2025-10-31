@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../models/plantao.dart';
 import '../models/local.dart';
+import '../services/database_service.dart';
 import 'cadastro_plantao_screen.dart';
 import 'lista_locais_screen.dart';
 
@@ -13,35 +14,22 @@ class ListaPlantoesScreen extends StatefulWidget {
 }
 
 class _ListaPlantoesScreenState extends State<ListaPlantoesScreen> {
-  final List<Plantao> _plantoes = [];
-  final List<Local> _locais = [];
-
   @override
   void initState() {
     super.initState();
   }
 
+  void _carregarDados() {
+    setState(() {});
+  }
+
   Future<void> _gerenciarLocais() async {
-    final listaAtualizada = await Navigator.of(context).push<List<Local>>(
+    await Navigator.of(context).push(
       MaterialPageRoute(
-        builder: (context) => ListaLocaisScreen(locaisIniciais: _locais),
+        builder: (context) => const ListaLocaisScreen(),
       ),
     );
-    if (listaAtualizada != null && mounted) {
-      setState(() {
-        _locais
-          ..clear()
-          ..addAll(listaAtualizada);
-        // Se algum plantão referenciava local inativo/removido, filtramos logicamente
-        for (var i = 0; i < _plantoes.length; i++) {
-          final p = _plantoes[i];
-          final localAtivo = _locais.any((l) => l.id == p.local.id && l.ativo);
-          if (!localAtivo) {
-            _plantoes[i] = p.copyWith(ativo: false, atualizadoEm: DateTime.now());
-          }
-        }
-      });
-    }
+    _carregarDados();
   }
 
   String _formatarDataHora(DateTime dateTime) {
@@ -57,12 +45,12 @@ class _ListaPlantoesScreenState extends State<ListaPlantoesScreen> {
   }
 
   Future<void> _navegarParaCadastro([Plantao? plantao]) async {
-    final ativos = _locais.where((l) => l.ativo).toList();
+    final ativos = DatabaseService.getLocaisAtivos();
     if (ativos.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Cadastre um local ativo antes de criar um plantão.')),
       );
-      return; // FAB já está desabilitado, mas proteção adicional
+      return;
     }
     final resultado = await Navigator.of(context).push<Plantao>(
       MaterialPageRoute(
@@ -74,28 +62,20 @@ class _ListaPlantoesScreenState extends State<ListaPlantoesScreen> {
     );
 
     if (resultado != null && mounted) {
-      setState(() {
-        if (plantao == null) {
-          // Novo plantão
-          _plantoes.add(resultado);
-        } else {
-          // Edição
-          final index = _plantoes.indexWhere((p) => p.id == plantao.id);
-          if (index != -1) {
-            _plantoes[index] = resultado;
-          }
-        }
-      });
+      await DatabaseService.savePlantao(resultado);
+      _carregarDados();
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            plantao == null
-                ? 'Plantão cadastrado com sucesso!'
-                : 'Plantão atualizado com sucesso!',
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              plantao == null
+                  ? 'Plantão cadastrado com sucesso!'
+                  : 'Plantão atualizado com sucesso!',
+            ),
           ),
-        ),
-      );
+        );
+      }
     }
   }
 
@@ -113,21 +93,16 @@ class _ListaPlantoesScreenState extends State<ListaPlantoesScreen> {
             child: const Text('Cancelar'),
           ),
           TextButton(
-            onPressed: () {
-              setState(() {
-                final index = _plantoes.indexWhere((p) => p.id == plantao.id);
-                if (index != -1) {
-                  final atual = _plantoes[index];
-                  _plantoes[index] = atual.copyWith(
-                    ativo: false,
-                    atualizadoEm: DateTime.now(),
-                  );
-                }
-              });
+            onPressed: () async {
+              await DatabaseService.deletePlantao(plantao.id);
               Navigator.of(context).pop();
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Plantão excluído com sucesso!')),
-              );
+              _carregarDados();
+              
+              if (mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Plantão excluído com sucesso!')),
+                );
+              }
             },
             child: const Text('Excluir', style: TextStyle(color: Colors.red)),
           ),
@@ -151,9 +126,8 @@ class _ListaPlantoesScreenState extends State<ListaPlantoesScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final locaisAtivos = _locais.where((l) => l.ativo).toList();
-    final plantoesAtivos = _plantoes.where((p) => p.ativo && p.local.ativo).toList()
-      ..sort((a, b) => b.dataHora.compareTo(a.dataHora));
+    final locaisAtivos = DatabaseService.getLocaisAtivos();
+    final plantoesAtivos = DatabaseService.getPlantoesAtivos();
 
     return Scaffold(
       appBar: AppBar(

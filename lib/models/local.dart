@@ -1,9 +1,20 @@
+import 'package:hive/hive.dart';
+
+part 'local.g.dart';
+
+@HiveType(typeId: 0)
 class Local {
+  @HiveField(0)
   final String id;
+  @HiveField(1)
   final String apelido;
+  @HiveField(2)
   final String nome;
+  @HiveField(3)
   final DateTime criadoEm;
+  @HiveField(4)
   final DateTime atualizadoEm;
+  @HiveField(5)
   final bool ativo; // soft delete flag
 
   Local({

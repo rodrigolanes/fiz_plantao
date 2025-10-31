@@ -1,4 +1,4 @@
-package br.com.rodrigolanes.fizplantao.fizplantao
+package br.com.rodrigolanes.fizplantao
 
 import io.flutter.embedding.android.FlutterActivity
 

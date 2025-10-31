@@ -4,6 +4,7 @@ import '../widgets/primary_action_buttons.dart';
 import 'package:intl/intl.dart';
 import '../models/plantao.dart';
 import '../models/local.dart';
+import '../services/database_service.dart';
 import 'lista_locais_screen.dart';
 
 class CadastroPlantaoScreen extends StatefulWidget {
@@ -58,15 +59,16 @@ class _CadastroPlantaoScreenState extends State<CadastroPlantaoScreen> {
   }
 
   Future<void> _navegarParaGerenciarLocais() async {
-    final listaAtualizada = await Navigator.of(context).push<List<Local>>(
+    await Navigator.of(context).push(
       MaterialPageRoute(
-        builder: (context) => ListaLocaisScreen(locaisIniciais: _locaisDisponiveis),
+        builder: (context) => const ListaLocaisScreen(),
       ),
     );
-    if (listaAtualizada != null && mounted) {
+    if (mounted) {
       setState(() {
-        _locaisDisponiveis = listaAtualizada;
-        // Se o local selecionado foi removido, limpar seleção
+        // Recarrega locais do Hive
+        _locaisDisponiveis = DatabaseService.getLocaisAtivos();
+        // Se o local selecionado foi removido/inativado, limpar seleção
         if (_localSelecionado != null &&
             !_locaisDisponiveis.any((l) => l.id == _localSelecionado!.id)) {
           _localSelecionado = null;

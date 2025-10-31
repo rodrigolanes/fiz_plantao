@@ -1,0 +1,20 @@
+flutter_launcher_icons:
+  android: true
+  ios: false
+  image_path: "assets/images/plant.png"
+  adaptive_icon_background: "#00897B"
+  adaptive_icon_foreground: "assets/images/plant.png"
+  min_sdk_android: 21
+  
+  # Configuração específica para Web
+  web:
+    generate: true
+    image_path: "assets/images/plant.png"
+    background_color: "#00897B"
+    theme_color: "#00897B"
+  
+  # Configuração para Windows
+  windows:
+    generate: true
+    image_path: "assets/images/plant.png"
+    icon_size: 48

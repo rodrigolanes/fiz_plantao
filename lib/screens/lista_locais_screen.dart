@@ -1,24 +1,23 @@
 import 'package:flutter/material.dart';
 import '../models/local.dart';
+import '../services/database_service.dart';
 import 'cadastro_local_screen.dart';
 
 class ListaLocaisScreen extends StatefulWidget {
-  const ListaLocaisScreen({super.key, this.locaisIniciais = const []});
-
-  final List<Local> locaisIniciais;
+  const ListaLocaisScreen({super.key});
 
   @override
   State<ListaLocaisScreen> createState() => _ListaLocaisScreenState();
 }
 
 class _ListaLocaisScreenState extends State<ListaLocaisScreen> {
-  late List<Local> _locais;
-
   @override
   void initState() {
     super.initState();
-    // Inicializa com lista recebida; não adiciona locais exemplo
-    _locais = List.from(widget.locaisIniciais);
+  }
+
+  void _carregarLocais() {
+    setState(() {});
   }
 
   Future<void> _navegarParaCadastro([Local? local]) async {
@@ -29,26 +28,18 @@ class _ListaLocaisScreenState extends State<ListaLocaisScreen> {
     );
 
     if (resultado != null && mounted) {
-      setState(() {
-        if (local == null) {
-          // Novo local
-          _locais.add(resultado);
-        } else {
-          // Edição
-          final index = _locais.indexWhere((l) => l.id == local.id);
-          if (index != -1) {
-            _locais[index] = resultado;
-          }
-        }
-      });
+      await DatabaseService.saveLocal(resultado);
+      _carregarLocais();
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            local == null ? 'Local cadastrado com sucesso!' : 'Local atualizado com sucesso!',
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              local == null ? 'Local cadastrado com sucesso!' : 'Local atualizado com sucesso!',
+            ),
           ),
-        ),
-      );
+        );
+      }
     }
   }
 
@@ -64,21 +55,17 @@ class _ListaLocaisScreenState extends State<ListaLocaisScreen> {
             child: const Text('Cancelar'),
           ),
           TextButton(
-            onPressed: () {
-              setState(() {
-                final index = _locais.indexWhere((l) => l.id == local.id);
-                if (index != -1) {
-                  final atual = _locais[index];
-                  _locais[index] = atual.copyWith(
-                    ativo: false,
-                    atualizadoEm: DateTime.now(),
-                  );
-                }
-              });
+            onPressed: () async {
+              await DatabaseService.deleteLocal(local.id);
+              await DatabaseService.deactivatePlantoesByLocalId(local.id);
               Navigator.of(context).pop();
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Local excluído com sucesso!')),
-              );
+              _carregarLocais();
+              
+              if (mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Local excluído com sucesso!')),
+                );
+              }
             },
             child: const Text('Excluir', style: TextStyle(color: Colors.red)),
           ),
@@ -90,13 +77,11 @@ class _ListaLocaisScreenState extends State<ListaLocaisScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final ativos = _locais.where((l) => l.ativo).toList();
+    final ativos = DatabaseService.getLocaisAtivos();
     return PopScope(
       canPop: true,
       onPopInvokedWithResult: (didPop, result) {
-        if (!didPop) {
-          Navigator.of(context).pop<List<Local>>(_locais);
-        }
+        // Não precisa mais retornar lista - dados estão no Hive
       },
       child: Scaffold(
       appBar: AppBar(
