@@ -294,12 +294,10 @@ lib/
 │   ├── lista_plantoes_screen.dart # Tela principal
 │   ├── cadastro_plantao_screen.dart
 │   ├── lista_locais_screen.dart
-│   ├── cadastro_local_screen.dart
-│   └── icon_preview_screen.dart   # Debug de ícones
+│   └── cadastro_local_screen.dart
 ├── services/                      # Camada de serviços
 │   └── database_service.dart      # CRUD centralizado
 └── widgets/                       # Widgets reutilizáveis
-    └── app_icon_painter.dart      # CustomPainter para ícone
 
 assets/
 └── images/
