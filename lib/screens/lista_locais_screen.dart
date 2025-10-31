@@ -57,7 +57,6 @@ class _ListaLocaisScreenState extends State<ListaLocaisScreen> {
           TextButton(
             onPressed: () async {
               await DatabaseService.deleteLocal(local.id);
-              await DatabaseService.deactivatePlantoesByLocalId(local.id);
               Navigator.of(context).pop();
               _carregarLocais();
               

@@ -42,7 +42,7 @@ class DatabaseService {
 
   static List<Plantao> getPlantoesAtivos() {
     return plantoesBox.values
-        .where((p) => p.ativo && p.local.ativo)
+        .where((p) => p.ativo)
         .toList()
       ..sort((a, b) => b.dataHora.compareTo(a.dataHora));
   }
@@ -66,17 +66,10 @@ class DatabaseService {
     }
   }
 
-  // Marcar plantões inativos quando local for desativado
-  static Future<void> deactivatePlantoesByLocalId(String localId) async {
-    final plantoes = plantoesBox.values.where((p) => p.local.id == localId);
-    for (var plantao in plantoes) {
-      if (plantao.ativo) {
-        final updated = plantao.copyWith(
-          ativo: false,
-          atualizadoEm: DateTime.now(),
-        );
-        await plantoesBox.put(plantao.id, updated);
-      }
-    }
+  // Retorna todos os locais (ativos e inativos) para exibição em plantões existentes
+  static List<Local> getLocaisParaDropdown() {
+    // Retorna locais ativos para novos cadastros, mas mantém todos disponíveis
+    // para que plantões antigos possam exibir locais desativados
+    return getLocaisAtivos();
   }
 }

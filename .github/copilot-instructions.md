@@ -148,11 +148,12 @@ import '../services/database_service.dart';
 4. Usar `box.put(id, objeto)` para salvar
 5. Atualizar `atualizadoEm` no save
 
-### Cascade Operations
+### Regras de Soft Delete
 
-- Ao desativar um Local, desativar todos os Plantoes relacionados
-- Implementar via método `deactivatePorLocalId()` no DatabaseService
-- Chamar automaticamente no `deleteLocal()`
+- Locais desativados (`ativo = false`) NÃO aparecem no dropdown para novos plantões
+- Plantões existentes com locais desativados CONTINUAM visíveis
+- Ao listar plantões ativos, filtrar apenas `plantao.ativo` (não verificar `plantao.local.ativo`)
+- Isso preserva o histórico: plantões antigos mostram o local mesmo que tenha sido desativado
 
 ## Testes e Debugging
 

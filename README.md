@@ -46,7 +46,8 @@ O **Fiz Plantão** é uma solução prática para médicos registrarem e acompan
   - [x] TypeAdapters para modelos
   - [x] DatabaseService centralizado
   - [x] Soft delete para locais e plantões
-  - [x] Desativação em cascata (ao desativar local, desativa plantões relacionados)
+  - [x] Locais desativados não aparecem no cadastro de novos plantões
+  - [x] Plantões existentes com locais desativados continuam visíveis
 
 ### 🎨 Interface e UX
 
@@ -315,7 +316,7 @@ android/
 ### Padrões Adotados
 
 - **Soft Delete:** Exclusão lógica via flag `ativo`
-- **Cascade Delete:** Desativar local desativa plantões relacionados
+- **Locais Inativos:** Não aparecem para novos cadastros, mas plantões existentes os mantêm visíveis
 - **Type-safe Enums:** `Duracao` para duração de plantões
 - **DateTime Formatting:** Intl para formatação brasileira
 - **Currency Formatting:** `NumberFormat.currency(locale: 'pt_BR')`
