@@ -40,7 +40,7 @@ class _CadastroPlantaoScreenState extends State<CadastroPlantaoScreen> {
     
     if (widget.plantao != null) {
       _localSelecionado = widget.plantao!.local;
-      _valorController.text = widget.plantao!.valor.toStringAsFixed(2);
+      _valorController.text = widget.plantao!.valor.toStringAsFixed(2).replaceAll('.', ',');
       _dataHoraSelecionada = widget.plantao!.dataHora;
       _dataHoraController.text = _formatarDataHora(_dataHoraSelecionada!);
       _previsaoPagamentoSelecionada = widget.plantao!.previsaoPagamento;
