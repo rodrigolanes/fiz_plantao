@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'dart:async';
 import 'lista_plantoes_screen.dart';
-import 'icon_preview_screen.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -53,16 +52,6 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.teal[50],
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () {
-          Navigator.of(context).push(
-            MaterialPageRoute(builder: (context) => const IconPreviewScreen()),
-          );
-        },
-        icon: const Icon(Icons.visibility),
-        label: const Text('Ver Ícone'),
-        backgroundColor: Colors.teal,
-      ),
       body: Center(
         child: FadeTransition(
           opacity: _fadeAnimation,
