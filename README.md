@@ -31,6 +31,10 @@ O **Fiz Plantão** é uma solução prática para médicos registrarem e acompan
   - [x] Cards com informações completas
   - [x] Status visual de pagamento
   - [x] Apenas plantões ativos são exibidos
+  - [x] Filtro por local (dropdown)
+  - [x] Filtro por período de datas
+  - [x] Filtro padrão "Próximos" (hoje ou posterior)
+  - [x] Contador de resultados filtrados
 - [x] **Edição e Exclusão**
   - [x] Editar plantões existentes
   - [x] Soft delete com confirmação
@@ -69,10 +73,10 @@ O **Fiz Plantão** é uma solução prática para médicos registrarem e acompan
 
 ### Recursos Planejados
 
-- [ ] **Filtros e Busca**
+- [x] **Filtros e Busca**
 
-  - [ ] Filtrar plantões por período
-  - [ ] Filtrar por local
+  - [x] Filtrar plantões por período (com opções rápidas: Próximos, Este mês)
+  - [x] Filtrar por local
   - [ ] Filtrar por status de pagamento
   - [ ] Busca por texto
 
@@ -145,7 +149,11 @@ Splash Screen
 └── Indicador de carregamento
 
 Tela Principal (Listagem de Plantões)
-├── AppBar: "Fiz Plantão"
+├── AppBar: "Fiz Plantão" + Gerenciar Locais
+├── Área de Filtros
+│   ├── Dropdown: Filtrar por Local
+│   ├── Botão: Filtrar por Período (Próximos/Personalizado)
+│   └── Contador e botão Limpar (quando filtros ativos)
 ├── Botão "Novo Plantão" (flutuante)
 └── Lista de Cards (ordenados por data)
     └── Card do Plantão
@@ -317,10 +325,12 @@ android/
 
 - **Soft Delete:** Exclusão lógica via flag `ativo`
 - **Locais Inativos:** Não aparecem para novos cadastros, mas plantões existentes os mantêm visíveis
+- **Filtros em Memória:** Aplicados diretamente na lista sem queries adicionais
+- **Filtro Padrão:** "Próximos" mostra plantões de hoje em diante
 - **Type-safe Enums:** `Duracao` para duração de plantões
 - **DateTime Formatting:** Intl para formatação brasileira
 - **Currency Formatting:** `NumberFormat.currency(locale: 'pt_BR')`
-- **UUID:** Identificadores únicos para registros
+- **Timestamp IDs:** `DateTime.now().millisecondsSinceEpoch.toString()`
 - **Hive Boxes:** `locais` e `plantoes` como boxes separados
 - **StatefulWidgets:** Para telas com interação
 - **Material 3:** Design system consistente
