@@ -16,12 +16,18 @@ class DatabaseService {
   }
 
   static Future<void> saveLocal(Local local) async {
-    // Usa o ID como chave para facilitar updates
-    await locaisBox.put(local.id, local);
+    final agora = DateTime.now();
+    final novo = local.copyWith(
+      criadoEm: local.criadoEm,
+      atualizadoEm: agora,
+    );
+    await locaisBox.put(novo.id, novo);
   }
 
   static Future<void> updateLocal(Local local) async {
-    await locaisBox.put(local.id, local);
+    final agora = DateTime.now();
+    final atualizado = local.copyWith(atualizadoEm: agora);
+    await locaisBox.put(atualizado.id, atualizado);
   }
 
   static Future<void> deleteLocal(String id) async {
@@ -48,11 +54,18 @@ class DatabaseService {
   }
 
   static Future<void> savePlantao(Plantao plantao) async {
-    await plantoesBox.put(plantao.id, plantao);
+    final agora = DateTime.now();
+    final novo = plantao.copyWith(
+      criadoEm: plantao.criadoEm,
+      atualizadoEm: agora,
+    );
+    await plantoesBox.put(novo.id, novo);
   }
 
   static Future<void> updatePlantao(Plantao plantao) async {
-    await plantoesBox.put(plantao.id, plantao);
+    final agora = DateTime.now();
+    final atualizado = plantao.copyWith(atualizadoEm: agora);
+    await plantoesBox.put(atualizado.id, atualizado);
   }
 
   static Future<void> deletePlantao(String id) async {

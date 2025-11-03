@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../models/plantao.dart';
-import '../models/local.dart';
 import '../services/database_service.dart';
 import 'cadastro_plantao_screen.dart';
 import 'lista_locais_screen.dart';
@@ -24,11 +23,13 @@ class _ListaPlantoesScreenState extends State<ListaPlantoesScreen> {
   }
 
   Future<void> _gerenciarLocais() async {
-    await Navigator.of(context).push(
+    final navigator = Navigator.of(context);
+    await navigator.push(
       MaterialPageRoute(
-        builder: (context) => const ListaLocaisScreen(),
+        builder: (_) => const ListaLocaisScreen(),
       ),
     );
+    if (!mounted) return;
     _carregarDados();
   }
 
@@ -52,57 +53,59 @@ class _ListaPlantoesScreenState extends State<ListaPlantoesScreen> {
       );
       return;
     }
-    final resultado = await Navigator.of(context).push<Plantao>(
+    final navigator = Navigator.of(context);
+    final messenger = ScaffoldMessenger.of(context);
+    final resultado = await navigator.push<Plantao>(
       MaterialPageRoute(
-        builder: (context) => CadastroPlantaoScreen(
+        builder: (_) => CadastroPlantaoScreen(
           plantao: plantao,
           locais: ativos,
         ),
       ),
     );
-
-    if (resultado != null && mounted) {
+    if (!mounted) return;
+    if (resultado != null) {
       await DatabaseService.savePlantao(resultado);
+      if (!mounted) return;
       _carregarDados();
-
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              plantao == null
-                  ? 'Plantão cadastrado com sucesso!'
-                  : 'Plantão atualizado com sucesso!',
-            ),
+      if (!mounted) return;
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text(
+            plantao == null
+                ? 'Plantão cadastrado com sucesso!'
+                : 'Plantão atualizado com sucesso!',
           ),
-        );
-      }
+        ),
+      );
     }
   }
 
   void _confirmarExclusao(Plantao plantao) {
+    final navigator = Navigator.of(context);
+    final messenger = ScaffoldMessenger.of(context);
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (_) => AlertDialog(
         title: const Text('Confirmar Exclusão'),
         content: Text(
           'Deseja realmente excluir o plantão em ${plantao.local.apelido}?',
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.of(context).pop(),
+            onPressed: () => navigator.pop(),
             child: const Text('Cancelar'),
           ),
           TextButton(
             onPressed: () async {
               await DatabaseService.deletePlantao(plantao.id);
-              Navigator.of(context).pop();
+              navigator.pop();
+              if (!mounted) return;
               _carregarDados();
-              
-              if (mounted) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Plantão excluído com sucesso!')),
-                );
-              }
+              if (!mounted) return;
+              messenger.showSnackBar(
+                const SnackBar(content: Text('Plantão excluído com sucesso!')),
+              );
             },
             child: const Text('Excluir', style: TextStyle(color: Colors.red)),
           ),
@@ -273,7 +276,7 @@ class _ListaPlantoesScreenState extends State<ListaPlantoesScreen> {
                                   vertical: 4,
                                 ),
                                 decoration: BoxDecoration(
-                                  color: statusColor.withValues(alpha: 0.2),
+                                  color: statusColor.withOpacity(0.2),
                                   borderRadius: BorderRadius.circular(12),
                                   border: Border.all(color: statusColor),
                                 ),

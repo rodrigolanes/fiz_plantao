@@ -14,7 +14,6 @@ O **Fiz Plantão** é uma solução prática para médicos registrarem e acompan
   - [x] Apelido e nome completo
   - [x] Validação de campos obrigatórios
   - [x] Soft delete (exclusão lógica)
-  
 - [x] **Listagem de Locais**
   - [x] Visualização em cards
   - [x] Ícones de edição e exclusão
@@ -27,13 +26,11 @@ O **Fiz Plantão** é uma solução prática para médicos registrarem e acompan
   - [x] Data e hora do plantão
   - [x] Duração (12h ou 24h)
   - [x] Valor e previsão de pagamento
-  
 - [x] **Listagem de Plantões**
   - [x] Ordenação por data (mais recentes primeiro)
   - [x] Cards com informações completas
   - [x] Status visual de pagamento
   - [x] Apenas plantões ativos são exibidos
-  
 - [x] **Edição e Exclusão**
   - [x] Editar plantões existentes
   - [x] Soft delete com confirmação
@@ -55,7 +52,6 @@ O **Fiz Plantão** é uma solução prática para médicos registrarem e acompan
   - [x] Animações de fade e scale
   - [x] Imagem de branding (planta)
   - [x] Navegação automática
-  
 - [x] **Ícone do App**
   - [x] Ícone customizado para Android
   - [x] Adaptive icon com background teal
@@ -74,28 +70,33 @@ O **Fiz Plantão** é uma solução prática para médicos registrarem e acompan
 ### Recursos Planejados
 
 - [ ] **Filtros e Busca**
+
   - [ ] Filtrar plantões por período
   - [ ] Filtrar por local
   - [ ] Filtrar por status de pagamento
   - [ ] Busca por texto
 
 - [ ] **Estatísticas e Relatórios**
+
   - [ ] Dashboard com totalizadores
   - [ ] Gráficos de rendimentos mensais
   - [ ] Relatório de plantões por local
   - [ ] Análise de pagamentos (recebidos/pendentes)
 
 - [ ] **Exportação de Dados**
+
   - [ ] Exportar para PDF
   - [ ] Exportar para Excel/CSV
   - [ ] Compartilhar relatórios
 
 - [ ] **Notificações**
+
   - [ ] Lembrete de plantões próximos
   - [ ] Alerta de pagamentos atrasados
   - [ ] Notificações programáveis
 
 - [ ] **Funcionalidades Avançadas**
+
   - [ ] Backup e restore de dados
   - [ ] Sincronização em nuvem (opcional)
   - [ ] Modo escuro
@@ -216,38 +217,39 @@ flutter build apk --split-per-abi
 Os APKs estarão em `build/app/outputs/flutter-apk/`
 
 **Importante:** Ao atualizar o app, incremente a versão no `pubspec.yaml`:
+
 ```yaml
-version: 1.0.1+2  # formato: versionName+versionCode
+version: 1.0.1+2 # formato: versionName+versionCode
 ```
 
 ## 📝 Modelo de Dados
 
 ### Local
 
-| Campo        | Tipo     | Descrição                                    |
-| ------------ | -------- | -------------------------------------------- |
-| id           | String   | Identificador único (UUID)                   |
-| apelido      | String   | Nome curto (ex: HSL)                         |
-| nome         | String   | Nome completo do local                       |
-| ativo        | bool     | Status (true=ativo, false=excluído)          |
-| criadoEm     | DateTime | Data de criação do registro                  |
-| atualizadoEm | DateTime | Data da última atualização                   |
+| Campo        | Tipo     | Descrição                           |
+| ------------ | -------- | ----------------------------------- |
+| id           | String   | Identificador único (UUID)          |
+| apelido      | String   | Nome curto (ex: HSL)                |
+| nome         | String   | Nome completo do local              |
+| ativo        | bool     | Status (true=ativo, false=excluído) |
+| criadoEm     | DateTime | Data de criação do registro         |
+| atualizadoEm | DateTime | Data da última atualização          |
 
 **Anotações Hive:** `@HiveType(typeId: 0)` com `@HiveField` em cada campo.
 
 ### Plantão
 
-| Campo             | Tipo     | Descrição                                    |
-| ----------------- | -------- | -------------------------------------------- |
-| id                | String   | Identificador único (UUID)                   |
-| local             | Local    | Objeto Local completo                        |
-| dataHora          | DateTime | Data e hora do plantão                       |
-| duracao           | Duracao  | Enum: dozehoras ou vinteequatrohoras         |
-| valor             | double   | Valor do pagamento (R$)                      |
-| previsaoPagamento | DateTime | Data prevista para pagamento                 |
-| ativo             | bool     | Status (true=ativo, false=excluído)          |
-| criadoEm          | DateTime | Data de criação do registro                  |
-| atualizadoEm      | DateTime | Data da última atualização                   |
+| Campo             | Tipo     | Descrição                            |
+| ----------------- | -------- | ------------------------------------ |
+| id                | String   | Identificador único (UUID)           |
+| local             | Local    | Objeto Local completo                |
+| dataHora          | DateTime | Data e hora do plantão               |
+| duracao           | Duracao  | Enum: dozehoras ou vinteequatrohoras |
+| valor             | double   | Valor do pagamento (R$)              |
+| previsaoPagamento | DateTime | Data prevista para pagamento         |
+| ativo             | bool     | Status (true=ativo, false=excluído)  |
+| criadoEm          | DateTime | Data de criação do registro          |
+| atualizadoEm      | DateTime | Data da última atualização           |
 
 **Anotações Hive:** `@HiveType(typeId: 1)` com `@HiveField` em cada campo.
 
@@ -267,7 +269,7 @@ DatabaseService.savePlantao(plantao)        // Salva/atualiza plantão
 DatabaseService.deletePlantao(plantaoId)    // Soft delete
 ```
 
-**Soft Delete:** Registros não são removidos fisicamente, apenas marcados como `ativo = false`. Ao desativar um local, todos os plantões relacionados também são desativados.
+**Soft Delete:** Registros não são removidos fisicamente, apenas marcados como `ativo = false`. Locais desativados não aparecem no dropdown para novos plantões, mas plantões existentes com locais desativados continuam visíveis preservando o histórico.
 
 ## 🎨 Design
 
@@ -330,6 +332,7 @@ Este projeto está sob a licença MIT.
 ## 👨‍💻 Desenvolvedor
 
 **Rodrigo Lanes**
+
 - GitHub: [@rodrigolanes](https://github.com/rodrigolanes)
 
 ---
@@ -337,4 +340,62 @@ Este projeto está sob a licença MIT.
 **Status do Projeto:** ✅ MVP Funcional | 🚧 Melhorias Contínuas
 
 **Versão Atual:** 1.0.0+1
+
+## 🔧 Upgrade Técnico
+
+Esta seção documenta o processo de upgrade de SDK/dependências realizado e as diretrizes para futuros updates.
+
+### Estratégia Adotada
+
+1. Manter a constraint do Dart/Flutter flexível dentro da major: `sdk: '>=3.5.0 <4.0.0'`.
+2. Atualizar dependências somente dentro de versões compatíveis evitando quebrar o build.
+3. Priorizar estabilidade sobre últimas versões quando pacotes exigem SDK superior.
+
+### Passos Executados
+
+1. Coletado ambiente: `flutter --version` e `dart --version`.
+2. Listado pacotes desatualizados com `flutter pub outdated`.
+3. Ajustado `pubspec.yaml`:
+   - `intl` mantido em `^0.19.0` (travado por `flutter_localizations`).
+   - `flutter_lints` revertido para `^5.0.0` por exigir SDK mais novo na v6.
+   - Adicionados pacotes de persistência: `hive`, `hive_flutter`, `path_provider`, `hive_generator`, `build_runner`.
+4. Rodado `flutter pub get` para sincronizar dependências.
+5. Corrigidos erros de análise (parâmetros inválidos e propriedades de cor) e eliminados avisos de async context.
+
+### Diretrizes Futuras de Upgrade
+
+- Antes de subir a major do Flutter/Dart, rodar:
+  ```bash
+  flutter pub outdated --mode=null-safety
+  flutter analyze
+  flutter test
+  ```
+- Se `intl` exigir upgrade (ex.: >=0.20.x), verificar compatibilidade com `flutter_localizations`.
+- Atualizar `flutter_lints` para v6 somente após confirmar suporte do SDK (ex.: Flutter >=3.24.x hipotético).
+- Após qualquer mudança em modelos Hive, sempre rodar:
+  ```bash
+  flutter pub run build_runner build --delete-conflicting-outputs
+  ```
+- Manter registro de alterações na seção de Changelog (a ser criada).
+
+### Checklist de Upgrade
+
+- [x] Revisar constraints do SDK
+- [x] Atualizar dependências seguras
+- [x] Rodar `flutter pub get`
+- [x] Rodar `flutter analyze` e resolver problemas
+- [ ] Rodar `flutter test` (pendente: adicionar testes)
+- [ ] Atualizar versão no `pubspec.yaml` (ex.: `1.0.1+2` após novo release)
+- [ ] Atualizar Changelog
+
+### Próximos Passos
+
+1. Adicionar testes básicos (ex.: validação de formatação de valores, soft delete).
+2. Criar script de verificação automática de integridade (`make` ou `melos` futuro).
+3. Separar camadas para facilitar upgrades (ex.: abstrair Hive para outra implementação).
+
+---
+
+```
+
 ```

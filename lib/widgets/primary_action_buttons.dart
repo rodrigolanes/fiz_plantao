@@ -63,7 +63,7 @@ class _PrimaryActionButtonsState extends State<PrimaryActionButtons> {
                 ).copyWith(
                   backgroundColor: WidgetStateProperty.resolveWith((states) {
                     if (states.contains(WidgetState.disabled)) {
-                      return cs.primary.withValues(alpha: 0.35);
+                      return cs.primary.withOpacity(0.35);
                     }
                     if (states.contains(WidgetState.pressed)) {
                       return cs.primaryContainer;

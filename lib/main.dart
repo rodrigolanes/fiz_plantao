@@ -19,6 +19,7 @@ void main() async {
   // Abre as boxes
   await Hive.openBox<Local>('locais');
   await Hive.openBox<Plantao>('plantoes');
+
   
   runApp(const MyApp());
 }

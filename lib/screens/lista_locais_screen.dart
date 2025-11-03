@@ -21,50 +21,52 @@ class _ListaLocaisScreenState extends State<ListaLocaisScreen> {
   }
 
   Future<void> _navegarParaCadastro([Local? local]) async {
-    final resultado = await Navigator.of(context).push<Local>(
+    final navigator = Navigator.of(context);
+    final messenger = ScaffoldMessenger.of(context);
+    final resultado = await navigator.push<Local>(
       MaterialPageRoute(
-        builder: (context) => CadastroLocalScreen(local: local),
+        builder: (_) => CadastroLocalScreen(local: local),
       ),
     );
-
-    if (resultado != null && mounted) {
+    if (!mounted) return;
+    if (resultado != null) {
       await DatabaseService.saveLocal(resultado);
+      if (!mounted) return;
       _carregarLocais();
-
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              local == null ? 'Local cadastrado com sucesso!' : 'Local atualizado com sucesso!',
-            ),
+      if (!mounted) return;
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text(
+            local == null ? 'Local cadastrado com sucesso!' : 'Local atualizado com sucesso!',
           ),
-        );
-      }
+        ),
+      );
     }
   }
 
   void _confirmarExclusao(Local local) {
+    final navigator = Navigator.of(context);
+    final messenger = ScaffoldMessenger.of(context);
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (_) => AlertDialog(
         title: const Text('Confirmar Exclusão'),
         content: Text('Deseja realmente excluir o local "${local.apelido}"?'),
         actions: [
           TextButton(
-            onPressed: () => Navigator.of(context).pop(),
+            onPressed: () => navigator.pop(),
             child: const Text('Cancelar'),
           ),
           TextButton(
             onPressed: () async {
               await DatabaseService.deleteLocal(local.id);
-              Navigator.of(context).pop();
+              navigator.pop();
+              if (!mounted) return;
               _carregarLocais();
-              
-              if (mounted) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Local excluído com sucesso!')),
-                );
-              }
+              if (!mounted) return;
+              messenger.showSnackBar(
+                const SnackBar(content: Text('Local excluído com sucesso!')),
+              );
             },
             child: const Text('Excluir', style: TextStyle(color: Colors.red)),
           ),

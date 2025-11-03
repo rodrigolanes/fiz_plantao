@@ -199,7 +199,7 @@ class _CadastroPlantaoScreenState extends State<CadastroPlantaoScreen> {
               children: [
                 Expanded(
                   child: DropdownButtonFormField<Local>(
-                    initialValue: _localSelecionado,
+                    value: _localSelecionado,
                     decoration: const InputDecoration(
                       labelText: 'Local',
                       border: OutlineInputBorder(),
@@ -251,7 +251,7 @@ class _CadastroPlantaoScreenState extends State<CadastroPlantaoScreen> {
             ),
             const SizedBox(height: 16),
             DropdownButtonFormField<Duracao>(
-              initialValue: _duracaoSelecionada,
+              value: _duracaoSelecionada,
               decoration: const InputDecoration(
                 labelText: 'Duração',
                 border: OutlineInputBorder(),
