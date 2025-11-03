@@ -187,6 +187,7 @@ import '../services/database_service.dart';
 - [ ] Rodar `flutter pub run build_runner build`
 - [ ] Testar em pelo menos um dispositivo/emulador
 - [ ] Verificar que dados persistem após restart
+- [ ] Atualizar README.md com novas funcionalidades ou mudanças relevantes
 - [ ] Incrementar version no pubspec.yaml se for release
 
 ### Debug Comum
