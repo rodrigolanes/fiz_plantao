@@ -13,13 +13,83 @@ class ListaPlantoesScreen extends StatefulWidget {
 }
 
 class _ListaPlantoesScreenState extends State<ListaPlantoesScreen> {
+  String? _localFiltroId;
+  DateTime? _dataInicio;
+  DateTime? _dataFim;
+  bool _filtrarDataAtual = true; // Filtro padrão: hoje ou posterior
+
   @override
   void initState() {
     super.initState();
+    _dataInicio = DateTime.now(); // Padrão: a partir de hoje
   }
 
   void _carregarDados() {
     setState(() {});
+  }
+
+  List<Plantao> _aplicarFiltros(List<Plantao> plantoes) {
+    var filtrados = plantoes;
+
+    // Filtro por local
+    if (_localFiltroId != null) {
+      filtrados = filtrados.where((p) => p.local.id == _localFiltroId).toList();
+    }
+
+    // Filtro por data
+    if (_filtrarDataAtual && _dataInicio != null) {
+      final hoje = DateTime(_dataInicio!.year, _dataInicio!.month, _dataInicio!.day);
+      filtrados = filtrados.where((p) {
+        final dataPlantao = DateTime(p.dataHora.year, p.dataHora.month, p.dataHora.day);
+        return dataPlantao.isAtSameMomentAs(hoje) || dataPlantao.isAfter(hoje);
+      }).toList();
+    } else if (_dataInicio != null || _dataFim != null) {
+      filtrados = filtrados.where((p) {
+        final dataPlantao = DateTime(p.dataHora.year, p.dataHora.month, p.dataHora.day);
+        if (_dataInicio != null && _dataFim != null) {
+          final inicio = DateTime(_dataInicio!.year, _dataInicio!.month, _dataInicio!.day);
+          final fim = DateTime(_dataFim!.year, _dataFim!.month, _dataFim!.day);
+          return (dataPlantao.isAtSameMomentAs(inicio) || dataPlantao.isAfter(inicio)) &&
+                 (dataPlantao.isAtSameMomentAs(fim) || dataPlantao.isBefore(fim));
+        } else if (_dataInicio != null) {
+          final inicio = DateTime(_dataInicio!.year, _dataInicio!.month, _dataInicio!.day);
+          return dataPlantao.isAtSameMomentAs(inicio) || dataPlantao.isAfter(inicio);
+        } else if (_dataFim != null) {
+          final fim = DateTime(_dataFim!.year, _dataFim!.month, _dataFim!.day);
+          return dataPlantao.isAtSameMomentAs(fim) || dataPlantao.isBefore(fim);
+        }
+        return true;
+      }).toList();
+    }
+
+    return filtrados;
+  }
+
+  void _limparFiltros() {
+    setState(() {
+      _localFiltroId = null;
+      _dataInicio = DateTime.now();
+      _dataFim = null;
+      _filtrarDataAtual = true;
+    });
+  }
+
+  Future<void> _selecionarPeriodo() async {
+    final resultado = await showDialog<Map<String, DateTime?>>(
+      context: context,
+      builder: (_) => _DialogSelecionarPeriodo(
+        dataInicio: _dataInicio,
+        dataFim: _dataFim,
+      ),
+    );
+    
+    if (resultado != null && mounted) {
+      setState(() {
+        _dataInicio = resultado['inicio'];
+        _dataFim = resultado['fim'];
+        _filtrarDataAtual = false;
+      });
+    }
   }
 
   Future<void> _gerenciarLocais() async {
@@ -131,60 +201,170 @@ class _ListaPlantoesScreenState extends State<ListaPlantoesScreen> {
   Widget build(BuildContext context) {
     final locaisAtivos = DatabaseService.getLocaisAtivos();
     final plantoesAtivos = DatabaseService.getPlantoesAtivos();
+    final plantoesFiltrados = _aplicarFiltros(plantoesAtivos);
+    final temFiltrosAtivos = _localFiltroId != null || !_filtrarDataAtual || _dataFim != null;
 
     return Scaffold(
       appBar: AppBar(
         title: const Text('Meus Plantões'),
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.location_on),
+            onPressed: _gerenciarLocais,
+            tooltip: 'Gerenciar Locais',
+          ),
+        ],
       ),
-      body: (plantoesAtivos.isEmpty)
-          ? Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(
-                    locaisAtivos.isEmpty ? Icons.location_off : Icons.medical_services_outlined,
-                    size: 64,
-                    color: Colors.grey[400],
-                  ),
-                  const SizedBox(height: 16),
-                  Text(
-                    locaisAtivos.isEmpty ? 'Nenhum local cadastrado' : 'Nenhum plantão cadastrado',
-                    style: TextStyle(
-                      fontSize: 18,
-                      color: Colors.grey[600],
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    locaisAtivos.isEmpty
-                        ? 'Crie seu primeiro local para cadastrar plantões.'
-                        : 'Clique no botão + para adicionar',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: Colors.grey[500],
-                    ),
-                  ),
-                  const SizedBox(height: 24),
-                  if (locaisAtivos.isEmpty)
-                    ElevatedButton.icon(
-                      onPressed: _gerenciarLocais,
-                      icon: const Icon(Icons.add_location_alt),
-                      label: const Text('Cadastrar Local'),
-                      style: ElevatedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+      body: Column(
+        children: [
+          // Área de filtros
+          Container(
+            padding: const EdgeInsets.all(12),
+            color: Colors.teal[50],
+            child: Column(
+              children: [
+                Row(
+                  children: [
+                    // Filtro por local
+                    Expanded(
+                      child: DropdownButtonFormField<String>(
+                        value: _localFiltroId,
+                        decoration: InputDecoration(
+                          labelText: 'Local',
+                          border: const OutlineInputBorder(),
+                          contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                          filled: true,
+                          fillColor: Colors.white,
+                          prefixIcon: const Icon(Icons.location_on, size: 20),
+                        ),
+                        hint: const Text('Todos os locais'),
+                        items: [
+                          const DropdownMenuItem<String>(
+                            value: null,
+                            child: Text('Todos os locais'),
+                          ),
+                          ...locaisAtivos.map((local) {
+                            return DropdownMenuItem<String>(
+                              value: local.id,
+                              child: Text(local.apelido),
+                            );
+                          }),
+                        ],
+                        onChanged: (value) {
+                          setState(() {
+                            _localFiltroId = value;
+                          });
+                        },
                       ),
                     ),
-                ],
-              ),
-            )
-          : ListView.builder(
-              padding: const EdgeInsets.all(16),
-              itemCount: plantoesAtivos.length,
-              itemBuilder: (context, index) {
-                final plantao = plantoesAtivos[index];
-                final statusColor = _getStatusColor(plantao.previsaoPagamento);
+                    const SizedBox(width: 8),
+                    // Botão de período
+                    Expanded(
+                      child: OutlinedButton.icon(
+                        onPressed: _selecionarPeriodo,
+                        icon: const Icon(Icons.date_range, size: 20),
+                        label: Text(
+                          _filtrarDataAtual
+                              ? 'Próximos'
+                              : _dataFim != null
+                                  ? '${DateFormat('dd/MM').format(_dataInicio!)} - ${DateFormat('dd/MM').format(_dataFim!)}'
+                                  : 'Desde ${DateFormat('dd/MM').format(_dataInicio!)}',
+                          style: const TextStyle(fontSize: 13),
+                        ),
+                        style: OutlinedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
+                          backgroundColor: Colors.white,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                if (temFiltrosAtivos)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 8),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            '${plantoesFiltrados.length} de ${plantoesAtivos.length} plantões',
+                            style: TextStyle(
+                              fontSize: 13,
+                              color: Colors.teal[700],
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ),
+                        TextButton.icon(
+                          onPressed: _limparFiltros,
+                          icon: const Icon(Icons.clear, size: 16),
+                          label: const Text('Limpar'),
+                          style: TextButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(horizontal: 8),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+              ],
+            ),
+          ),
+          // Lista de plantões
+          Expanded(
+            child: (plantoesFiltrados.isEmpty)
+                ? Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          temFiltrosAtivos
+                              ? Icons.filter_alt_off
+                              : (locaisAtivos.isEmpty ? Icons.location_off : Icons.medical_services_outlined),
+                          size: 64,
+                          color: Colors.grey[400],
+                        ),
+                        const SizedBox(height: 16),
+                        Text(
+                          temFiltrosAtivos
+                              ? 'Nenhum plantão encontrado'
+                              : (locaisAtivos.isEmpty ? 'Nenhum local cadastrado' : 'Nenhum plantão cadastrado'),
+                          style: TextStyle(
+                            fontSize: 18,
+                            color: Colors.grey[600],
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          temFiltrosAtivos
+                              ? 'Tente ajustar os filtros acima'
+                              : (locaisAtivos.isEmpty
+                                  ? 'Crie seu primeiro local para cadastrar plantões.'
+                                  : 'Clique no botão + para adicionar'),
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: Colors.grey[500],
+                          ),
+                        ),
+                        const SizedBox(height: 24),
+                        if (locaisAtivos.isEmpty && !temFiltrosAtivos)
+                          ElevatedButton.icon(
+                            onPressed: _gerenciarLocais,
+                            icon: const Icon(Icons.add_location_alt),
+                            label: const Text('Cadastrar Local'),
+                            style: ElevatedButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+                            ),
+                          ),
+                      ],
+                    ),
+                  )
+                : ListView.builder(
+                    padding: const EdgeInsets.all(16),
+                    itemCount: plantoesFiltrados.length,
+                    itemBuilder: (context, index) {
+                      final plantao = plantoesFiltrados[index];
+                      final statusColor = _getStatusColor(plantao.previsaoPagamento);
 
                 return Card(
                   margin: const EdgeInsets.only(bottom: 12),
@@ -309,6 +489,9 @@ class _ListaPlantoesScreenState extends State<ListaPlantoesScreen> {
                 );
               },
             ),
+          ),
+        ],
+      ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: locaisAtivos.isEmpty ? null : () => _navegarParaCadastro(),
         backgroundColor: locaisAtivos.isEmpty ? Colors.grey[300] : null,
@@ -316,6 +499,151 @@ class _ListaPlantoesScreenState extends State<ListaPlantoesScreen> {
         icon: const Icon(Icons.add),
         label: const Text('Novo Plantão'),
       ),
+    );
+  }
+}
+
+// Dialog para seleção de período personalizado
+class _DialogSelecionarPeriodo extends StatefulWidget {
+  final DateTime? dataInicio;
+  final DateTime? dataFim;
+
+  const _DialogSelecionarPeriodo({
+    this.dataInicio,
+    this.dataFim,
+  });
+
+  @override
+  State<_DialogSelecionarPeriodo> createState() => _DialogSelecionarPeriodoState();
+}
+
+class _DialogSelecionarPeriodoState extends State<_DialogSelecionarPeriodo> {
+  late DateTime? _inicio;
+  late DateTime? _fim;
+  final _inicioController = TextEditingController();
+  final _fimController = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    _inicio = widget.dataInicio;
+    _fim = widget.dataFim;
+    if (_inicio != null) {
+      _inicioController.text = DateFormat('dd/MM/yyyy').format(_inicio!);
+    }
+    if (_fim != null) {
+      _fimController.text = DateFormat('dd/MM/yyyy').format(_fim!);
+    }
+  }
+
+  @override
+  void dispose() {
+    _inicioController.dispose();
+    _fimController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _selecionarData(bool isInicio) async {
+    final data = await showDatePicker(
+      context: context,
+      initialDate: (isInicio ? _inicio : _fim) ?? DateTime.now(),
+      firstDate: DateTime(2020),
+      lastDate: DateTime(2030),
+      locale: const Locale('pt', 'BR'),
+    );
+
+    if (data != null && mounted) {
+      setState(() {
+        if (isInicio) {
+          _inicio = data;
+          _inicioController.text = DateFormat('dd/MM/yyyy').format(data);
+        } else {
+          _fim = data;
+          _fimController.text = DateFormat('dd/MM/yyyy').format(data);
+        }
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: const Text('Selecionar Período'),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          TextFormField(
+            controller: _inicioController,
+            decoration: const InputDecoration(
+              labelText: 'Data Início',
+              border: OutlineInputBorder(),
+              prefixIcon: Icon(Icons.calendar_today),
+            ),
+            readOnly: true,
+            onTap: () => _selecionarData(true),
+          ),
+          const SizedBox(height: 16),
+          TextFormField(
+            controller: _fimController,
+            decoration: const InputDecoration(
+              labelText: 'Data Fim (opcional)',
+              border: OutlineInputBorder(),
+              prefixIcon: Icon(Icons.calendar_today),
+              helperText: 'Deixe vazio para sem limite',
+            ),
+            readOnly: true,
+            onTap: () => _selecionarData(false),
+          ),
+          const SizedBox(height: 16),
+          Row(
+            children: [
+              Expanded(
+                child: OutlinedButton(
+                  onPressed: () {
+                    setState(() {
+                      _inicio = DateTime.now();
+                      _fim = null;
+                      _inicioController.text = DateFormat('dd/MM/yyyy').format(_inicio!);
+                      _fimController.clear();
+                    });
+                  },
+                  child: const Text('Próximos'),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: OutlinedButton(
+                  onPressed: () {
+                    final agora = DateTime.now();
+                    setState(() {
+                      _inicio = DateTime(agora.year, agora.month, 1);
+                      _fim = DateTime(agora.year, agora.month + 1, 0);
+                      _inicioController.text = DateFormat('dd/MM/yyyy').format(_inicio!);
+                      _fimController.text = DateFormat('dd/MM/yyyy').format(_fim!);
+                    });
+                  },
+                  child: const Text('Este mês'),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: const Text('Cancelar'),
+        ),
+        FilledButton(
+          onPressed: () {
+            Navigator.of(context).pop({
+              'inicio': _inicio,
+              'fim': _fim,
+            });
+          },
+          child: const Text('Aplicar'),
+        ),
+      ],
     );
   }
 }
