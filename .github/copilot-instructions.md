@@ -28,30 +28,35 @@ lib/
 ### Padrões Obrigatórios
 
 1. **Soft Delete Pattern**
+
    - NUNCA delete registros fisicamente do Hive
    - Use flag `bool ativo = true` em todos os modelos
    - Métodos `delete*` devem setar `ativo = false`
    - Queries devem filtrar por `where((item) => item.ativo)`
 
 2. **Hive TypeAdapters**
+
    - Todos os modelos devem ter `@HiveType(typeId: X)`
    - Cada campo deve ter `@HiveField(N)`
    - Usar typeId únicos: Local=0, Plantao=1
    - Rodar `flutter pub run build_runner build` após mudanças
 
 3. **Database Service Pattern**
+
    - Toda operação de banco DEVE passar por `DatabaseService`
    - Métodos estáticos e síncronos
    - Nomenclatura: `getNomeAtivos()`, `saveNome()`, `deleteNome()`
    - Box names: lowercase plural (ex: 'locais', 'plantoes')
 
 4. **DateTime Formatting**
+
    - Sempre usar `intl` para formatação
    - Locale fixo: `'pt_BR'`
    - Formato data: `DateFormat('dd/MM/yyyy', 'pt_BR')`
    - Formato hora: `DateFormat('HH:mm', 'pt_BR')`
 
 5. **Currency Formatting**
+
    ```dart
    NumberFormat.currency(
      locale: 'pt_BR',
@@ -61,15 +66,23 @@ lib/
    ```
 
 6. **Model Structure**
+
    - Todos os modelos têm: `id`, `criadoEm`, `atualizadoEm`, `ativo`
-   - ID é UUID v4: `const Uuid().v4()`
-   - Timestamps automáticos no save
+   - ID é timestamp: `DateTime.now().millisecondsSinceEpoch.toString()`
+   - Timestamps automáticos no save via `DatabaseService` (atualiza `atualizadoEm`)
    - Incluir `copyWith()` method em todos os modelos
 
 7. **Enums**
+
    - Usar PascalCase para enum names
    - Valores em lowercase sem separadores
-   - Exemplo: `enum Duracao { dozehoras, vinteequatrohoras }`
+   - Exemplo: `enum Duracao { dozeHoras, vinteQuatroHoras }`
+   - Incluir Hive annotations: `@HiveType(typeId: X)` e `@HiveField(N)` em cada valor
+
+8. **Async Context Safety**
+   - Capturar `Navigator.of(context)` e `ScaffoldMessenger.of(context)` ANTES de awaits
+   - Verificar `if (!mounted) return;` após cada operação async
+   - Usar builders como `builder: (_) =>` em dialogs para evitar captura de context
 
 ## Convenções de Código
 
@@ -100,27 +113,37 @@ import '../services/database_service.dart';
 ### UI Components
 
 1. **Screens**
+
    - StatefulWidget quando há interação
    - AppBar com título em português
    - FloatingActionButton para ação primária (ex: "Novo")
    - Usar `ListView.builder` para listas
 
 2. **Forms**
+
    - TextFormField com validators
    - Validação de campos obrigatórios
    - Feedback com SnackBar após salvar/deletar
    - Confirmação antes de deletar (AlertDialog)
 
 3. **Navegação**
+
    - `Navigator.push` para telas de cadastro/edição
    - `Navigator.pushReplacement` para SplashScreen
    - Passar objetos via constructor arguments
 
 4. **Colors**
+
    - Primary: `Colors.teal` ou `Colors.teal[800]`
    - Background: `Colors.teal[50]`
    - Cards: `Colors.white`
    - Erro: `Colors.red`
+   - Usar `withOpacity(value)` para transparência (não `withAlpha` ou deprecated `withValues`)
+
+5. **Material Design 3**
+   - Usar `WidgetStateProperty` (não deprecated `MaterialStateProperty`)
+   - Usar `WidgetState` (não deprecated `MaterialState`)
+   - Preferir Material 3 components: `FilledButton`, `OutlinedButton`, etc.
 
 ## Regras Específicas
 
@@ -142,11 +165,12 @@ import '../services/database_service.dart';
 
 ### Ao Modificar DatabaseService
 
-1. Manter métodos síncronos (Hive é síncrono)
-2. Retornar List<T>, T ou void
+1. Métodos de leitura são síncronos, writes são async
+2. Retornar List<T>, T ou void (Future<void> para saves)
 3. Filtrar por `.where((item) => item.ativo)` em queries
 4. Usar `box.put(id, objeto)` para salvar
-5. Atualizar `atualizadoEm` no save
+5. `save*` e `update*` methods já atualizam `atualizadoEm` automaticamente via `copyWith`
+6. NUNCA pré-popular dados (seed) - usuário cria manualmente
 
 ### Regras de Soft Delete
 
@@ -206,10 +230,12 @@ flutter build apk --split-per-abi
 Formato no `pubspec.yaml`: `version: MAJOR.MINOR.PATCH+BUILD`
 
 Exemplo: `1.0.0+1` onde:
+
 - `1.0.0` = versionName (user-facing)
 - `+1` = versionCode (internal, Android)
 
 **Incrementar sempre:**
+
 - PATCH (+build): Bug fixes
 - MINOR (+build): New features
 - MAJOR (+build): Breaking changes
@@ -240,7 +266,24 @@ R: Projeto pequeno, setState é suficiente. Considerar state management se cresc
 **P: Posso usar inglês nos nomes?**
 R: Preferir português para domínio (Local, Plantao), inglês para técnico (DatabaseService).
 
+## Histórico de Atualizações
+
+### Novembro 2025
+
+- Migração para WidgetStateProperty/WidgetState (Material 3)
+- Async context safety implementado (captured navigator/messenger)
+- Timestamps automáticos no DatabaseService
+- Remoção de seed automático de dados
+- Correção de documentação sobre soft delete de locais
+
+### Outubro 2025
+
+- Implementação inicial com Hive
+- Soft delete pattern
+- Splash screen e ícone customizado
+- Localização pt_BR completa
+
 ---
 
-**Última atualização:** Outubro 2025
+**Última atualização:** Novembro 2025
 **Versão do projeto:** 1.0.0+1
