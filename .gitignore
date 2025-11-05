@@ -66,3 +66,24 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+
+# Keystore - NUNCA commitar!
+*.jks
+*.keystore
+upload-keystore.jks
+android/app/upload-keystore.jks
+
+# Chaves e senhas - NUNCA commitar!
+key.properties
+android/key.properties
+**/key.properties
+
+# Service Account JSON - NUNCA commitar!
+service-account.json
+google-services.json  # se tiver Firebase
+**/google-services.json
+
+# Builds
+build/
+*.aab
+*.apk
