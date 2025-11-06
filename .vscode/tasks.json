@@ -1,0 +1,71 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Flutter: Pub Get",
+      "type": "shell",
+      "command": "flutter pub get",
+      "problemMatcher": [],
+      "group": "build"
+    },
+    {
+      "label": "Flutter: Clean",
+      "type": "shell",
+      "command": "flutter clean",
+      "problemMatcher": [],
+      "group": "build"
+    },
+    {
+      "label": "Flutter: Build Runner",
+      "type": "shell",
+      "command": "flutter pub run build_runner build --delete-conflicting-outputs",
+      "problemMatcher": [],
+      "group": "build"
+    },
+    {
+      "label": "Flutter: Analyze",
+      "type": "shell",
+      "command": "flutter analyze",
+      "problemMatcher": [],
+      "group": "test"
+    },
+    {
+      "label": "Flutter: Test",
+      "type": "shell",
+      "command": "flutter test",
+      "problemMatcher": [],
+      "group": "test"
+    },
+    {
+      "label": "Build APK (Debug)",
+      "type": "shell",
+      "command": "flutter build apk --debug",
+      "problemMatcher": [],
+      "group": "build"
+    },
+    {
+      "label": "Build APK (Release)",
+      "type": "shell",
+      "command": "flutter build apk --release --split-per-abi",
+      "problemMatcher": [],
+      "group": "build"
+    },
+    {
+      "label": "Build AppBundle (Release)",
+      "type": "shell",
+      "command": "flutter build appbundle --release",
+      "problemMatcher": [],
+      "group": {
+        "kind": "build",
+        "isDefault": true
+      }
+    },
+    {
+      "label": "Generate Launcher Icons",
+      "type": "shell",
+      "command": "dart run flutter_launcher_icons",
+      "problemMatcher": [],
+      "group": "build"
+    }
+  ]
+}

@@ -1,0 +1,84 @@
+{
+  // Configurações do Dart/Flutter
+  "dart.flutterSdkPath": null,
+  "dart.lineLength": 120,
+  "dart.previewLsp": true,
+  "dart.openDevTools": "flutter",
+  
+  // Formatação automática
+  "editor.formatOnSave": true,
+  "editor.formatOnType": true,
+  "editor.codeActionsOnSave": {
+    "source.fixAll": "explicit",
+    "source.organizeImports": "explicit"
+  },
+  
+  // Específico para Dart
+  "[dart]": {
+    "editor.defaultFormatter": "Dart-Code.dart-code",
+    "editor.selectionHighlight": false,
+    "editor.suggest.snippetsPreventQuickSuggestions": false,
+    "editor.suggestSelection": "first",
+    "editor.tabCompletion": "onlySnippets",
+    "editor.wordBasedSuggestions": "off",
+    "editor.rulers": [120]
+  },
+  
+  // Específico para YAML
+  "[yaml]": {
+    "editor.defaultFormatter": "redhat.vscode-yaml",
+    "editor.tabSize": 2
+  },
+  
+  // Específico para JSON
+  "[json]": {
+    "editor.defaultFormatter": "vscode.json-language-features",
+    "editor.tabSize": 2
+  },
+  
+  // Específico para Markdown
+  "[markdown]": {
+    "editor.wordWrap": "on",
+    "editor.defaultFormatter": "vscode.markdown-language-features"
+  },
+  
+  // Arquivos a excluir da busca
+  "files.exclude": {
+    "**/.dart_tool": true,
+    "**/.flutter-plugins": true,
+    "**/.flutter-plugins-dependencies": true,
+    "**/.packages": true,
+    "**/build": true
+  },
+  
+  // Arquivos a observar
+  "files.watcherExclude": {
+    "**/.dart_tool/**": true,
+    "**/build/**": true,
+    "**/.gradle/**": true
+  },
+  
+  // Git
+  "git.autofetch": true,
+  "git.confirmSync": false,
+  "git.enableSmartCommit": true,
+  
+  // Terminal
+  "terminal.integrated.defaultProfile.windows": "PowerShell",
+  
+  // Outras configurações úteis
+  "editor.minimap.enabled": true,
+  "editor.bracketPairColorization.enabled": true,
+  "editor.guides.bracketPairs": true,
+  "workbench.colorTheme": "Default Dark+",
+  "explorer.confirmDelete": false,
+  "explorer.confirmDragAndDrop": false,
+  
+  // GitHub Copilot
+  "github.copilot.enable": {
+    "*": true,
+    "dart": true,
+    "yaml": true,
+    "markdown": true
+  }
+}

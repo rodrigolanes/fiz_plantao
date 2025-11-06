@@ -44,7 +44,7 @@ android/app/google-services.json
 .env.*
 
 # VS Code (uncomment if you prefer excluding local settings)
-.vscode/
+#.vscode/
 
 # Web build artifacts
 web/build/
