@@ -45,8 +45,8 @@ android {
         applicationId = "br.com.rodrigolanes.fizplantao"
         minSdk = 21
         targetSdk = 34
-        versionCode = flutter.versionCode
-        versionName = flutter.versionName
+        versionCode = 3
+        versionName = "1.0.0"
     }
 
     buildTypes {
