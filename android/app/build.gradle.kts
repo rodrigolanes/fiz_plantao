@@ -17,11 +17,8 @@ if (keystorePropertiesFile.exists()) {
 
 android {
     namespace = "br.com.rodrigolanes.fizplantao"
-    compileSdk = 36
+    compileSdk = flutter.compileSdkVersion
     ndkVersion = "27.0.12077973"
-    
-    // Force SDK versions before anything else
-    compileSdkVersion(36)
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11
@@ -46,16 +43,10 @@ android {
 
     defaultConfig {
         applicationId = "br.com.rodrigolanes.fizplantao"
-        // Force SDK versions
-        minSdk = 21
-        targetSdk = 34
-        compileSdk = 36
-        versionCode = 3
-        versionName = "1.0.0"
-        
-        // Explicitly set target SDK version
-        targetSdkVersion(34)
-        minSdkVersion(21)
+        minSdk = flutter.minSdkVersion
+        targetSdk = flutter.targetSdkVersion
+        versionCode = flutter.versionCode
+        versionName = flutter.versionName
     }
 
     buildTypes {
