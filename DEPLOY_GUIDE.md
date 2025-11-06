@@ -134,9 +134,83 @@ Adicione os seguintes secrets clicando em **New repository secret**:
 - **Nome:** `SERVICE_ACCOUNT_JSON`
 - **Valor:** Cole **todo o conteúdo** do arquivo JSON baixado no passo 2.2
 
-## 🚀 Parte 4: Workflows Configurados
+## 📦 Parte 4: Primeiro Upload Manual (OBRIGATÓRIO)
 
-### 4.1 Deploy Internal Testing (Branch `develop`)
+**⚠️ CRÍTICO:** O Google Play Console exige que o **primeiro upload seja manual**. Os workflows automatizados só funcionam após isso.
+
+### 4.1 Build Local do AAB
+
+No terminal, execute:
+
+```bash
+flutter build appbundle --release
+```
+
+O arquivo será gerado em: `build/app/outputs/bundle/release/app-release.aab`
+
+### 4.2 Criar App no Google Play Console
+
+1. Acesse [Google Play Console](https://play.google.com/console)
+2. Clique **"Criar app"**
+3. Preencha informações básicas:
+   - **Nome do app:** Fiz Plantão
+   - **Idioma padrão:** Português (Brasil)
+   - **Tipo:** Aplicativo
+   - **Gratuito/Pago:** Gratuito
+4. Aceite os termos e clique **"Criar app"**
+
+### 4.3 Configurar Ficha da Loja
+
+Complete as informações obrigatórias:
+
+**Detalhes do app:**
+
+- Descrição curta (até 80 caracteres)
+- Descrição completa (até 4000 caracteres)
+- Ícone do app (512x512 PNG)
+- Imagem de recursos (1024x500 PNG)
+
+**Screenshots:**
+
+- Pelo menos 2 capturas de tela
+- Tamanho recomendado: 1080x1920 ou 1440x2560
+
+**Classificação:**
+
+- Preencha o questionário de classificação de conteúdo
+
+**Categoria:**
+
+- Escolha categoria apropriada (ex: "Médica" ou "Produtividade")
+
+### 4.4 Upload Manual do AAB
+
+1. No menu lateral, vá em **"Teste"** → **"Teste interno"** (ou **"Produção"** se preferir)
+2. Clique **"Criar nova versão"**
+3. Clique em **"Upload"** e selecione `app-release.aab`
+4. Preencha as **"Notas da versão"** (ex: "Versão inicial")
+5. Clique em **"Revisar versão"**
+6. Revise e clique em **"Iniciar implementação para teste interno"**
+
+### 4.5 Aguardar Processamento
+
+- O Google Play pode levar **algumas horas** para processar
+- Você receberá email quando estiver pronto
+- Status visível em: **"Lançamentos"** → **"Visão geral"**
+
+### 4.6 ✅ Pronto para Automação
+
+Após o primeiro upload ser aprovado:
+
+- ✅ Os workflows automatizados funcionarão!
+- ✅ Próximos deploys serão via GitHub Actions
+- ✅ Não precisará mais fazer upload manual
+
+---
+
+## 🚀 Parte 5: Workflows Automatizados
+
+### 5.1 Deploy Internal Testing (Branch `develop`)
 
 Arquivo: `.github/workflows/deploy-internal.yml`
 
@@ -160,7 +234,7 @@ git commit -m "Nova funcionalidade"
 git push origin develop
 ```
 
-### 4.2 Deploy Production (Tag `v*`)
+### 5.2 Deploy Production (Tag `v*`)
 
 Arquivo: `.github/workflows/deploy-production.yml`
 
@@ -200,7 +274,9 @@ git push origin v1.0.1
 - [ ] Service Account criado no Google Cloud
 - [ ] Service Account vinculado ao Google Play Console
 - [ ] Todos os 5 secrets configurados no GitHub
-- [ ] App já criado manualmente no Google Play Console (primeiro upload manual)
+- [ ] App criado no Google Play Console (nome, descrição, ícone, screenshots)
+- [ ] **PRIMEIRO UPLOAD MANUAL do AAB feito** ⚠️ **OBRIGATÓRIO**
+- [ ] Aguardar aprovação do primeiro upload pelo Google Play
 - [ ] Branch `develop` criada no repositório
 
 ### Para Cada Deploy Internal
@@ -221,6 +297,12 @@ git push origin v1.0.1
 - [ ] Verificar no Google Play Console → Production
 
 ## 🐛 Troubleshooting
+
+### Erro: "Package not found: br.com.rodrigolanes.fizplantao"
+
+**Causa:** Primeiro upload manual ainda não foi feito no Google Play Console.
+
+**Solução:** Complete a **Parte 4** deste guia (Primeiro Upload Manual).
 
 ### Erro: "Keystore was tampered with"
 
