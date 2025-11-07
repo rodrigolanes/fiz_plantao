@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+
 import '../models/local.dart';
 import '../services/database_service.dart';
 import 'cadastro_local_screen.dart';
@@ -11,6 +12,8 @@ class ListaLocaisScreen extends StatefulWidget {
 }
 
 class _ListaLocaisScreenState extends State<ListaLocaisScreen> {
+  bool _mostrarInativos = false;
+
   @override
   void initState() {
     super.initState();
@@ -75,91 +78,136 @@ class _ListaLocaisScreenState extends State<ListaLocaisScreen> {
     );
   }
 
-
   @override
   Widget build(BuildContext context) {
     final ativos = DatabaseService.getLocaisAtivos();
+    final inativos = DatabaseService.getAllLocais().where((l) => !l.ativo).toList();
+    final locaisExibidos = _mostrarInativos ? [...ativos, ...inativos] : ativos;
+
     return PopScope(
       canPop: true,
       onPopInvokedWithResult: (didPop, result) {
         // Não precisa mais retornar lista - dados estão no Hive
       },
       child: Scaffold(
-      appBar: AppBar(
-        title: const Text('Locais'),
-        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
-      ),
-      body: ativos.isEmpty
-          ? Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(
-                    Icons.location_off,
-                    size: 64,
-                    color: Colors.grey[400],
-                  ),
-                  const SizedBox(height: 16),
-                  Text(
-                    'Nenhum local cadastrado',
-                    style: TextStyle(
-                      fontSize: 18,
-                      color: Colors.grey[600],
+        appBar: AppBar(
+          title: const Text('Locais'),
+          backgroundColor: Theme.of(context).colorScheme.inversePrimary,
+          actions: [
+            IconButton(
+              icon: Icon(_mostrarInativos ? Icons.visibility_off : Icons.visibility),
+              onPressed: () {
+                setState(() {
+                  _mostrarInativos = !_mostrarInativos;
+                });
+              },
+              tooltip: _mostrarInativos ? 'Ocultar inativos' : 'Mostrar inativos',
+            ),
+          ],
+        ),
+        body: locaisExibidos.isEmpty
+            ? Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      Icons.location_off,
+                      size: 64,
+                      color: Colors.grey[400],
                     ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'Clique no botão + para adicionar',
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: Colors.grey[500],
-                    ),
-                  ),
-                ],
-              ),
-            )
-          : ListView.builder(
-              padding: const EdgeInsets.all(16),
-              itemCount: ativos.length,
-              itemBuilder: (context, index) {
-                final local = ativos[index];
-                return Card(
-                  margin: const EdgeInsets.only(bottom: 12),
-                  child: ListTile(
-                    leading: CircleAvatar(
-                      backgroundColor: Theme.of(context).colorScheme.primaryContainer,
-                      child: Text(
-                        local.apelido.isNotEmpty ? local.apelido[0].toUpperCase() : 'L',
-                        style: TextStyle(
-                          color: Theme.of(context).colorScheme.onPrimaryContainer,
-                          fontWeight: FontWeight.bold,
-                        ),
+                    const SizedBox(height: 16),
+                    Text(
+                      'Nenhum local cadastrado',
+                      style: TextStyle(
+                        fontSize: 18,
+                        color: Colors.grey[600],
                       ),
                     ),
-                    title: Text(
-                      local.apelido,
-                      style: const TextStyle(fontWeight: FontWeight.bold),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Clique no botão + para adicionar',
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: Colors.grey[500],
+                      ),
                     ),
-                    subtitle: Text(local.nome),
-                    trailing: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        IconButton(
-                          icon: const Icon(Icons.edit),
-                          onPressed: () => _navegarParaCadastro(local),
-                          tooltip: 'Editar',
+                  ],
+                ),
+              )
+            : ListView.builder(
+                padding: const EdgeInsets.all(16),
+                itemCount: locaisExibidos.length,
+                itemBuilder: (context, index) {
+                  final local = locaisExibidos[index];
+                  return Card(
+                    margin: const EdgeInsets.only(bottom: 12),
+                    color: local.ativo ? null : Colors.grey[200],
+                    child: ListTile(
+                      leading: CircleAvatar(
+                        backgroundColor:
+                            local.ativo ? Theme.of(context).colorScheme.primaryContainer : Colors.grey[400],
+                        child: Text(
+                          local.apelido.isNotEmpty ? local.apelido[0].toUpperCase() : 'L',
+                          style: TextStyle(
+                            color: local.ativo ? Theme.of(context).colorScheme.onPrimaryContainer : Colors.grey[700],
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
-                        IconButton(
-                          icon: const Icon(Icons.delete, color: Colors.red),
-                          onPressed: () => _confirmarExclusao(local),
-                          tooltip: 'Excluir',
+                      ),
+                      title: Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              local.apelido,
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                color: local.ativo ? null : Colors.grey[600],
+                              ),
+                            ),
+                          ),
+                          if (!local.ativo)
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                              decoration: BoxDecoration(
+                                color: Colors.grey[400],
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: const Text(
+                                'Inativo',
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                        ],
+                      ),
+                      subtitle: Text(
+                        local.nome,
+                        style: TextStyle(
+                          color: local.ativo ? null : Colors.grey[600],
                         ),
-                      ],
+                      ),
+                      trailing: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          IconButton(
+                            icon: const Icon(Icons.edit),
+                            onPressed: () => _navegarParaCadastro(local),
+                            tooltip: 'Editar',
+                          ),
+                          IconButton(
+                            icon: const Icon(Icons.delete, color: Colors.red),
+                            onPressed: () => _confirmarExclusao(local),
+                            tooltip: 'Excluir',
+                          ),
+                        ],
+                      ),
                     ),
-                  ),
-                );
-              },
-            ),
+                  );
+                },
+              ),
         floatingActionButton: FloatingActionButton(
           onPressed: () => _navegarParaCadastro(),
           child: const Icon(Icons.add),

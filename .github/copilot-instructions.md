@@ -183,10 +183,11 @@ import '../services/database_service.dart';
 
 ### Antes de Commitar
 
-- [ ] Rodar `flutter analyze`
-- [ ] Rodar `flutter pub run build_runner build`
-- [ ] Testar em pelo menos um dispositivo/emulador
-- [ ] Verificar que dados persistem após restart
+- [ ] **Rodar a aplicação** em pelo menos um dispositivo/emulador para validar mudanças
+- [ ] **Executar testes** (se existirem): `flutter test`
+- [ ] Rodar `flutter analyze` para verificar problemas no código
+- [ ] Rodar `flutter pub run build_runner build` se alterou modelos Hive
+- [ ] Verificar que dados persistem após restart (se mudou persistência)
 - [ ] Atualizar README.md com novas funcionalidades ou mudanças relevantes
 - [ ] Incrementar version no pubspec.yaml se for release
 

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+
 import '../models/plantao.dart';
 import '../services/database_service.dart';
 import 'cadastro_plantao_screen.dart';
@@ -50,7 +51,7 @@ class _ListaPlantoesScreenState extends State<ListaPlantoesScreen> {
           final inicio = DateTime(_dataInicio!.year, _dataInicio!.month, _dataInicio!.day);
           final fim = DateTime(_dataFim!.year, _dataFim!.month, _dataFim!.day);
           return (dataPlantao.isAtSameMomentAs(inicio) || dataPlantao.isAfter(inicio)) &&
-                 (dataPlantao.isAtSameMomentAs(fim) || dataPlantao.isBefore(fim));
+              (dataPlantao.isAtSameMomentAs(fim) || dataPlantao.isBefore(fim));
         } else if (_dataInicio != null) {
           final inicio = DateTime(_dataInicio!.year, _dataInicio!.month, _dataInicio!.day);
           return dataPlantao.isAtSameMomentAs(inicio) || dataPlantao.isAfter(inicio);
@@ -82,7 +83,7 @@ class _ListaPlantoesScreenState extends State<ListaPlantoesScreen> {
         dataFim: _dataFim,
       ),
     );
-    
+
     if (resultado != null && mounted) {
       setState(() {
         _dataInicio = resultado['inicio'];
@@ -142,9 +143,7 @@ class _ListaPlantoesScreenState extends State<ListaPlantoesScreen> {
       messenger.showSnackBar(
         SnackBar(
           content: Text(
-            plantao == null
-                ? 'Plantão cadastrado com sucesso!'
-                : 'Plantão atualizado com sucesso!',
+            plantao == null ? 'Plantão cadastrado com sucesso!' : 'Plantão atualizado com sucesso!',
           ),
         ),
       );
@@ -259,27 +258,51 @@ class _ListaPlantoesScreenState extends State<ListaPlantoesScreen> {
                       ),
                     ),
                     const SizedBox(width: 8),
-                    // Botão de período
-                    Expanded(
-                      child: OutlinedButton.icon(
-                        onPressed: _selecionarPeriodo,
-                        icon: const Icon(Icons.date_range, size: 20),
-                        label: Text(
-                          _filtrarDataAtual
-                              ? 'Próximos'
-                              : _dataFim != null
-                                  ? '${DateFormat('dd/MM').format(_dataInicio!)} - ${DateFormat('dd/MM').format(_dataFim!)}'
-                                  : 'Desde ${DateFormat('dd/MM').format(_dataInicio!)}',
-                          style: const TextStyle(fontSize: 13),
-                        ),
-                        style: OutlinedButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
-                          backgroundColor: Colors.white,
+                    // Botão de filtro (ícone)
+                    IconButton(
+                      onPressed: _selecionarPeriodo,
+                      icon: const Icon(Icons.filter_list),
+                      tooltip: 'Filtrar por período',
+                      style: IconButton.styleFrom(
+                        backgroundColor: Colors.white,
+                        padding: const EdgeInsets.all(12),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                          side: BorderSide(color: Colors.grey[300]!),
                         ),
                       ),
                     ),
                   ],
                 ),
+                // Indicador de filtro ativo
+                if (!_filtrarDataAtual || _dataFim != null)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 8),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: Colors.teal[100],
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.filter_list, size: 16, color: Colors.teal[800]),
+                          const SizedBox(width: 6),
+                          Text(
+                            _dataFim != null
+                                ? '${DateFormat('dd/MM').format(_dataInicio!)} - ${DateFormat('dd/MM').format(_dataFim!)}'
+                                : 'Desde ${DateFormat('dd/MM').format(_dataInicio!)}',
+                            style: TextStyle(
+                              fontSize: 13,
+                              color: Colors.teal[800],
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
                 if (temFiltrosAtivos)
                   Padding(
                     padding: const EdgeInsets.only(top: 8),
@@ -366,129 +389,129 @@ class _ListaPlantoesScreenState extends State<ListaPlantoesScreen> {
                       final plantao = plantoesFiltrados[index];
                       final statusColor = _getStatusColor(plantao.previsaoPagamento);
 
-                return Card(
-                  margin: const EdgeInsets.only(bottom: 12),
-                  elevation: 2,
-                  child: InkWell(
-                    onTap: () => _navegarParaCadastro(plantao),
-                    borderRadius: BorderRadius.circular(12),
-                    child: Padding(
-                      padding: const EdgeInsets.all(16),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            children: [
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
+                      return Card(
+                        margin: const EdgeInsets.only(bottom: 12),
+                        elevation: 2,
+                        child: InkWell(
+                          onTap: () => _navegarParaCadastro(plantao),
+                          borderRadius: BorderRadius.circular(12),
+                          child: Padding(
+                            padding: const EdgeInsets.all(16),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
                                   children: [
-                                    Text(
-                                      plantao.local.apelido,
-                                      style: const TextStyle(
-                                        fontSize: 18,
-                                        fontWeight: FontWeight.bold,
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            plantao.local.apelido,
+                                            style: const TextStyle(
+                                              fontSize: 18,
+                                              fontWeight: FontWeight.bold,
+                                            ),
+                                          ),
+                                          Text(
+                                            plantao.local.nome,
+                                            style: TextStyle(
+                                              fontSize: 14,
+                                              color: Colors.grey[600],
+                                            ),
+                                          ),
+                                        ],
                                       ),
                                     ),
+                                    IconButton(
+                                      icon: const Icon(Icons.edit, size: 20),
+                                      onPressed: () => _navegarParaCadastro(plantao),
+                                      tooltip: 'Editar',
+                                    ),
+                                    IconButton(
+                                      icon: const Icon(
+                                        Icons.delete,
+                                        size: 20,
+                                        color: Colors.red,
+                                      ),
+                                      onPressed: () => _confirmarExclusao(plantao),
+                                      tooltip: 'Excluir',
+                                    ),
+                                  ],
+                                ),
+                                const Divider(),
+                                Row(
+                                  children: [
+                                    const Icon(Icons.calendar_today, size: 16),
+                                    const SizedBox(width: 8),
                                     Text(
-                                      plantao.local.nome,
-                                      style: TextStyle(
-                                        fontSize: 14,
-                                        color: Colors.grey[600],
+                                      _formatarDataHora(plantao.dataHora),
+                                      style: const TextStyle(fontSize: 14),
+                                    ),
+                                    const SizedBox(width: 16),
+                                    const Icon(Icons.access_time, size: 16),
+                                    const SizedBox(width: 8),
+                                    Text(
+                                      plantao.duracao.label,
+                                      style: const TextStyle(fontSize: 14),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 8),
+                                Row(
+                                  children: [
+                                    Expanded(
+                                      child: Row(
+                                        children: [
+                                          Text(
+                                            _formatarValor(plantao.valor),
+                                            style: const TextStyle(
+                                              fontSize: 16,
+                                              fontWeight: FontWeight.bold,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 12,
+                                        vertical: 4,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: statusColor.withOpacity(0.2),
+                                        borderRadius: BorderRadius.circular(12),
+                                        border: Border.all(color: statusColor),
+                                      ),
+                                      child: Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          Icon(
+                                            Icons.calendar_month,
+                                            size: 14,
+                                            color: statusColor,
+                                          ),
+                                          const SizedBox(width: 4),
+                                          Text(
+                                            _formatarData(plantao.previsaoPagamento),
+                                            style: TextStyle(
+                                              fontSize: 12,
+                                              color: statusColor,
+                                              fontWeight: FontWeight.bold,
+                                            ),
+                                          ),
+                                        ],
                                       ),
                                     ),
                                   ],
                                 ),
-                              ),
-                              IconButton(
-                                icon: const Icon(Icons.edit, size: 20),
-                                onPressed: () => _navegarParaCadastro(plantao),
-                                tooltip: 'Editar',
-                              ),
-                              IconButton(
-                                icon: const Icon(
-                                  Icons.delete,
-                                  size: 20,
-                                  color: Colors.red,
-                                ),
-                                onPressed: () => _confirmarExclusao(plantao),
-                                tooltip: 'Excluir',
-                              ),
-                            ],
+                              ],
+                            ),
                           ),
-                          const Divider(),
-                          Row(
-                            children: [
-                              const Icon(Icons.calendar_today, size: 16),
-                              const SizedBox(width: 8),
-                              Text(
-                                _formatarDataHora(plantao.dataHora),
-                                style: const TextStyle(fontSize: 14),
-                              ),
-                              const SizedBox(width: 16),
-                              const Icon(Icons.access_time, size: 16),
-                              const SizedBox(width: 8),
-                              Text(
-                                plantao.duracao.label,
-                                style: const TextStyle(fontSize: 14),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 8),
-                          Row(
-                            children: [
-                              Expanded(
-                                child: Row(
-                                  children: [
-                                    Text(
-                                      _formatarValor(plantao.valor),
-                                      style: const TextStyle(
-                                        fontSize: 16,
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 12,
-                                  vertical: 4,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: statusColor.withOpacity(0.2),
-                                  borderRadius: BorderRadius.circular(12),
-                                  border: Border.all(color: statusColor),
-                                ),
-                                child: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Icon(
-                                      Icons.calendar_month,
-                                      size: 14,
-                                      color: statusColor,
-                                    ),
-                                    const SizedBox(width: 4),
-                                    Text(
-                                      _formatarData(plantao.previsaoPagamento),
-                                      style: TextStyle(
-                                        fontSize: 12,
-                                        color: statusColor,
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
-                    ),
+                        ),
+                      );
+                    },
                   ),
-                );
-              },
-            ),
           ),
         ],
       ),
