@@ -1,81 +1,91 @@
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:hive/hive.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 class AuthService {
-  static final FirebaseAuth _auth = FirebaseAuth.instance;
-  static final GoogleSignIn _googleSignIn = GoogleSignIn();
+  static final SupabaseClient _supabase = Supabase.instance.client;
+  static final GoogleSignIn _googleSignIn = GoogleSignIn(
+    scopes: ['email', 'profile'],
+  );
 
   // Stream do estado de autenticação
-  static Stream<User?> get authStateChanges => _auth.authStateChanges();
+  static Stream<AuthState> get authStateChanges => _supabase.auth.onAuthStateChange;
 
   // Usuário atual
-  static User? get currentUser => _auth.currentUser;
+  static User? get currentUser => _supabase.auth.currentUser;
 
   // Verificar se está logado
   static bool get isLoggedIn => currentUser != null;
 
-  // Obter userId
-  static String? get userId => currentUser?.uid;
+  // Obter userId (UUID do Supabase)
+  static String? get userId => currentUser?.id;
 
   // Login com email e senha
-  static Future<UserCredential?> login(String email, String senha) async {
+  static Future<AuthResponse?> login(String email, String senha) async {
     try {
-      final credential = await _auth.signInWithEmailAndPassword(
+      final response = await _supabase.auth.signInWithPassword(
         email: email,
         password: senha,
       );
 
       // Salvar userId no Hive para cache
-      if (credential.user != null) {
+      if (response.user != null) {
         final box = await Hive.openBox('config');
-        await box.put('userId', credential.user!.uid);
-        await box.put('userEmail', credential.user!.email);
+        await box.put('userId', response.user!.id);
+        await box.put('userEmail', response.user!.email);
       }
 
-      return credential;
-    } on FirebaseAuthException catch (e) {
+      return response;
+    } on AuthException catch (e) {
       throw _handleAuthException(e);
+    } catch (e) {
+      throw 'Erro ao fazer login: $e';
     }
   }
 
   // Cadastro com email e senha
-  static Future<UserCredential?> cadastrar(String email, String senha) async {
+  static Future<AuthResponse?> cadastrar(String email, String senha) async {
     try {
-      final credential = await _auth.createUserWithEmailAndPassword(
+      final response = await _supabase.auth.signUp(
         email: email,
         password: senha,
       );
 
       // Salvar userId no Hive para cache
-      if (credential.user != null) {
+      if (response.user != null) {
         final box = await Hive.openBox('config');
-        await box.put('userId', credential.user!.uid);
-        await box.put('userEmail', credential.user!.email);
-
-        // Enviar email de verificação automaticamente
-        await credential.user!.sendEmailVerification();
+        await box.put('userId', response.user!.id);
+        await box.put('userEmail', response.user!.email);
       }
 
-      return credential;
-    } on FirebaseAuthException catch (e) {
+      // Nota: Supabase envia email de confirmação automaticamente
+      // se configurado em Authentication > Email Templates
+
+      return response;
+    } on AuthException catch (e) {
       throw _handleAuthException(e);
+    } catch (e) {
+      throw 'Erro ao cadastrar: $e';
     }
   }
 
   // Logout
   static Future<void> logout() async {
-    await _auth.signOut();
-    await _googleSignIn.signOut();
+    try {
+      await _supabase.auth.signOut();
+      await _googleSignIn.signOut();
 
-    // Limpar cache do Hive
-    final box = await Hive.openBox('config');
-    await box.delete('userId');
-    await box.delete('userEmail');
+      // Limpar cache do Hive
+      final box = await Hive.openBox('config');
+      await box.delete('userId');
+      await box.delete('userEmail');
+    } catch (e) {
+      throw 'Erro ao fazer logout: $e';
+    }
   }
 
   // Login com Google
-  static Future<UserCredential?> loginComGoogle() async {
+  static Future<AuthResponse?> loginComGoogle() async {
     try {
       // Trigger the authentication flow
       final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
@@ -88,23 +98,26 @@ class AuthService {
       // Obtain the auth details from the request
       final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
 
-      // Create a new credential
-      final credential = GoogleAuthProvider.credential(
-        accessToken: googleAuth.accessToken,
-        idToken: googleAuth.idToken,
-      );
-
-      // Sign in to Firebase with the Google credential
-      final userCredential = await _auth.signInWithCredential(credential);
-
-      // Salvar userId no Hive para cache
-      if (userCredential.user != null) {
-        final box = await Hive.openBox('config');
-        await box.put('userId', userCredential.user!.uid);
-        await box.put('userEmail', userCredential.user!.email);
+      // Verificar se temos os tokens necessários
+      if (googleAuth.accessToken == null || googleAuth.idToken == null) {
+        throw 'Erro ao obter tokens do Google';
       }
 
-      return userCredential;
+      // Sign in to Supabase with the Google credential
+      final response = await _supabase.auth.signInWithIdToken(
+        provider: OAuthProvider.google,
+        idToken: googleAuth.idToken!,
+        accessToken: googleAuth.accessToken,
+      );
+
+      // Salvar userId no Hive para cache
+      if (response.user != null) {
+        final box = await Hive.openBox('config');
+        await box.put('userId', response.user!.id);
+        await box.put('userEmail', response.user!.email);
+      }
+
+      return response;
     } catch (e) {
       throw 'Erro ao fazer login com Google: $e';
     }
@@ -113,20 +126,32 @@ class AuthService {
   // Redefinir senha
   static Future<void> redefinirSenha(String email) async {
     try {
-      await _auth.sendPasswordResetEmail(email: email);
-    } on FirebaseAuthException catch (e) {
+      await _supabase.auth.resetPasswordForEmail(email);
+    } on AuthException catch (e) {
       throw _handleAuthException(e);
+    } catch (e) {
+      throw 'Erro ao redefinir senha: $e';
     }
   }
 
   // Verificar se o email foi verificado
   static bool get emailVerificado {
-    return currentUser?.emailVerified ?? false;
+    final user = currentUser;
+    if (user == null) return false;
+
+    // No Supabase, verificamos se emailConfirmedAt não é null
+    return user.emailConfirmedAt != null;
   }
 
   // Recarregar dados do usuário (para atualizar status de verificação)
   static Future<void> recarregarUsuario() async {
-    await currentUser?.reload();
+    try {
+      // Supabase atualiza automaticamente o usuário
+      // Mas podemos forçar uma atualização fazendo refresh
+      await _supabase.auth.refreshSession();
+    } catch (e) {
+      // Ignorar erros de refresh silenciosamente
+    }
   }
 
   // Enviar email de verificação
@@ -136,38 +161,43 @@ class AuthService {
       if (user == null) {
         throw 'Nenhum usuário logado';
       }
-      if (user.emailVerified) {
+      if (user.emailConfirmedAt != null) {
         throw 'Email já verificado';
       }
-      await user.sendEmailVerification();
-    } on FirebaseAuthException catch (e) {
+
+      // Reenviar email de confirmação
+      await _supabase.auth.resend(
+        type: OtpType.signup,
+        email: user.email!,
+      );
+    } on AuthException catch (e) {
       throw _handleAuthException(e);
+    } catch (e) {
+      throw 'Erro ao enviar email de verificação: $e';
     }
   }
 
-  // Tratar exceções do Firebase Auth
-  static String _handleAuthException(FirebaseAuthException e) {
-    switch (e.code) {
-      case 'user-not-found':
-        return 'Usuário não encontrado.';
-      case 'wrong-password':
-        return 'Senha incorreta.';
-      case 'email-already-in-use':
-        return 'Este email já está em uso.';
-      case 'invalid-email':
-        return 'Email inválido.';
-      case 'weak-password':
-        return 'Senha muito fraca. Use no mínimo 6 caracteres.';
-      case 'user-disabled':
-        return 'Usuário desabilitado.';
-      case 'too-many-requests':
-        return 'Muitas tentativas. Tente novamente mais tarde.';
-      case 'operation-not-allowed':
-        return 'Operação não permitida.';
-      case 'invalid-credential':
-        return 'Credenciais inválidas.';
-      default:
-        return 'Erro ao autenticar: ${e.message}';
+  // Tratar exceções do Supabase Auth
+  static String _handleAuthException(AuthException e) {
+    // Supabase usa mensagens de erro em inglês por padrão
+    final message = e.message.toLowerCase();
+
+    if (message.contains('invalid login credentials') || message.contains('invalid email or password')) {
+      return 'Email ou senha incorretos.';
+    } else if (message.contains('user not found')) {
+      return 'Usuário não encontrado.';
+    } else if (message.contains('email already registered') || message.contains('user already registered')) {
+      return 'Este email já está em uso.';
+    } else if (message.contains('invalid email')) {
+      return 'Email inválido.';
+    } else if (message.contains('password') && message.contains('short')) {
+      return 'Senha muito fraca. Use no mínimo 6 caracteres.';
+    } else if (message.contains('email not confirmed')) {
+      return 'Email não confirmado. Verifique sua caixa de entrada.';
+    } else if (message.contains('too many requests')) {
+      return 'Muitas tentativas. Tente novamente mais tarde.';
+    } else {
+      return 'Erro ao autenticar: ${e.message}';
     }
   }
 

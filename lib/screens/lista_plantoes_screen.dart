@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 import '../models/plantao.dart';
 import '../services/auth_service.dart';
 import '../services/database_service.dart';
+import '../services/sync_service.dart';
 import 'cadastro_plantao_screen.dart';
 import 'lista_locais_screen.dart';
 import 'login_screen.dart';
@@ -26,6 +27,9 @@ class _ListaPlantoesScreenState extends State<ListaPlantoesScreen> {
   void initState() {
     super.initState();
     _dataInicio = DateTime.now(); // Padrão: a partir de hoje
+    
+    // Inicializar serviço de sincronização após login
+    SyncService.initialize();
   }
 
   void _carregarDados() {
@@ -199,6 +203,78 @@ class _ListaPlantoesScreenState extends State<ListaPlantoesScreen> {
     }
   }
 
+  Widget _getSyncIcon(SyncStatus status) {
+    switch (status) {
+      case SyncStatus.syncing:
+        return const SizedBox(
+          width: 20,
+          height: 20,
+          child: CircularProgressIndicator(
+            strokeWidth: 2,
+            color: Colors.white,
+          ),
+        );
+      case SyncStatus.synced:
+        return const Icon(Icons.cloud_done, color: Colors.green);
+      case SyncStatus.error:
+        return const Icon(Icons.cloud_off, color: Colors.red);
+      case SyncStatus.idle:
+        return const Icon(Icons.cloud_queue);
+    }
+  }
+
+  String _getSyncTooltip(SyncStatus status) {
+    switch (status) {
+      case SyncStatus.syncing:
+        return 'Sincronizando...';
+      case SyncStatus.synced:
+        final lastSync = SyncService.lastSyncTime;
+        if (lastSync != null) {
+          final diff = DateTime.now().difference(lastSync);
+          if (diff.inMinutes < 1) {
+            return 'Sincronizado agora';
+          } else if (diff.inHours < 1) {
+            return 'Sincronizado há ${diff.inMinutes}min';
+          } else {
+            return 'Sincronizado há ${diff.inHours}h';
+          }
+        }
+        return 'Sincronizado';
+      case SyncStatus.error:
+        return 'Erro na sincronização';
+      case SyncStatus.idle:
+        return 'Sincronizar';
+    }
+  }
+
+  Future<void> _sincronizar() async {
+    try {
+      await SyncService.syncAll();
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Dados sincronizados com sucesso!'),
+          backgroundColor: Colors.green,
+          duration: Duration(seconds: 2),
+        ),
+      );
+
+      // Recarrega a lista após sincronização
+      _carregarDados();
+    } catch (e) {
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Erro ao sincronizar: ${e.toString()}'),
+          backgroundColor: Colors.red,
+          duration: const Duration(seconds: 4),
+        ),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final locaisAtivos = DatabaseService.getLocaisAtivos();
@@ -211,6 +287,20 @@ class _ListaPlantoesScreenState extends State<ListaPlantoesScreen> {
         title: const Text('Meus Plantões'),
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
         actions: [
+          // Indicador de sincronização
+          StreamBuilder<SyncStatus>(
+            stream: SyncService.statusStream,
+            initialData: SyncStatus.idle,
+            builder: (context, snapshot) {
+              final status = snapshot.data ?? SyncStatus.idle;
+
+              return IconButton(
+                icon: _getSyncIcon(status),
+                onPressed: status == SyncStatus.syncing ? null : _sincronizar,
+                tooltip: _getSyncTooltip(status),
+              );
+            },
+          ),
           IconButton(
             icon: const Icon(Icons.assessment),
             onPressed: () {

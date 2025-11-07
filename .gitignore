@@ -83,6 +83,9 @@ service-account.json
 google-services.json  # se tiver Firebase
 **/google-services.json
 
+# Supabase config - NUNCA commitar!
+lib/config/supabase_config.dart
+
 # Builds
 build/
 *.aab

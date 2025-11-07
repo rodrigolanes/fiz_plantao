@@ -1,9 +1,9 @@
-import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:hive_flutter/hive_flutter.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
-import 'firebase_options.dart';
+import 'config/supabase_config.dart';
 import 'models/local.dart';
 import 'models/plantao.dart';
 import 'screens/splash_screen.dart';
@@ -11,9 +11,10 @@ import 'screens/splash_screen.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Inicializa o Firebase
-  await Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform,
+  // Inicializa o Supabase
+  await Supabase.initialize(
+    url: SupabaseConfig.supabaseUrl,
+    anonKey: SupabaseConfig.supabaseAnonKey,
   );
 
   // Inicializa o Hive
@@ -27,6 +28,9 @@ void main() async {
   // Abre as boxes
   await Hive.openBox<Local>('locais');
   await Hive.openBox<Plantao>('plantoes');
+
+  // Nota: SyncService.initialize() será chamado após login
+  // Ver ListaPlantoesScreen.initState()
 
   runApp(const MyApp());
 }
