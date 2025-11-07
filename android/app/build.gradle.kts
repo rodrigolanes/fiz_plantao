@@ -45,11 +45,12 @@ android {
     defaultConfig {
         applicationId = "br.com.rodrigolanes.fizplantao"
 
-        minSdk = flutter.minSdkVersion
-        targetSdk = flutter.targetSdkVersion
+        // Usar o maior valor entre o padrão do Flutter e o requisito do Firebase
+        minSdk = Math.max(flutter.minSdkVersion, 23)  // Firebase Auth requer 23+
+        targetSdk = Math.max(flutter.targetSdkVersion, 34)  // Google Play requer 34+
 
-        versionCode = flutterVersionCode.toInteger()
-        versionName = flutterVersionName
+        versionCode = flutter.versionCode
+        versionName = flutter.versionName
     }
 
     buildTypes {
