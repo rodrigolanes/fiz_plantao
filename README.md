@@ -17,7 +17,9 @@ O **Fiz Plantão** é uma solução prática para médicos registrarem e acompan
 - [x] **Listagem de Locais**
   - [x] Visualização em cards
   - [x] Ícones de edição e exclusão
-  - [x] Apenas locais ativos são exibidos
+  - [x] Apenas locais ativos são exibidos por padrão
+  - [x] Toggle para mostrar/ocultar locais inativos
+  - [x] Destaque visual para locais inativos
 
 ### 📅 Gestão de Plantões
 
@@ -35,10 +37,25 @@ O **Fiz Plantão** é uma solução prática para médicos registrarem e acompan
   - [x] Filtro por período de datas
   - [x] Filtro padrão "Próximos" (hoje ou posterior)
   - [x] Contador de resultados filtrados
+  - [x] IconButton de filtro compacto
+  - [x] Indicador visual de filtro ativo
 - [x] **Edição e Exclusão**
   - [x] Editar plantões existentes
   - [x] Soft delete com confirmação
   - [x] Feedback visual
+
+### 📊 Relatórios e Estatísticas
+
+- [x] **Relatório de Plantões por Local**
+  - [x] Total geral destacado com quantidade de plantões
+  - [x] Toggle "Apenas pagamentos futuros" (ativado por padrão)
+  - [x] Listagem de locais ordenada por valor
+  - [x] Percentual e barra de progresso por local
+  - [x] Detalhes expansíveis:
+    - [x] Valor médio por plantão
+    - [x] Quantidade total
+    - [x] Plantões agrupados por data de pagamento
+    - [x] Data/hora e valor de cada plantão
 
 ### 💾 Persistência de Dados
 
@@ -82,9 +99,11 @@ O **Fiz Plantão** é uma solução prática para médicos registrarem e acompan
 
 - [ ] **Estatísticas e Relatórios**
 
+  - [x] Relatório de plantões por local
+  - [x] Total geral e pagamentos futuros
+  - [x] Detalhamento por data de pagamento
   - [ ] Dashboard com totalizadores
   - [ ] Gráficos de rendimentos mensais
-  - [ ] Relatório de plantões por local
   - [ ] Análise de pagamentos (recebidos/pendentes)
 
 - [ ] **Exportação de Dados**
@@ -345,9 +364,9 @@ Este projeto está sob a licença MIT.
 
 - GitHub: [@rodrigolanes](https://github.com/rodrigolanes)
 
----
-
 **Status do Projeto:** ✅ MVP Funcional | 🚧 Melhorias Contínuas
+
+**Versão Atual:** 1.0.0+5MVP Funcional | 🚧 Melhorias Contínuas
 
 **Versão Atual:** 1.0.0+1
 

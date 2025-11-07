@@ -318,6 +318,7 @@ class _RelatoriosScreenState extends State<RelatoriosScreen> {
                             Padding(
                               padding: const EdgeInsets.all(16),
                               child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Row(
                                     mainAxisAlignment: MainAxisAlignment.spaceAround,
@@ -334,6 +335,19 @@ class _RelatoriosScreenState extends State<RelatoriosScreen> {
                                       ),
                                     ],
                                   ),
+                                  const SizedBox(height: 16),
+                                  const Divider(),
+                                  const SizedBox(height: 8),
+                                  Text(
+                                    'Plantões por Data de Pagamento',
+                                    style: TextStyle(
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.grey[700],
+                                    ),
+                                  ),
+                                  const SizedBox(height: 12),
+                                  ..._buildPlantoesPorPagamento(plantoes),
                                 ],
                               ),
                             ),
@@ -346,6 +360,102 @@ class _RelatoriosScreenState extends State<RelatoriosScreen> {
         ],
       ),
     );
+  }
+
+  List<Widget> _buildPlantoesPorPagamento(List<Plantao> plantoes) {
+    // Agrupar plantões por data de pagamento
+    final Map<String, List<Plantao>> plantoesPorData = {};
+
+    for (final plantao in plantoes) {
+      final dataPagamento = DateFormat('dd/MM/yyyy', 'pt_BR').format(plantao.previsaoPagamento);
+      if (!plantoesPorData.containsKey(dataPagamento)) {
+        plantoesPorData[dataPagamento] = [];
+      }
+      plantoesPorData[dataPagamento]!.add(plantao);
+    }
+
+    // Ordenar por data de pagamento
+    final datasOrdenadas = plantoesPorData.keys.toList()
+      ..sort((a, b) {
+        final dateA = DateFormat('dd/MM/yyyy', 'pt_BR').parse(a);
+        final dateB = DateFormat('dd/MM/yyyy', 'pt_BR').parse(b);
+        return dateA.compareTo(dateB);
+      });
+
+    return datasOrdenadas.map((dataPagamento) {
+      final plantoesDaData = plantoesPorData[dataPagamento]!;
+      final totalData = plantoesDaData.fold<double>(0, (sum, p) => sum + p.valor);
+
+      return Container(
+        margin: const EdgeInsets.only(bottom: 12),
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: Colors.grey[50],
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: Colors.grey[300]!),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Row(
+                  children: [
+                    Icon(Icons.calendar_today, size: 16, color: Colors.teal[700]),
+                    const SizedBox(width: 8),
+                    Text(
+                      dataPagamento,
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.grey[800],
+                      ),
+                    ),
+                  ],
+                ),
+                Text(
+                  _formatarValor(totalData),
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.teal[700],
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            ...plantoesDaData.map((plantao) {
+              return Padding(
+                padding: const EdgeInsets.only(left: 24, top: 4),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Expanded(
+                      child: Text(
+                        DateFormat('dd/MM/yyyy HH:mm', 'pt_BR').format(plantao.dataHora),
+                        style: TextStyle(
+                          fontSize: 13,
+                          color: Colors.grey[700],
+                        ),
+                      ),
+                    ),
+                    Text(
+                      _formatarValor(plantao.valor),
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w500,
+                        color: Colors.grey[800],
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            }),
+          ],
+        ),
+      );
+    }).toList();
   }
 
   Widget _buildMetricaCard(String label, String valor, IconData icon) {

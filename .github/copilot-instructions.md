@@ -188,7 +188,14 @@ import '../services/database_service.dart';
 - [ ] Rodar `flutter analyze` para verificar problemas no código
 - [ ] Rodar `flutter pub run build_runner build` se alterou modelos Hive
 - [ ] Verificar que dados persistem após restart (se mudou persistência)
-- [ ] Atualizar README.md com novas funcionalidades ou mudanças relevantes
+- [ ] **Atualizar README.md** com novas funcionalidades ou mudanças relevantes
+  - Marcar features implementadas como [x]
+  - Adicionar novas seções se necessário
+  - Atualizar versão atual no final do documento
+- [ ] **Atualizar RELEASE_NOTES.md** com as mudanças da versão
+  - Criar nova seção para a versão com data
+  - Descrever novidades, melhorias e correções
+  - Usar linguagem clara para usuários finais
 
 ### Antes de Push para Develop (OBRIGATÓRIO)
 
