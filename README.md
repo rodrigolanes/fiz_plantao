@@ -167,6 +167,34 @@ O **Fiz Plantão** é uma solução prática para médicos registrarem e acompan
 - **flutter_launcher_icons** - Geração automática de ícones
 - **Material Design 3** - Design system
 
+## 🌐 Desenvolvimento em Diferentes Ambientes
+
+### Build Local vs CI/CD
+
+Este projeto foi configurado para funcionar em dois cenários:
+
+**🏠 Em Casa (Build Local)**
+- Build local funciona normalmente com configurações padrão do Flutter
+- Comando: `flutter build appbundle --release` ou `flutter run`
+- Repositórios: Google Maven e Maven Central padrão
+- JDK: Detectado automaticamente pelo sistema
+
+**🏢 Na Empresa (Apenas Desenvolvimento)**
+- **Não é necessário fazer build na empresa**
+- Apenas desenvolva e faça push para GitHub
+- GitHub Actions faz todo o build e deploy automaticamente
+- Se houver problemas com SSL corporativo, apenas trabalhe no código - o CI/CD resolve
+
+### Deploy Automático
+
+Todo push para a branch `develop` aciona automaticamente:
+1. ✅ Build do APK e AAB via GitHub Actions
+2. ✅ Incremento automático da versão (se configurado)
+3. ✅ Criação de release notes
+4. ✅ Publicação de artefatos
+
+**Importante**: Sempre incremente a versão no `pubspec.yaml` antes de fazer push para `develop`.
+
 ### Pacotes Principais
 
 ```yaml
