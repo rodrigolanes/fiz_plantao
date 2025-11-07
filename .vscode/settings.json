@@ -80,5 +80,6 @@
     "dart": true,
     "yaml": true,
     "markdown": true
-  }
+  },
+  "java.configuration.updateBuildConfiguration": "interactive"
 }

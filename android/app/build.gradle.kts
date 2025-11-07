@@ -18,7 +18,7 @@ if (keystorePropertiesFile.exists()) {
 
 android {
     namespace = "br.com.rodrigolanes.fizplantao"
-    compileSdk = 34
+    compileSdk = flutter.compileSdkVersion
     ndkVersion = "27.0.12077973"
 
     compileOptions {
@@ -44,10 +44,12 @@ android {
 
     defaultConfig {
         applicationId = "br.com.rodrigolanes.fizplantao"
-        minSdk = 23  // Firebase Auth requer mínimo 23
-        targetSdk = 34
-        versionCode = flutter.versionCode
-        versionName = flutter.versionName
+
+        minSdk = flutter.minSdkVersion
+        targetSdk = flutter.targetSdkVersion
+
+        versionCode = flutterVersionCode.toInteger()
+        versionName = flutterVersionName
     }
 
     buildTypes {
