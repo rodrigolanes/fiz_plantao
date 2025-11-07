@@ -1,0 +1,24 @@
+🔐 AUTENTICAÇÃO E SEGURANÇA
+
+• Sistema completo de login e cadastro
+• Suporte a Google Sign-In
+• Verificação de email obrigatória para proteger sua conta
+• Dados isolados por usuário - total privacidade
+
+🎨 NOVA INTERFACE
+
+• Telas de login e cadastro modernas
+• Verificação de email com feedback visual
+• Navegação fluida e intuitiva
+
+🛡️ PROTEÇÃO DE DADOS
+
+• Cada usuário tem seus próprios dados
+• Impossível acessar informações de outros usuários
+• Verificação de email previne sequestro de contas
+
+📊 PRÓXIMAS ATUALIZAÇÕES
+
+• Sincronização em nuvem (backup automático)
+• Acesso de múltiplos dispositivos
+• Recuperação de dados em caso de troca de celular

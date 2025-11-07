@@ -50,3 +50,5 @@ jobs:
           releaseFiles: build/app/outputs/bundle/release/app-release.aab
           track: production
           status: completed
+          whatsNewDirectory: android/
+          mappingFile: build/app/outputs/mapping/release/mapping.txt
