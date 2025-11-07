@@ -1,6 +1,11 @@
-import 'package:flutter/material.dart';
 import 'dart:async';
+
+import 'package:flutter/material.dart';
+
+import '../services/auth_service.dart';
 import 'lista_plantoes_screen.dart';
+import 'login_screen.dart';
+import 'verificacao_email_screen.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -32,14 +37,34 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
 
     _controller.forward();
 
-    // Navega para a tela principal após 2.5 segundos
+    // Verifica autenticação e navega após 2.5 segundos
     Timer(const Duration(milliseconds: 2500), () {
       if (mounted) {
-        Navigator.of(context).pushReplacement(
-          MaterialPageRoute(builder: (context) => const ListaPlantoesScreen()),
-        );
+        _checkAuthAndNavigate();
       }
     });
+  }
+
+  void _checkAuthAndNavigate() {
+    final navigator = Navigator.of(context);
+
+    // Verifica se usuário está logado
+    if (AuthService.isLoggedIn) {
+      // Verifica se o email foi verificado
+      if (!AuthService.emailVerificado) {
+        navigator.pushReplacement(
+          MaterialPageRoute(builder: (_) => const VerificacaoEmailScreen()),
+        );
+      } else {
+        navigator.pushReplacement(
+          MaterialPageRoute(builder: (_) => const ListaPlantoesScreen()),
+        );
+      }
+    } else {
+      navigator.pushReplacement(
+        MaterialPageRoute(builder: (_) => const LoginScreen()),
+      );
+    }
   }
 
   @override

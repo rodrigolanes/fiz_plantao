@@ -1,4 +1,5 @@
 import 'package:hive/hive.dart';
+
 import 'local.dart';
 
 part 'plantao.g.dart';
@@ -34,6 +35,8 @@ class Plantao {
   final DateTime atualizadoEm;
   @HiveField(8)
   final bool ativo; // soft delete flag
+  @HiveField(9)
+  final String userId; // ID do usuário proprietário
 
   Plantao({
     required this.id,
@@ -45,6 +48,7 @@ class Plantao {
     required this.criadoEm,
     required this.atualizadoEm,
     this.ativo = true,
+    required this.userId,
   });
 
   Plantao copyWith({
@@ -57,6 +61,7 @@ class Plantao {
     DateTime? criadoEm,
     DateTime? atualizadoEm,
     bool? ativo,
+    String? userId,
   }) {
     return Plantao(
       id: id ?? this.id,
@@ -68,6 +73,7 @@ class Plantao {
       criadoEm: criadoEm ?? this.criadoEm,
       atualizadoEm: atualizadoEm ?? this.atualizadoEm,
       ativo: ativo ?? this.ativo,
+      userId: userId ?? this.userId,
     );
   }
 }

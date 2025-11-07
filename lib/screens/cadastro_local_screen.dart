@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
-import '../widgets/primary_action_buttons.dart';
+
 import '../models/local.dart';
+import '../services/auth_service.dart';
+import '../widgets/primary_action_buttons.dart';
 
 class CadastroLocalScreen extends StatefulWidget {
   final Local? local;
@@ -35,12 +37,25 @@ class _CadastroLocalScreenState extends State<CadastroLocalScreen> {
   void _salvar() {
     if (_formKey.currentState!.validate()) {
       final agora = DateTime.now();
+      final userId = AuthService.userId;
+
+      if (userId == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Erro: usuário não autenticado'),
+            backgroundColor: Colors.red,
+          ),
+        );
+        return;
+      }
+
       final local = Local(
         id: widget.local?.id ?? DateTime.now().millisecondsSinceEpoch.toString(),
         apelido: _apelidoController.text,
         nome: _nomeController.text,
         criadoEm: widget.local?.criadoEm ?? agora,
         atualizadoEm: agora,
+        userId: widget.local?.userId ?? userId,
       );
 
       Navigator.of(context).pop(local);

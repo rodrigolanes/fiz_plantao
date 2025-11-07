@@ -8,6 +8,29 @@ O **Fiz Plantão** é uma solução prática para médicos registrarem e acompan
 
 ## ✨ Funcionalidades Implementadas
 
+### 🔐 Autenticação e Segurança
+
+- [x] **Firebase Authentication**
+  - [x] Login com email e senha
+  - [x] Cadastro de novos usuários
+  - [x] Google Sign-In (Web e Android)
+  - [x] Redefinição de senha via email
+  - [x] Logout com limpeza de cache
+- [x] **Verificação de Email**
+  - [x] Email de verificação obrigatório
+  - [x] Verificação automática em tempo real
+  - [x] Reenvio de email com cooldown
+  - [x] Proteção contra sequestro de contas
+- [x] **Isolamento de Dados**
+  - [x] Campo userId em todos os modelos
+  - [x] Filtros automáticos por usuário
+  - [x] Dados privados por conta
+- [x] **Telas de Autenticação**
+  - [x] Login Screen com validação
+  - [x] Cadastro Screen com confirmação de senha
+  - [x] Verificação de Email Screen
+  - [x] Splash Screen com check de autenticação
+
 ### 🏥 Gestão de Locais
 
 - [x] **Cadastro de Locais**
@@ -138,6 +161,7 @@ O **Fiz Plantão** é uma solução prática para médicos registrarem e acompan
 
 - **Flutter 3.x** - Framework multiplataforma
 - **Dart** - Linguagem de programação
+- **Firebase Auth** - Autenticação de usuários
 - **Hive 2.2.3** - Banco de dados NoSQL local
 - **Intl** - Internacionalização e formatação (pt_BR)
 - **flutter_launcher_icons** - Geração automática de ícones
@@ -149,9 +173,19 @@ O **Fiz Plantão** é uma solução prática para médicos registrarem e acompan
 dependencies:
   flutter:
     sdk: flutter
+  # Persistência Local
   hive: ^2.2.3
   hive_flutter: ^1.1.0
+  path_provider: ^2.1.5
+  # Firebase
+  firebase_core: ^3.6.0
+  firebase_auth: ^5.3.1
+  cloud_firestore: ^5.4.4
+  google_sign_in: ^6.2.2
+  # Internacionalização
   intl: ^0.19.0
+  # Network
+  connectivity_plus: ^6.0.5
 
 dev_dependencies:
   hive_generator: ^2.0.1
@@ -165,7 +199,30 @@ dev_dependencies:
 Splash Screen
 ├── Logo animada (planta)
 ├── Nome do app
-└── Indicador de carregamento
+├── Verificação de autenticação
+└── Redirecionamento (Login ou ListaPlantões)
+
+Login Screen
+├── Formulário de email/senha
+├── Botão "Entrar"
+├── Botão "Entrar com Google"
+├── Link "Esqueci minha senha"
+└── Link "Cadastre-se"
+
+Cadastro Screen
+├── Formulário de email/senha
+├── Confirmação de senha
+├── Botão "Cadastrar"
+├── Botão "Entrar com Google"
+└── Envio automático de email de verificação
+
+Verificação de Email Screen
+├── Ícone e instruções
+├── Email do usuário
+├── Verificação automática (3s)
+├── Botão "Reenviar email" (cooldown 60s)
+├── Botão "Cancelar e voltar" (logout)
+└── Alerta de segurança
 
 Tela Principal (Listagem de Plantões)
 ├── AppBar: "Fiz Plantão" + Gerenciar Locais
@@ -258,6 +315,7 @@ version: 1.0.1+2 # formato: versionName+versionCode
 | id           | String   | Identificador único (UUID)          |
 | apelido      | String   | Nome curto (ex: HSL)                |
 | nome         | String   | Nome completo do local              |
+| userId       | String   | ID do usuário proprietário          |
 | ativo        | bool     | Status (true=ativo, false=excluído) |
 | criadoEm     | DateTime | Data de criação do registro         |
 | atualizadoEm | DateTime | Data da última atualização          |
@@ -274,6 +332,7 @@ version: 1.0.1+2 # formato: versionName+versionCode
 | duracao           | Duracao  | Enum: dozehoras ou vinteequatrohoras |
 | valor             | double   | Valor do pagamento (R$)              |
 | previsaoPagamento | DateTime | Data prevista para pagamento         |
+| userId            | String   | ID do usuário proprietário           |
 | ativo             | bool     | Status (true=ativo, false=excluído)  |
 | criadoEm          | DateTime | Data de criação do registro          |
 | atualizadoEm      | DateTime | Data da última atualização           |
@@ -312,20 +371,25 @@ O aplicativo segue **Material Design 3**, proporcionando uma interface moderna e
 
 ```
 lib/
-├── main.dart                      # Entry point
+├── main.dart                      # Entry point + Firebase init
+├── firebase_options.dart          # Configuração Firebase (gerado)
 ├── models/                        # Modelos de dados
-│   ├── local.dart                 # @HiveType(typeId: 0)
+│   ├── local.dart                 # @HiveType(typeId: 0) + userId
 │   ├── local.g.dart               # TypeAdapter gerado
-│   ├── plantao.dart               # @HiveType(typeId: 1)
+│   ├── plantao.dart               # @HiveType(typeId: 1) + userId
 │   └── plantao.g.dart             # TypeAdapter gerado
 ├── screens/                       # Telas do app
-│   ├── splash_screen.dart         # Splash animado
+│   ├── splash_screen.dart         # Splash + auth check
+│   ├── login_screen.dart          # Login email/Google
+│   ├── cadastro_screen.dart       # Cadastro de usuário
+│   ├── verificacao_email_screen.dart # Verificação obrigatória
 │   ├── lista_plantoes_screen.dart # Tela principal
 │   ├── cadastro_plantao_screen.dart
 │   ├── lista_locais_screen.dart
 │   └── cadastro_local_screen.dart
 ├── services/                      # Camada de serviços
-│   └── database_service.dart      # CRUD centralizado
+│   ├── auth_service.dart          # Autenticação Firebase
+│   └── database_service.dart      # CRUD com filtro userId
 └── widgets/                       # Widgets reutilizáveis
 
 assets/
@@ -364,11 +428,9 @@ Este projeto está sob a licença MIT.
 
 - GitHub: [@rodrigolanes](https://github.com/rodrigolanes)
 
-**Status do Projeto:** ✅ MVP Funcional | 🚧 Melhorias Contínuas
+**Status do Projeto:** ✅ MVP Funcional com Autenticação | 🚧 Sincronização em Desenvolvimento
 
-**Versão Atual:** 1.0.0+5MVP Funcional | 🚧 Melhorias Contínuas
-
-**Versão Atual:** 1.0.0+1
+**Versão Atual:** 1.1.0+7
 
 ## 🔧 Upgrade Técnico
 

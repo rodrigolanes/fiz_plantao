@@ -2,9 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
 import '../models/plantao.dart';
+import '../services/auth_service.dart';
 import '../services/database_service.dart';
 import 'cadastro_plantao_screen.dart';
 import 'lista_locais_screen.dart';
+import 'login_screen.dart';
 import 'relatorios_screen.dart';
 
 class ListaPlantoesScreen extends StatefulWidget {
@@ -225,6 +227,51 @@ class _ListaPlantoesScreenState extends State<ListaPlantoesScreen> {
             icon: const Icon(Icons.location_on),
             onPressed: _gerenciarLocais,
             tooltip: 'Gerenciar Locais',
+          ),
+          PopupMenuButton<String>(
+            icon: const Icon(Icons.more_vert),
+            onSelected: (value) async {
+              if (value == 'logout') {
+                final confirm = await showDialog<bool>(
+                  context: context,
+                  builder: (_) => AlertDialog(
+                    title: const Text('Sair'),
+                    content: const Text('Deseja realmente sair?'),
+                    actions: [
+                      TextButton(
+                        onPressed: () => Navigator.pop(context, false),
+                        child: const Text('Cancelar'),
+                      ),
+                      FilledButton(
+                        onPressed: () => Navigator.pop(context, true),
+                        child: const Text('Sair'),
+                      ),
+                    ],
+                  ),
+                );
+
+                if (confirm == true && mounted) {
+                  await AuthService.logout();
+                  if (!mounted) return;
+
+                  Navigator.of(context).pushReplacement(
+                    MaterialPageRoute(builder: (_) => const LoginScreen()),
+                  );
+                }
+              }
+            },
+            itemBuilder: (context) => [
+              const PopupMenuItem(
+                value: 'logout',
+                child: Row(
+                  children: [
+                    Icon(Icons.logout),
+                    SizedBox(width: 8),
+                    Text('Sair'),
+                  ],
+                ),
+              ),
+            ],
           ),
         ],
       ),

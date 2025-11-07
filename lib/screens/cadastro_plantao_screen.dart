@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import '../widgets/primary_action_buttons.dart';
 import 'package:intl/intl.dart';
-import '../models/plantao.dart';
+
 import '../models/local.dart';
+import '../models/plantao.dart';
+import '../services/auth_service.dart';
 import '../services/database_service.dart';
+import '../widgets/primary_action_buttons.dart';
 import 'lista_locais_screen.dart';
 
 class CadastroPlantaoScreen extends StatefulWidget {
@@ -37,15 +39,14 @@ class _CadastroPlantaoScreenState extends State<CadastroPlantaoScreen> {
   void initState() {
     super.initState();
     _locaisDisponiveis = List.from(widget.locais);
-    
+
     if (widget.plantao != null) {
       _localSelecionado = widget.plantao!.local;
       _valorController.text = widget.plantao!.valor.toStringAsFixed(2).replaceAll('.', ',');
       _dataHoraSelecionada = widget.plantao!.dataHora;
       _dataHoraController.text = _formatarDataHora(_dataHoraSelecionada!);
       _previsaoPagamentoSelecionada = widget.plantao!.previsaoPagamento;
-      _previsaoPagamentoController.text =
-          _formatarData(_previsaoPagamentoSelecionada!);
+      _previsaoPagamentoController.text = _formatarData(_previsaoPagamentoSelecionada!);
       _duracaoSelecionada = widget.plantao!.duracao;
     }
   }
@@ -69,8 +70,7 @@ class _CadastroPlantaoScreenState extends State<CadastroPlantaoScreen> {
         // Recarrega locais do Hive
         _locaisDisponiveis = DatabaseService.getLocaisAtivos();
         // Se o local selecionado foi removido/inativado, limpar seleção
-        if (_localSelecionado != null &&
-            !_locaisDisponiveis.any((l) => l.id == _localSelecionado!.id)) {
+        if (_localSelecionado != null && !_locaisDisponiveis.any((l) => l.id == _localSelecionado!.id)) {
           _localSelecionado = null;
         } else if (_localSelecionado != null) {
           // Atualiza referência caso tenha sido editado
@@ -165,6 +165,18 @@ class _CadastroPlantaoScreenState extends State<CadastroPlantaoScreen> {
       // Converte texto com vírgula para double (pt-BR)
       final valorTexto = _valorController.text.trim().replaceAll('.', '').replaceAll(',', '.');
       final valorDouble = double.parse(valorTexto);
+      final userId = AuthService.userId;
+
+      if (userId == null) {
+        final messenger = ScaffoldMessenger.of(context);
+        messenger.showSnackBar(
+          const SnackBar(
+            content: Text('Erro: usuário não autenticado'),
+            backgroundColor: Colors.red,
+          ),
+        );
+        return;
+      }
 
       final plantao = Plantao(
         id: widget.plantao?.id ?? DateTime.now().millisecondsSinceEpoch.toString(),
@@ -175,6 +187,7 @@ class _CadastroPlantaoScreenState extends State<CadastroPlantaoScreen> {
         previsaoPagamento: _previsaoPagamentoSelecionada!,
         criadoEm: widget.plantao?.criadoEm ?? agora,
         atualizadoEm: agora,
+        userId: widget.plantao?.userId ?? userId,
       );
 
       Navigator.of(context).pop(plantao);

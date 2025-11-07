@@ -1,6 +1,8 @@
 import 'package:hive/hive.dart';
+
 import '../models/local.dart';
 import '../models/plantao.dart';
+import 'auth_service.dart';
 
 class DatabaseService {
   static Box<Local> get locaisBox => Hive.box<Local>('locais');
@@ -8,11 +10,15 @@ class DatabaseService {
 
   // Local operations
   static List<Local> getAllLocais() {
-    return locaisBox.values.toList();
+    final userId = AuthService.userId;
+    if (userId == null) return [];
+    return locaisBox.values.where((l) => l.userId == userId).toList();
   }
 
   static List<Local> getLocaisAtivos() {
-    return locaisBox.values.where((l) => l.ativo).toList();
+    final userId = AuthService.userId;
+    if (userId == null) return [];
+    return locaisBox.values.where((l) => l.ativo && l.userId == userId).toList();
   }
 
   static Future<void> saveLocal(Local local) async {
@@ -43,13 +49,15 @@ class DatabaseService {
 
   // Plantao operations
   static List<Plantao> getAllPlantoes() {
-    return plantoesBox.values.toList();
+    final userId = AuthService.userId;
+    if (userId == null) return [];
+    return plantoesBox.values.where((p) => p.userId == userId).toList();
   }
 
   static List<Plantao> getPlantoesAtivos() {
-    return plantoesBox.values
-        .where((p) => p.ativo)
-        .toList()
+    final userId = AuthService.userId;
+    if (userId == null) return [];
+    return plantoesBox.values.where((p) => p.ativo && p.userId == userId).toList()
       ..sort((a, b) => b.dataHora.compareTo(a.dataHora));
   }
 

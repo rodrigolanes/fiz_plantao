@@ -1,5 +1,67 @@
 # Notas de Versão - Fiz Plantão
 
+## Versão 1.1.0 (Build 7) - 7 de novembro de 2025
+
+### 🔐 Autenticação e Segurança
+
+**Autenticação Firebase**
+- Sistema de login e cadastro com Firebase Auth
+- Suporte a login por email/senha
+- Integração com Google Sign-In (Web e Android)
+- Splash screen com verificação automática de autenticação
+- Logout seguro com limpeza de cache
+
+**Verificação de Email Obrigatória**
+- Email de verificação enviado automaticamente após cadastro
+- Tela dedicada para verificação de email
+- Verificação automática a cada 3 segundos
+- Botão para reenviar email (com cooldown de 60s)
+- Bloqueio de acesso até confirmação do email
+- Proteção contra sequestro de contas
+
+**Isolamento de Dados por Usuário**
+- Campo `userId` adicionado aos modelos Local e Plantão
+- Cada usuário visualiza apenas seus próprios dados
+- DatabaseService filtra automaticamente por usuário logado
+- Migração automática de dados existentes
+
+**Segurança**
+- Redefinição de senha via email
+- Account linking automático do Firebase (mesmo email = mesma conta)
+- Dados preservados ao trocar método de autenticação
+- Cache seguro de credenciais no Hive
+
+### 🎨 Interface de Autenticação
+
+- Telas de Login e Cadastro com design Material 3
+- Validação de formulários em tempo real
+- Indicadores de carregamento durante operações
+- Mensagens de erro contextualizadas
+- Toggle de visibilidade de senha
+- "Esqueci minha senha" funcional
+- Botões com Google branding
+
+### 🔧 Infraestrutura
+
+- Firebase configurado para Web e Android
+- OAuth Client ID configurado para Google Sign-In
+- TypeAdapters regenerados para novos campos
+- AuthService centralizado para todas operações de autenticação
+
+### ⚠️ Breaking Changes
+
+- **Requer autenticação:** Usuários devem criar conta ou fazer login
+- **Dados migrados:** Dados locais existentes vinculados ao primeiro usuário logado
+- **Email obrigatório:** Verificação de email necessária para acessar o app
+
+### 📝 Próximos Passos
+
+- Sincronização de dados com Firestore (em desenvolvimento)
+- Backup e restauração em nuvem
+- Suporte a múltiplos dispositivos
+
+---
+
 ## Versão 1.0.0 (Build 5) - 7 de novembro de 2025
 
 ### ✨ Novidades
