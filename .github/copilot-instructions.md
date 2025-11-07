@@ -189,7 +189,14 @@ import '../services/database_service.dart';
 - [ ] Rodar `flutter pub run build_runner build` se alterou modelos Hive
 - [ ] Verificar que dados persistem após restart (se mudou persistência)
 - [ ] Atualizar README.md com novas funcionalidades ou mudanças relevantes
-- [ ] Incrementar version no pubspec.yaml se for release
+
+### Antes de Push para Develop (OBRIGATÓRIO)
+
+- [ ] **SEMPRE incrementar version no pubspec.yaml** antes de fazer push para `develop`
+  - Branch `develop` aciona GitHub Actions que faz deploy automático
+  - Formato: `MAJOR.MINOR.PATCH+BUILD` (ex: `1.0.0+5`)
+  - Incrementar `+BUILD` (versionCode) a cada push
+  - Deploy falhará se a versão não for incrementada
 
 ### Debug Comum
 

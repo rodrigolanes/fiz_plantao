@@ -5,6 +5,7 @@ import '../models/plantao.dart';
 import '../services/database_service.dart';
 import 'cadastro_plantao_screen.dart';
 import 'lista_locais_screen.dart';
+import 'relatorios_screen.dart';
 
 class ListaPlantoesScreen extends StatefulWidget {
   const ListaPlantoesScreen({super.key});
@@ -208,6 +209,18 @@ class _ListaPlantoesScreenState extends State<ListaPlantoesScreen> {
         title: const Text('Meus Plantões'),
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
         actions: [
+          IconButton(
+            icon: const Icon(Icons.assessment),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => const RelatoriosScreen(),
+                ),
+              );
+            },
+            tooltip: 'Relatórios',
+          ),
           IconButton(
             icon: const Icon(Icons.location_on),
             onPressed: _gerenciarLocais,
