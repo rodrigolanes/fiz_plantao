@@ -1,6 +1,7 @@
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:hive/hive.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:flutter/foundation.dart';
 
 class AuthService {
   static final SupabaseClient _supabase = Supabase.instance.client;
@@ -87,37 +88,37 @@ class AuthService {
   // Login com Google
   static Future<AuthResponse?> loginComGoogle() async {
     try {
-      // Trigger the authentication flow
-      final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
-
-      if (googleUser == null) {
-        // O usuário cancelou o login
+      if (kIsWeb) {
+        // Web retorna bool (redirect/popup). Sessão chega via onAuthStateChange.
+        await _supabase.auth.signInWithOAuth(
+          OAuthProvider.google,
+          redirectTo: kIsWeb ? 'http://localhost:3000' : null,
+          queryParams: {
+            'access_type': 'offline',
+            'prompt': 'consent',
+          },
+        );
         return null;
+      } else {
+        final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
+        if (googleUser == null) return null; // cancelado
+
+        final googleAuth = await googleUser.authentication;
+        if (googleAuth.idToken == null) throw 'Token Google ausente';
+
+        final response = await _supabase.auth.signInWithIdToken(
+          provider: OAuthProvider.google,
+          idToken: googleAuth.idToken!,
+          accessToken: googleAuth.accessToken,
+        );
+
+        if (response.user != null) {
+          final box = await Hive.openBox('config');
+          await box.put('userId', response.user!.id);
+          await box.put('userEmail', response.user!.email);
+        }
+        return response;
       }
-
-      // Obtain the auth details from the request
-      final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
-
-      // Verificar se temos os tokens necessários
-      if (googleAuth.accessToken == null || googleAuth.idToken == null) {
-        throw 'Erro ao obter tokens do Google';
-      }
-
-      // Sign in to Supabase with the Google credential
-      final response = await _supabase.auth.signInWithIdToken(
-        provider: OAuthProvider.google,
-        idToken: googleAuth.idToken!,
-        accessToken: googleAuth.accessToken,
-      );
-
-      // Salvar userId no Hive para cache
-      if (response.user != null) {
-        final box = await Hive.openBox('config');
-        await box.put('userId', response.user!.id);
-        await box.put('userEmail', response.user!.email);
-      }
-
-      return response;
     } catch (e) {
       throw 'Erro ao fazer login com Google: $e';
     }

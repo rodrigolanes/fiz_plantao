@@ -123,32 +123,24 @@ class SyncService {
 
   /// Upload de mudanças locais para o servidor
   static Future<void> _uploadLocalChanges(String userId) async {
-    // Upload Locais
-    final locaisLocais = DatabaseService.getLocaisAtivos().where((l) => l.userId == userId).toList();
+    // Upload Locais (inclui inativos para propagar soft delete)
+    final locaisLocais = DatabaseService.getAllLocais().where((l) => l.userId == userId).toList();
 
     for (final local in locaisLocais) {
+      // Verifica se já existe remotamente
       final remoteLocal = await _supabase.from('locais').select().eq('id', local.id).maybeSingle();
 
       if (remoteLocal == null) {
-        // Não existe remotamente - inserir (Supabase gera UUID automaticamente)
-        final inserted = await _supabase
-            .from('locais')
-            .insert({
-              'user_id': userId,
-              'apelido': local.apelido,
-              'nome': local.nome,
-              'criado_em': local.criadoEm.toIso8601String(),
-              'atualizado_em': local.atualizadoEm.toIso8601String(),
-              'ativo': local.ativo,
-            })
-            .select()
-            .single();
-
-        // Atualizar local Hive com o UUID gerado pelo Supabase
-        final localAtualizado = local.copyWith(
-          id: inserted['id'],
-        );
-        await DatabaseService.saveLocal(localAtualizado);
+        // Não existe remotamente - inserir com ID gerado localmente
+        await _supabase.from('locais').insert({
+          'id': local.id, // Usa o UUID gerado localmente
+          'user_id': userId,
+          'apelido': local.apelido,
+          'nome': local.nome,
+          'criado_em': local.criadoEm.toIso8601String(),
+          'atualizado_em': local.atualizadoEm.toIso8601String(),
+          'ativo': local.ativo,
+        });
       } else {
         // Existe - verificar qual é mais recente
         final remoteUpdatedAt = DateTime.parse(remoteLocal['atualizado_em']);
@@ -164,35 +156,26 @@ class SyncService {
       }
     }
 
-    // Upload Plantões
-    final plantoesLocais = DatabaseService.getPlantoesAtivos().where((p) => p.userId == userId).toList();
+    // Upload Plantões (inclui inativos para propagar soft delete)
+    final plantoesLocais = DatabaseService.getAllPlantoes().where((p) => p.userId == userId).toList();
 
     for (final plantao in plantoesLocais) {
       final remotePlantao = await _supabase.from('plantoes').select().eq('id', plantao.id).maybeSingle();
 
       if (remotePlantao == null) {
-        // Não existe remotamente - inserir (Supabase gera UUID automaticamente)
-        final inserted = await _supabase
-            .from('plantoes')
-            .insert({
-              'user_id': userId,
-              'local_id': plantao.local.id,
-              'data_hora': plantao.dataHora.toIso8601String(),
-              'duracao': plantao.duracao.name,
-              'valor': plantao.valor,
-              'previsao_pagamento': plantao.previsaoPagamento.toIso8601String(),
-              'criado_em': plantao.criadoEm.toIso8601String(),
-              'atualizado_em': plantao.atualizadoEm.toIso8601String(),
-              'ativo': plantao.ativo,
-            })
-            .select()
-            .single();
-
-        // Atualizar plantão Hive com o UUID gerado pelo Supabase
-        final plantaoAtualizado = plantao.copyWith(
-          id: inserted['id'],
-        );
-        await DatabaseService.savePlantao(plantaoAtualizado);
+        // Não existe remotamente - inserir com ID gerado localmente
+        await _supabase.from('plantoes').insert({
+          'id': plantao.id, // Usa o UUID gerado localmente
+          'user_id': userId,
+          'local_id': plantao.local.id,
+          'data_hora': plantao.dataHora.toIso8601String(),
+          'duracao': plantao.duracao.name,
+          'valor': plantao.valor,
+          'previsao_pagamento': plantao.previsaoPagamento.toIso8601String(),
+          'criado_em': plantao.criadoEm.toIso8601String(),
+          'atualizado_em': plantao.atualizadoEm.toIso8601String(),
+          'ativo': plantao.ativo,
+        });
       } else {
         // Existe - verificar qual é mais recente
         final remoteUpdatedAt = DateTime.parse(remotePlantao['atualizado_em']);
@@ -214,18 +197,18 @@ class SyncService {
 
   /// Download de mudanças remotas para local
   static Future<void> _downloadRemoteChanges(String userId) async {
-    // Download Locais
+    // Download Locais (inclui inativos para manter histórico fiel)
     final remoteLocais = await _supabase.from('locais').select().eq('user_id', userId);
 
     for (final remoteLocal in remoteLocais) {
-      final localLocal = DatabaseService.getLocaisAtivos().where((l) => l.id == remoteLocal['id']).firstOrNull;
-
+      final localId = remoteLocal['id'] as String;
+      final localLocal = DatabaseService.locaisBox.get(localId);
       final remoteUpdatedAt = DateTime.parse(remoteLocal['atualizado_em']);
 
       if (localLocal == null) {
-        // Não existe localmente - criar
+        // Não existe localmente - criar novo
         final novoLocal = Local(
-          id: remoteLocal['id'],
+          id: localId,
           userId: remoteLocal['user_id'],
           apelido: remoteLocal['apelido'],
           nome: remoteLocal['nome'],
@@ -233,67 +216,61 @@ class SyncService {
           atualizadoEm: remoteUpdatedAt,
           ativo: remoteLocal['ativo'] ?? true,
         );
-        await DatabaseService.saveLocal(novoLocal);
+        await DatabaseService.locaisBox.put(localId, novoLocal);
       } else if (remoteUpdatedAt.isAfter(localLocal.atualizadoEm)) {
-        // Remoto é mais recente - atualizar local
+        // Existe mas remoto é mais recente - atualizar
         final localAtualizado = localLocal.copyWith(
           apelido: remoteLocal['apelido'],
           nome: remoteLocal['nome'],
           atualizadoEm: remoteUpdatedAt,
           ativo: remoteLocal['ativo'] ?? true,
         );
-        await DatabaseService.saveLocal(localAtualizado);
+        await DatabaseService.locaisBox.put(localId, localAtualizado);
       }
     }
 
-    // Download Plantões
-    final remotePlantoes = await _supabase.from('plantoes').select('*, locais(*)').eq('user_id', userId);
+    // Download Plantões (inclui inativos)
+    final remotePlantoes = await _supabase.from('plantoes').select().eq('user_id', userId);
 
     for (final remotePlantao in remotePlantoes) {
-      final localPlantao = DatabaseService.getPlantoesAtivos().where((p) => p.id == remotePlantao['id']).firstOrNull;
-
+      final plantaoId = remotePlantao['id'] as String;
+      final localPlantao = DatabaseService.plantoesBox.get(plantaoId);
       final remoteUpdatedAt = DateTime.parse(remotePlantao['atualizado_em']);
 
-      // Buscar ou criar o Local associado
-      final localDoPlantao =
-          DatabaseService.getLocaisAtivos().where((l) => l.id == remotePlantao['local_id']).firstOrNull;
-
+      // Local associado
+      final localDoPlantao = DatabaseService.locaisBox.get(remotePlantao['local_id']);
       if (localDoPlantao == null) {
-        // Local não existe - pular este plantão (será sincronizado quando o local vier)
+        // Se o local não está presente ainda, pulamos este plantão por ora
         continue;
       }
 
       if (localPlantao == null) {
-        // Não existe localmente - criar
+        // Não existe localmente - criar novo
         final novoPlantao = Plantao(
-          id: remotePlantao['id'],
+          id: plantaoId,
           userId: remotePlantao['user_id'],
           local: localDoPlantao,
           dataHora: DateTime.parse(remotePlantao['data_hora']),
-          duracao: Duracao.values.firstWhere(
-            (d) => d.name == remotePlantao['duracao'],
-          ),
+          duracao: Duracao.values.firstWhere((d) => d.name == remotePlantao['duracao']),
           valor: (remotePlantao['valor'] as num).toDouble(),
           previsaoPagamento: DateTime.parse(remotePlantao['previsao_pagamento']),
           criadoEm: DateTime.parse(remotePlantao['criado_em']),
           atualizadoEm: remoteUpdatedAt,
           ativo: remotePlantao['ativo'] ?? true,
         );
-        await DatabaseService.savePlantao(novoPlantao);
+        await DatabaseService.plantoesBox.put(plantaoId, novoPlantao);
       } else if (remoteUpdatedAt.isAfter(localPlantao.atualizadoEm)) {
-        // Remoto é mais recente - atualizar local
+        // Existe mas remoto é mais recente - atualizar
         final plantaoAtualizado = localPlantao.copyWith(
           local: localDoPlantao,
           dataHora: DateTime.parse(remotePlantao['data_hora']),
-          duracao: Duracao.values.firstWhere(
-            (d) => d.name == remotePlantao['duracao'],
-          ),
+          duracao: Duracao.values.firstWhere((d) => d.name == remotePlantao['duracao']),
           valor: (remotePlantao['valor'] as num).toDouble(),
           previsaoPagamento: DateTime.parse(remotePlantao['previsao_pagamento']),
           atualizadoEm: remoteUpdatedAt,
           ativo: remotePlantao['ativo'] ?? true,
         );
-        await DatabaseService.savePlantao(plantaoAtualizado);
+        await DatabaseService.plantoesBox.put(plantaoId, plantaoAtualizado);
       }
     }
   }
@@ -354,4 +331,10 @@ enum SyncStatus {
 /// Operação pendente para executar quando voltar conectividade
 abstract class PendingOperation {
   Future<void> execute();
+}
+
+/// Verifica se a string está no formato UUID v4 padrão
+bool _isUuid(String value) {
+  final uuidRegex = RegExp(r'^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12} ?$');
+  return uuidRegex.hasMatch(value);
 }

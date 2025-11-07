@@ -1,10 +1,13 @@
 import 'package:hive/hive.dart';
+import 'package:uuid/uuid.dart';
 
 import '../models/local.dart';
 import '../models/plantao.dart';
 import 'auth_service.dart';
 
 class DatabaseService {
+  static const _uuid = Uuid();
+  
   static Box<Local> get locaisBox => Hive.box<Local>('locais');
   static Box<Plantao> get plantoesBox => Hive.box<Plantao>('plantoes');
 
@@ -23,11 +26,19 @@ class DatabaseService {
 
   static Future<void> saveLocal(Local local) async {
     final agora = DateTime.now();
+    // Gera UUID se o ID atual não for um UUID válido
+    final id = _isUuid(local.id) ? local.id : _uuid.v4();
     final novo = local.copyWith(
+      id: id,
       criadoEm: local.criadoEm,
       atualizadoEm: agora,
     );
-    await locaisBox.put(novo.id, novo);
+    await locaisBox.put(id, novo);
+  }
+  
+  static bool _isUuid(String value) {
+    final uuidRegex = RegExp(r'^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$');
+    return uuidRegex.hasMatch(value);
   }
 
   static Future<void> updateLocal(Local local) async {
@@ -63,11 +74,14 @@ class DatabaseService {
 
   static Future<void> savePlantao(Plantao plantao) async {
     final agora = DateTime.now();
+    // Gera UUID se o ID atual não for um UUID válido
+    final id = _isUuid(plantao.id) ? plantao.id : _uuid.v4();
     final novo = plantao.copyWith(
+      id: id,
       criadoEm: plantao.criadoEm,
       atualizadoEm: agora,
     );
-    await plantoesBox.put(novo.id, novo);
+    await plantoesBox.put(id, novo);
   }
 
   static Future<void> updatePlantao(Plantao plantao) async {

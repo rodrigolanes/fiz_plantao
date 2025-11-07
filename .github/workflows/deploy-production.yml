@@ -36,9 +36,15 @@ jobs:
           storeFile=../upload-keystore.jks
           EOF
 
-      - name: Create google-services.json
+      - name: Create Supabase config
         run: |
-          echo '${{ secrets.GOOGLE_SERVICES_JSON }}' > android/app/google-services.json
+          cat > lib/config/supabase_config.dart << EOF
+          /// Gerado automaticamente pelo CI (Deploy Production)
+          class SupabaseConfig {
+            static const String supabaseUrl = '${{ secrets.SUPABASE_URL }}';
+            static const String supabaseAnonKey = '${{ secrets.SUPABASE_ANON_KEY }}';
+          }
+          EOF
 
       - name: Flutter Pub Get
         run: flutter pub get

@@ -3,7 +3,6 @@ plugins {
     id("kotlin-android")
     // The Flutter Gradle Plugin must be applied after the Android and Kotlin Gradle plugins.
     id("dev.flutter.flutter-gradle-plugin")
-    id("com.google.gms.google-services")
 }
 
 import java.util.Properties
@@ -45,8 +44,8 @@ android {
     defaultConfig {
         applicationId = "br.com.rodrigolanes.fizplantao"
 
-        // Usar o maior valor entre o padrão do Flutter e o requisito do Firebase
-        minSdk = Math.max(flutter.minSdkVersion, 23)  // Firebase Auth requer 23+
+        // Usar o maior valor entre o padrão do Flutter e os requisitos
+        minSdk = Math.max(flutter.minSdkVersion, 23)  // Supabase Auth requer 23+
         targetSdk = Math.max(flutter.targetSdkVersion, 34)  // Google Play requer 34+
 
         versionCode = flutter.versionCode

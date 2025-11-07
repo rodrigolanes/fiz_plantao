@@ -1,5 +1,40 @@
 # Notas de Versão - Fiz Plantão
 
+## Versão 1.2.1 (Build 9) - 7 de novembro de 2025
+
+### 🐛 Correções Críticas
+
+**Sincronização de Dados**
+- Corrigido problema de duplicação de registros durante sincronização
+- Implementada geração local de UUID v4 antes de salvar dados
+- IDs agora são estáveis desde criação (não mudam após sync)
+- Removida lógica de atualização de ID após insert no Supabase
+- Eliminada cascata de atualização de referências
+
+**Melhorias Técnicas**
+- Adicionado package `uuid` para geração confiável de identificadores
+- `DatabaseService.saveLocal()` e `savePlantao()` geram UUID automaticamente
+- `SyncService` envia UUID local diretamente para Supabase
+- Chaves do Hive sempre consistentes com IDs dos objetos
+
+### 🔐 Autenticação Web
+
+**Google Sign-In para Web**
+- Implementado fluxo OAuth correto para plataforma web
+- Configurado `redirectTo` para localhost:3000
+- Separação de lógica: OAuth web vs token exchange mobile
+- Porta fixa (3000) para desenvolvimento local web
+
+### ⚠️ Importante
+
+Se você experimentou duplicação de dados:
+1. Faça logout
+2. Limpe dados locais (IndexedDB no navegador ou pasta AppData no Android)
+3. Faça login novamente
+4. Sincronize - agora funcionará corretamente
+
+---
+
 ## Versão 1.1.0 (Build 7) - 7 de novembro de 2025
 
 ### 🔐 Autenticação e Segurança
