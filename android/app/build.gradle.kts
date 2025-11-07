@@ -46,8 +46,8 @@ android {
         applicationId = "br.com.rodrigolanes.fizplantao"
         minSdk = 23  // Firebase Auth requer mínimo 23
         targetSdk = 34
-        versionCode = 7  // Incrementar a cada release
-        versionName = "1.1.0"
+        versionCode = flutter.versionCode
+        versionName = flutter.versionName
     }
 
     buildTypes {
