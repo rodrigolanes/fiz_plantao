@@ -288,9 +288,9 @@ flutter:
 
 **Main → Production (Manual Promotion)**
 
-- Branch `main` + tag de versão para marcar a release
+- Branch `main` + tag de versão para marcar a release (ex: `v1.3.1`)
 - Versão já está em Internal Testing, apenas promover para Production
-- **NÃO faz novo build**, promove o AAB já testado
+- **NÃO faz novo build**, promove o AAB já testado diretamente no Play Console
 
 ### Processo de Release para Produção
 
@@ -327,11 +327,10 @@ flutter:
 5. **Promover no Play Console (MANUAL)**
    - Acesse: https://play.google.com/console
    - Selecione o app "Fiz Plantão"
-   - Vá em **Testing → Internal testing**
-   - Encontre o release com a versão (ex: 1.2.5 - Build 13)
-   - Clique em **"Promote release"** → **"Production"**
-   - Revise e confirme a promoção
-   - Release notes são copiados automaticamente do Internal Testing
+   - Vá em **Testing → Internal testing** e confirme que a versão (ex: `1.3.1` code `15`) está disponível
+   - Clique em **Promote release** → **Production**
+   - Revise países de distribuição, notas e confirme a promoção
+   - Caso Managed publishing esteja ativo, finalize em **Publishing overview** com **Publish changes**
 
 ### Gerar APK Local
 
@@ -393,6 +392,10 @@ R: Preferir português para domínio (Local, Plantao), inglês para técnico (Da
 - Timestamps automáticos no DatabaseService
 - Remoção de seed automático de dados
 - Correção de documentação sobre soft delete de locais
+- Campo `pago` adicionado ao modelo `Plantao` (Hive + Supabase + UI)
+- Sincronização resiliente para campo boolean (versões antigas)
+- Geração de massa de teste com UUID e limpeza remota/local
+- Processo de promoção revertido para manual via Play Console (workflow removido)
 
 ### Outubro 2025
 
@@ -404,4 +407,4 @@ R: Preferir português para domínio (Local, Plantao), inglês para técnico (Da
 ---
 
 **Última atualização:** Novembro 2025
-**Versão do projeto:** 1.0.0+1
+**Versão do projeto:** 1.3.1+15
