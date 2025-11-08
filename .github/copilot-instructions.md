@@ -284,7 +284,7 @@ flutter:
 
 - Branch `develop` dispara GitHub Actions automaticamente
 - Deploy para Play Store Internal Track
-- Prefixos que NÃO disparam deploy: `docs:`, `chore:`, `style:`, `test:`
+- Prefixos que NÃO disparam deploy: `docs:`, `chore:`, `style:`
 
 **Main → Production (Manual Promotion)**
 
@@ -407,4 +407,4 @@ R: Preferir português para domínio (Local, Plantao), inglês para técnico (Da
 ---
 
 **Última atualização:** Novembro 2025
-**Versão do projeto:** 1.3.1+15
+**Versão do projeto:** 1.3.2+16
