@@ -275,7 +275,56 @@ flutter:
 
 ## Build e Deploy
 
-### Gerar APK
+### Ambientes de Deploy
+
+**Develop → Internal Testing (Automático)**
+
+- Branch `develop` dispara GitHub Actions automaticamente
+- Deploy para Play Store Internal Track
+- Prefixos que NÃO disparam deploy: `docs:`, `chore:`, `style:`, `test:`
+
+**Main → Production (Manual)**
+
+- Branch `main` + tag de versão dispara deploy para produção
+- Requer merge de `develop` → `main` e criação de tag
+
+### Processo de Release para Produção
+
+**Passos obrigatórios:**
+
+1. **Garantir que develop está estável**
+
+   - Testar versão Internal Testing
+   - Validar todas funcionalidades
+   - Confirmar versão no `pubspec.yaml` (ex: `1.2.5+13`)
+
+2. **Merge develop → main**
+
+   ```bash
+   git checkout main
+   git pull origin main
+   git merge develop
+   ```
+
+3. **Criar tag de versão**
+
+   ```bash
+   # Formato: v{MAJOR}.{MINOR}.{PATCH} (sem o +BUILD)
+   git tag v1.2.5
+   ```
+
+4. **Push main e tag**
+
+   ```bash
+   git push origin main
+   git push origin v1.2.5
+   ```
+
+5. **Monitorar GitHub Actions**
+   - Workflow `Deploy Production` será disparado pela tag
+   - Verificar em: https://github.com/rodrigolanes/fiz_plantao/actions
+
+### Gerar APK Local
 
 ```bash
 # APK universal (maior)
@@ -289,16 +338,16 @@ flutter build apk --split-per-abi
 
 Formato no `pubspec.yaml`: `version: MAJOR.MINOR.PATCH+BUILD`
 
-Exemplo: `1.0.0+1` onde:
+Exemplo: `1.2.5+13` onde:
 
-- `1.0.0` = versionName (user-facing)
-- `+1` = versionCode (internal, Android)
+- `1.2.5` = versionName (user-facing, usado na tag)
+- `+13` = versionCode (internal, Android, auto-incrementa)
 
-**Incrementar sempre:**
+**Incrementar sempre antes de push para develop:**
 
-- PATCH (+build): Bug fixes
-- MINOR (+build): New features
-- MAJOR (+build): Breaking changes
+- PATCH (+build): Bug fixes (ex: 1.2.5 → 1.2.6)
+- MINOR (+build): New features (ex: 1.2.5 → 1.3.0)
+- MAJOR (+build): Breaking changes (ex: 1.2.5 → 2.0.0)
 
 ## Melhorias Futuras Planejadas
 
