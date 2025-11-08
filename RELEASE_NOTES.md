@@ -1,5 +1,38 @@
 # Notas de Versão - Fiz Plantão
 
+## Versão 1.3.0 (Build 14) - 8 de novembro de 2025
+
+### ✨ Rastreamento de Pagamentos
+
+**Campo Pago**
+- Novo campo para marcar plantões como pagos
+- Switch intuitivo para alternar status do pagamento
+- Badge visual na lista de plantões
+- Sincronização bidirecional do status
+- Campo preservado durante versões antigas do app
+- Persistência local via Hive e remota via Supabase
+
+**Novos Filtros**
+- Filtro por status de pagamento na lista
+- Totais separados para valores pagos/pendentes
+- Relatórios com segmentação por status de pagamento
+
+### 🔧 Melhorias Técnicas
+
+**Supabase**
+- Migração SQL para adicionar coluna pago
+- Índice otimizado para consultas por status
+- Campo com valor padrão false para compatibilidade
+- RLS policies mantidas (apenas dados do próprio usuário)
+
+**Sync Service**
+- Tratamento resiliente do campo pago
+- Suporte a versões antigas do app
+- Conversão inteligente de tipos
+- Download/Upload bidirecional do status
+
+---
+
 ## Versão 1.2.5 (Build 13) - 8 de novembro de 2025
 
 ### ⚡ Sincronização em Tempo Real

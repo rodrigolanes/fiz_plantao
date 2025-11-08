@@ -173,6 +173,7 @@ class SyncService {
           'duracao': plantao.duracao.name,
           'valor': plantao.valor,
           'previsao_pagamento': plantao.previsaoPagamento.toIso8601String(),
+          'pago': plantao.pago,
           'criado_em': plantao.criadoEm.toIso8601String(),
           'atualizado_em': plantao.atualizadoEm.toIso8601String(),
           'ativo': plantao.ativo,
@@ -188,6 +189,7 @@ class SyncService {
             'duracao': plantao.duracao.name,
             'valor': plantao.valor,
             'previsao_pagamento': plantao.previsaoPagamento.toIso8601String(),
+            'pago': plantao.pago,
             'atualizado_em': plantao.atualizadoEm.toIso8601String(),
             'ativo': plantao.ativo,
           }).eq('id', plantao.id);
@@ -255,6 +257,7 @@ class SyncService {
           duracao: Duracao.values.firstWhere((d) => d.name == remotePlantao['duracao']),
           valor: (remotePlantao['valor'] as num).toDouble(),
           previsaoPagamento: DateTime.parse(remotePlantao['previsao_pagamento']),
+          pago: _getRemoteBooleanField(remotePlantao, 'pago'),
           criadoEm: DateTime.parse(remotePlantao['criado_em']),
           atualizadoEm: remoteUpdatedAt,
           ativo: remotePlantao['ativo'] ?? true,
@@ -268,6 +271,7 @@ class SyncService {
           duracao: Duracao.values.firstWhere((d) => d.name == remotePlantao['duracao']),
           valor: (remotePlantao['valor'] as num).toDouble(),
           previsaoPagamento: DateTime.parse(remotePlantao['previsao_pagamento']),
+          pago: remotePlantao['pago'] ?? false,
           atualizadoEm: remoteUpdatedAt,
           ativo: remotePlantao['ativo'] ?? true,
         );
@@ -294,14 +298,14 @@ class SyncService {
   static void _handleRemoteLocaisChange(List<Map<String, dynamic>> changes) {
     try {
       final box = DatabaseService.locaisBox;
-      
+
       for (final data in changes) {
         final id = data['id'] as String;
         final remoteUpdatedAt = DateTime.parse(data['atualizado_em'] as String);
-        
+
         // Buscar local existente no Hive
         final localExistente = box.get(id);
-        
+
         // Se não existe localmente ou remoto é mais recente, atualiza
         if (localExistente == null || remoteUpdatedAt.isAfter(localExistente.atualizadoEm)) {
           final local = Local(
@@ -313,11 +317,11 @@ class SyncService {
             ativo: data['ativo'] as bool? ?? true,
             userId: data['user_id'] as String,
           );
-          
+
           box.put(id, local);
         }
       }
-      
+
       // Atualiza timestamp da última sincronização
       _lastSyncTime = DateTime.now();
     } catch (e) {
@@ -330,29 +334,29 @@ class SyncService {
     try {
       final plantoesBox = DatabaseService.plantoesBox;
       final locaisBox = DatabaseService.locaisBox;
-      
+
       for (final data in changes) {
         final id = data['id'] as String;
         final remoteUpdatedAt = DateTime.parse(data['atualizado_em'] as String);
-        
+
         // Buscar plantão existente no Hive
         final plantaoExistente = plantoesBox.get(id);
-        
+
         // Se não existe localmente ou remoto é mais recente, atualiza
         if (plantaoExistente == null || remoteUpdatedAt.isAfter(plantaoExistente.atualizadoEm)) {
           // Buscar o Local relacionado
           final localId = data['local_id'] as String;
           final local = locaisBox.get(localId);
-          
+
           if (local == null) {
             debugPrint('Local $localId não encontrado para Plantão $id');
             continue; // Pula este plantão se o local não existe
           }
-          
+
           // Parse da duração
           final duracaoStr = data['duracao'] as String;
           final duracao = duracaoStr == '12h' ? Duracao.dozeHoras : Duracao.vinteQuatroHoras;
-          
+
           final plantao = Plantao(
             id: id,
             local: local,
@@ -360,16 +364,17 @@ class SyncService {
             duracao: duracao,
             valor: (data['valor'] as num).toDouble(),
             previsaoPagamento: DateTime.parse(data['previsao_pagamento'] as String),
+            pago: _getRemoteBooleanField(data, 'pago'),
             criadoEm: DateTime.parse(data['criado_em'] as String),
             atualizadoEm: remoteUpdatedAt,
             ativo: data['ativo'] as bool? ?? true,
             userId: data['user_id'] as String,
           );
-          
+
           plantoesBox.put(id, plantao);
         }
       }
-      
+
       // Atualiza timestamp da última sincronização
       _lastSyncTime = DateTime.now();
     } catch (e) {
@@ -393,6 +398,16 @@ class SyncService {
   /// Limpa recursos
   static void dispose() {
     _statusController.close();
+  }
+
+  /// Obtém um valor booleano de um campo remoto, lidando com nulos e diferentes tipos
+  static bool _getRemoteBooleanField(Map<String, dynamic> data, String fieldName) {
+    final value = data[fieldName];
+    if (value == null) return false;
+    if (value is bool) return value;
+    if (value is num) return value != 0;
+    if (value is String) return value.toLowerCase() == 'true';
+    return false;
   }
 }
 
