@@ -13,15 +13,38 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+      # Setup Ruby to use Fastlane Supply for promotion
+      - name: Setup Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.3'
 
-      - name: Promote to Production
+      - name: Install Fastlane
         run: |
-          echo "Promoting version ${{ inputs.version_code }} from internal to production"
-          echo "This requires manual promotion in Play Console for now"
-          echo "Go to: https://play.google.com/console"
-          echo "1. Select app"
-          echo "2. Testing > Internal testing"
-          echo "3. Find release with version code ${{ inputs.version_code }}"
-          echo "4. Click 'Promote release' > 'Production'"
+          gem install fastlane -NV
+
+      - name: Write Google Service Account JSON
+        env:
+          SERVICE_ACCOUNT_JSON: ${{ secrets.SERVICE_ACCOUNT_JSON }}
+        run: |
+          echo "$SERVICE_ACCOUNT_JSON" > service_account.json
+
+      - name: Promote Internal -> Production
+        env:
+          VERSION_CODE: ${{ inputs.version_code }}
+        run: |
+          # Promote existing release from Internal to Production using Fastlane Supply
+          fastlane supply \
+            --json_key service_account.json \
+            --package_name br.com.rodrigolanes.fizplantao \
+            --skip_upload_apk true \
+            --skip_upload_aab true \
+            --skip_upload_metadata true \
+            --skip_upload_images true \
+            --skip_upload_screenshots true \
+            --track internal \
+            --track_promote_to production \
+            --version_codes $VERSION_CODE \
+            --release_status completed
 
 
