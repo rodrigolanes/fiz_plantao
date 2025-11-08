@@ -322,6 +322,7 @@ class _ListaPlantoesScreenState extends State<ListaPlantoesScreen> {
             icon: const Icon(Icons.more_vert),
             onSelected: (value) async {
               if (value == 'logout') {
+                final navigator = Navigator.of(context);
                 final confirm = await showDialog<bool>(
                   context: context,
                   builder: (_) => AlertDialog(
@@ -340,11 +341,11 @@ class _ListaPlantoesScreenState extends State<ListaPlantoesScreen> {
                   ),
                 );
 
-                if (confirm == true && mounted) {
+                if (confirm == true) {
                   await AuthService.logout();
                   if (!mounted) return;
 
-                  Navigator.of(context).pushReplacement(
+                  navigator.pushReplacement(
                     MaterialPageRoute(builder: (_) => const LoginScreen()),
                   );
                 }
@@ -378,7 +379,7 @@ class _ListaPlantoesScreenState extends State<ListaPlantoesScreen> {
                     // Filtro por local
                     Expanded(
                       child: DropdownButtonFormField<String>(
-                        value: _localFiltroId,
+                        initialValue: _localFiltroId,
                         decoration: InputDecoration(
                           labelText: 'Local',
                           border: const OutlineInputBorder(),
@@ -629,7 +630,7 @@ class _ListaPlantoesScreenState extends State<ListaPlantoesScreen> {
                                         vertical: 4,
                                       ),
                                       decoration: BoxDecoration(
-                                        color: statusColor.withOpacity(0.2),
+                                        color: statusColor.withValues(alpha: 0.2),
                                         borderRadius: BorderRadius.circular(12),
                                         border: Border.all(color: statusColor),
                                       ),

@@ -111,7 +111,7 @@ class _RelatoriosScreenState extends State<RelatoriosScreen> {
                           _apenasProximos = value;
                         });
                       },
-                      activeColor: Colors.teal,
+                      activeThumbColor: Colors.teal,
                     ),
                   ],
                 ),
@@ -141,7 +141,7 @@ class _RelatoriosScreenState extends State<RelatoriosScreen> {
               borderRadius: BorderRadius.circular(16),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.teal.withOpacity(0.3),
+                  color: Colors.teal.withValues(alpha: 0.3),
                   blurRadius: 8,
                   offset: const Offset(0, 4),
                 ),
@@ -166,7 +166,7 @@ class _RelatoriosScreenState extends State<RelatoriosScreen> {
                         vertical: 4,
                       ),
                       decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.2),
+                        color: Colors.white.withValues(alpha: 0.2),
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: Text(

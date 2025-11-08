@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:connectivity_plus/connectivity_plus.dart';
+import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../models/local.dart';
@@ -320,7 +321,7 @@ class SyncService {
       // Atualiza timestamp da última sincronização
       _lastSyncTime = DateTime.now();
     } catch (e) {
-      print('Erro ao processar mudanças remotas de Locais: $e');
+      debugPrint('Erro ao processar mudanças remotas de Locais: $e');
     }
   }
 
@@ -344,7 +345,7 @@ class SyncService {
           final local = locaisBox.get(localId);
           
           if (local == null) {
-            print('Local $localId não encontrado para Plantão $id');
+            debugPrint('Local $localId não encontrado para Plantão $id');
             continue; // Pula este plantão se o local não existe
           }
           
@@ -372,7 +373,7 @@ class SyncService {
       // Atualiza timestamp da última sincronização
       _lastSyncTime = DateTime.now();
     } catch (e) {
-      print('Erro ao processar mudanças remotas de Plantões: $e');
+      debugPrint('Erro ao processar mudanças remotas de Plantões: $e');
     }
   }
 
