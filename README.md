@@ -199,13 +199,13 @@ Este projeto foi configurado para funcionar em dois cenários:
 
 ### Deploy Automático
 
-Todo push para a branch `develop` aciona automaticamente:
+Todo push para a branch `main` aciona automaticamente:
 1. ✅ Build do APK e AAB via GitHub Actions
 2. ✅ Incremento automático da versão (se configurado)
 3. ✅ Criação de release notes
 4. ✅ Publicação de artefatos
 
-**Importante**: Sempre incremente a versão no `pubspec.yaml` antes de fazer push para `develop`.
+**Importante**: Sempre incremente a versão no `pubspec.yaml` antes de fazer push para `main`.
 
 ### Pacotes Principais
 
