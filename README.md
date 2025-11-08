@@ -80,7 +80,7 @@ O **Fiz Plantão** é uma solução prática para médicos registrarem e acompan
     - [x] Plantões agrupados por data de pagamento
     - [x] Data/hora e valor de cada plantão
 
-### 💾 Persistência de Dados
+### 💾 Persistência e Sincronização
 
 - [x] **Hive Database**
   - [x] Persistência local offline
@@ -89,6 +89,14 @@ O **Fiz Plantão** é uma solução prática para médicos registrarem e acompan
   - [x] Soft delete para locais e plantões
   - [x] Locais desativados não aparecem no cadastro de novos plantões
   - [x] Plantões existentes com locais desativados continuam visíveis
+- [x] **Supabase Backend**
+  - [x] PostgreSQL com Row Level Security
+  - [x] Sincronização bidirecional (up e down)
+  - [x] Realtime Subscriptions
+  - [x] Detecção automática de mudanças remotas
+  - [x] Merge inteligente com Last-Write-Wins
+  - [x] Sincronização instantânea entre dispositivos
+  - [x] Fallback para polling a cada 30 minutos
 
 ### 🎨 Interface e UX
 
@@ -144,7 +152,7 @@ O **Fiz Plantão** é uma solução prática para médicos registrarem e acompan
 - [ ] **Funcionalidades Avançadas**
 
   - [ ] Backup e restore de dados
-  - [ ] Sincronização em nuvem (opcional)
+  - [x] Sincronização em nuvem (Supabase Realtime)
   - [ ] Modo escuro
   - [ ] Múltiplos usuários
   - [ ] Anexar documentos (contratos, comprovantes)
@@ -159,10 +167,14 @@ O **Fiz Plantão** é uma solução prática para médicos registrarem e acompan
 
 ## 🛠️ Tecnologias
 
-- **Flutter 3.x** - Framework multiplataforma
-- **Dart** - Linguagem de programação
-- **Firebase Auth** - Autenticação de usuários
-- **Hive 2.2.3** - Banco de dados NoSQL local
+- **Flutter 3.35.6** - Framework multiplataforma
+- **Dart 3.9.2** - Linguagem de programação
+- **Supabase** - Backend as a Service
+  - PostgreSQL - Banco de dados relacional
+  - Auth - Autenticação (email/senha e Google OAuth)
+  - Realtime - Sincronização em tempo real
+  - Row Level Security - Segurança a nível de linha
+- **Hive 2.2.3** - Cache e persistência local
 - **Intl** - Internacionalização e formatação (pt_BR)
 - **flutter_launcher_icons** - Geração automática de ícones
 - **Material Design 3** - Design system
@@ -456,7 +468,7 @@ Este projeto está sob a licença MIT.
 
 - GitHub: [@rodrigolanes](https://github.com/rodrigolanes)
 
-**Status do Projeto:** ✅ MVP Funcional com Autenticação | 🚧 Sincronização em Desenvolvimento
+**Status do Projeto:** ✅ MVP Funcional com Autenticação e Sincronização em Tempo Real
 
 **Versão Atual:** 1.1.0+7
 

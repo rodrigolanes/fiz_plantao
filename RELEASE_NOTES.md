@@ -1,5 +1,23 @@
 # Notas de Versão - Fiz Plantão
 
+## Versão 1.2.5 (Build 13) - 8 de novembro de 2025
+
+### ⚡ Sincronização em Tempo Real
+
+**Supabase Realtime**
+- Implementada sincronização instantânea via Supabase Realtime
+- Mudanças em outros dispositivos são recebidas automaticamente
+- Estratégia Last-Write-Wins: timestamp mais recente prevalece
+- Handlers implementados para Locais e Plantões com merge inteligente
+
+**Como Funciona**
+- Ao modificar dados em qualquer dispositivo, todos os outros sincronizam automaticamente
+- Não é mais necessário aguardar 30 minutos ou sincronizar manualmente
+- Funciona mesmo com o app em segundo plano
+- Conflitos resolvidos automaticamente pelo timestamp de atualização
+
+---
+
 ## Versão 1.2.4 (Build 12) - 7 de novembro de 2025
 
 ### 🔗 Deep Links e Autenticação

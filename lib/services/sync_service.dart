@@ -291,14 +291,89 @@ class SyncService {
 
   /// Handler de mudanças remotas em Locais
   static void _handleRemoteLocaisChange(List<Map<String, dynamic>> changes) {
-    // Implementar lógica de merge em tempo real se necessário
-    // TODO: Implementar merge automático quando houver mudanças remotas
+    try {
+      final box = DatabaseService.locaisBox;
+      
+      for (final data in changes) {
+        final id = data['id'] as String;
+        final remoteUpdatedAt = DateTime.parse(data['atualizado_em'] as String);
+        
+        // Buscar local existente no Hive
+        final localExistente = box.get(id);
+        
+        // Se não existe localmente ou remoto é mais recente, atualiza
+        if (localExistente == null || remoteUpdatedAt.isAfter(localExistente.atualizadoEm)) {
+          final local = Local(
+            id: id,
+            apelido: data['apelido'] as String,
+            nome: data['nome'] as String,
+            criadoEm: DateTime.parse(data['criado_em'] as String),
+            atualizadoEm: remoteUpdatedAt,
+            ativo: data['ativo'] as bool? ?? true,
+            userId: data['user_id'] as String,
+          );
+          
+          box.put(id, local);
+        }
+      }
+      
+      // Atualiza timestamp da última sincronização
+      _lastSyncTime = DateTime.now();
+    } catch (e) {
+      print('Erro ao processar mudanças remotas de Locais: $e');
+    }
   }
 
   /// Handler de mudanças remotas em Plantões
   static void _handleRemotePlantoesChange(List<Map<String, dynamic>> changes) {
-    // Implementar lógica de merge em tempo real se necessário
-    // TODO: Implementar merge automático quando houver mudanças remotas
+    try {
+      final plantoesBox = DatabaseService.plantoesBox;
+      final locaisBox = DatabaseService.locaisBox;
+      
+      for (final data in changes) {
+        final id = data['id'] as String;
+        final remoteUpdatedAt = DateTime.parse(data['atualizado_em'] as String);
+        
+        // Buscar plantão existente no Hive
+        final plantaoExistente = plantoesBox.get(id);
+        
+        // Se não existe localmente ou remoto é mais recente, atualiza
+        if (plantaoExistente == null || remoteUpdatedAt.isAfter(plantaoExistente.atualizadoEm)) {
+          // Buscar o Local relacionado
+          final localId = data['local_id'] as String;
+          final local = locaisBox.get(localId);
+          
+          if (local == null) {
+            print('Local $localId não encontrado para Plantão $id');
+            continue; // Pula este plantão se o local não existe
+          }
+          
+          // Parse da duração
+          final duracaoStr = data['duracao'] as String;
+          final duracao = duracaoStr == '12h' ? Duracao.dozeHoras : Duracao.vinteQuatroHoras;
+          
+          final plantao = Plantao(
+            id: id,
+            local: local,
+            dataHora: DateTime.parse(data['data_hora'] as String),
+            duracao: duracao,
+            valor: (data['valor'] as num).toDouble(),
+            previsaoPagamento: DateTime.parse(data['previsao_pagamento'] as String),
+            criadoEm: DateTime.parse(data['criado_em'] as String),
+            atualizadoEm: remoteUpdatedAt,
+            ativo: data['ativo'] as bool? ?? true,
+            userId: data['user_id'] as String,
+          );
+          
+          plantoesBox.put(id, plantao);
+        }
+      }
+      
+      // Atualiza timestamp da última sincronização
+      _lastSyncTime = DateTime.now();
+    } catch (e) {
+      print('Erro ao processar mudanças remotas de Plantões: $e');
+    }
   }
 
   /// Atualiza status de sincronização
@@ -331,10 +406,4 @@ enum SyncStatus {
 /// Operação pendente para executar quando voltar conectividade
 abstract class PendingOperation {
   Future<void> execute();
-}
-
-/// Verifica se a string está no formato UUID v4 padrão
-bool _isUuid(String value) {
-  final uuidRegex = RegExp(r'^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12} ?$');
-  return uuidRegex.hasMatch(value);
 }
