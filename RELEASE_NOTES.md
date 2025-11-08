@@ -1,5 +1,23 @@
 # Notas de Versão - Fiz Plantão
 
+## Versão 1.2.3 (Build 11) - 7 de novembro de 2025
+
+### 🔐 Correções de Autenticação
+
+**Google Sign-In Production**
+- Atualizado Google Web Client ID nos secrets do GitHub
+- Configuração correta de OAuth Clients para debug e release
+- Login com Google agora funciona em builds da Play Store
+
+### 🛠️ Melhorias de CI/CD
+
+**Flutter**
+- Atualizado Flutter no GitHub Actions para 3.35.6
+- Alinhado com versão local para compatibilidade
+- Habilitado cache para builds mais rápidos
+
+---
+
 ## Versão 1.2.2 (Build 10) - 7 de novembro de 2025
 
 ### 🐛 Correções
