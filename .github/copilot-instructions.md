@@ -9,7 +9,7 @@
 - **Framework:** Flutter 3.x com Dart
 - **Banco de Dados Local:** Hive 2.2.3 (NoSQL cache/offline)
 - **Backend:** Supabase (PostgreSQL + Auth + Realtime)
-- **Autenticação:** Firebase Auth + Google Sign-In
+- **Autenticação:** Supabase Auth + Google Sign-In
 - **Internacionalização:** Intl (pt_BR)
 - **Design:** Material Design 3 com tema Teal (#00897B)
 - **Build Tools:** build_runner, hive_generator, flutter_launcher_icons
@@ -92,14 +92,17 @@ lib/
 
    - Todos os modelos devem ter `@HiveType(typeId: X)`
    - Cada campo deve ter `@HiveField(N)`
-   - Usar typeId únicos: Local=0, Plantao=1, Duracao=2
+   - Usar typeId únicos: Local=0, Plantao=1, Duracao=2 (estes são os IDs atualmente em uso; ao criar novos modelos/enums, utilize o próximo ID disponível, começando por 3)
    - Rodar `flutter pub run build_runner build` após mudanças
 
 4. **Database Service Pattern**
 
    - Toda operação de banco DEVE passar por `DatabaseService`
-   - Métodos estáticos e síncronos
-   - Nomenclatura: `getNomeAtivos()`, `saveNome()`, `deleteNome()`
+   - Métodos estáticos e síncronos para operações apenas no Hive (local)
+   - Métodos que interagem com Supabase (sync, cloud) DEVEM ser assíncronos (`Future`) e estáticos
+   - Nomenclatura: 
+     - Hive: `getNomeAtivos()`, `saveNome()`, `deleteNome()`
+     - Supabase: `syncNomeUp()`, `syncNomeDown()`, etc. (sempre async)
    - Box names: lowercase plural (ex: 'locais', 'plantoes')
    - Sempre incluir filtro de userId nas queries
 
@@ -154,8 +157,8 @@ lib/
 
 1. **NUNCA commitar credenciais**
    - Secrets devem estar em arquivos de configuração ignorados (.gitignore)
-   - Firebase config e Supabase URLs/keys não devem ser expostos
-   - Usar variáveis de ambiente quando possível
+   - Supabase URLs e anon keys são públicos e podem estar no app; apenas a service_role key NUNCA deve ser exposta
+   - Para Flutter, usar `--dart-define` durante o build ou arquivos de configuração gitignored (ex: `config.dart`, JSON) para secrets e chaves; variáveis de ambiente não são suportadas diretamente em builds mobile
    - Verificar `.gitignore` antes de commit
 
 2. **Isolamento de Dados**
