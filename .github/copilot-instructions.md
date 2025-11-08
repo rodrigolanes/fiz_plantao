@@ -7,7 +7,9 @@
 ## Stack Tecnológica
 
 - **Framework:** Flutter 3.x com Dart
-- **Banco de Dados:** Hive 2.2.3 (NoSQL local)
+- **Banco de Dados Local:** Hive 2.2.3 (NoSQL cache/offline)
+- **Backend:** Supabase (PostgreSQL + Auth + Realtime)
+- **Autenticação:** Firebase Auth + Google Sign-In
 - **Internacionalização:** Intl (pt_BR)
 - **Design:** Material Design 3 com tema Teal (#00897B)
 - **Build Tools:** build_runner, hive_generator, flutter_launcher_icons
@@ -71,35 +73,53 @@ lib/
 
 ### Padrões Obrigatórios
 
-1. **Soft Delete Pattern**
+1. **User Isolation Pattern**
 
-   - NUNCA delete registros fisicamente do Hive
+   - TODOS os modelos devem ter campo `userId` (String)
+   - Sempre filtrar dados pelo usuário logado: `where((item) => item.userId == AuthService.userId)`
+   - NUNCA permitir acesso a dados de outros usuários
+   - AuthService.userId é a fonte de verdade para ID do usuário atual
+   - Verificar autenticação antes de operações sensíveis
+
+2. **Soft Delete Pattern**
+
+   - NUNCA delete registros fisicamente do Hive ou Supabase
    - Use flag `bool ativo = true` em todos os modelos
    - Métodos `delete*` devem setar `ativo = false`
    - Queries devem filtrar por `where((item) => item.ativo)`
 
-2. **Hive TypeAdapters**
+3. **Hive TypeAdapters**
 
    - Todos os modelos devem ter `@HiveType(typeId: X)`
    - Cada campo deve ter `@HiveField(N)`
-   - Usar typeId únicos: Local=0, Plantao=1
+   - Usar typeId únicos: Local=0, Plantao=1, Duracao=2
    - Rodar `flutter pub run build_runner build` após mudanças
 
-3. **Database Service Pattern**
+4. **Database Service Pattern**
 
    - Toda operação de banco DEVE passar por `DatabaseService`
    - Métodos estáticos e síncronos
    - Nomenclatura: `getNomeAtivos()`, `saveNome()`, `deleteNome()`
    - Box names: lowercase plural (ex: 'locais', 'plantoes')
+   - Sempre incluir filtro de userId nas queries
 
-4. **DateTime Formatting**
+5. **Supabase Sync Pattern**
+
+   - Hive é cache local, Supabase é fonte de verdade
+   - Sync bidirecional: up (local → remoto) e down (remoto → local)
+   - Merge com Last-Write-Wins baseado em `atualizadoEm`
+   - Realtime subscriptions para mudanças remotas
+   - Fallback para polling a cada 30 minutos
+   - Sempre sincronizar após save/delete local
+
+6. **DateTime Formatting**
 
    - Sempre usar `intl` para formatação
    - Locale fixo: `'pt_BR'`
    - Formato data: `DateFormat('dd/MM/yyyy', 'pt_BR')`
    - Formato hora: `DateFormat('HH:mm', 'pt_BR')`
 
-5. **Currency Formatting**
+7. **Currency Formatting**
 
    ```dart
    NumberFormat.currency(
@@ -109,24 +129,86 @@ lib/
    )
    ```
 
-6. **Model Structure**
+8. **Model Structure**
 
-   - Todos os modelos têm: `id`, `criadoEm`, `atualizadoEm`, `ativo`
-   - ID é timestamp: `DateTime.now().millisecondsSinceEpoch.toString()`
+   - Todos os modelos têm: `id`, `userId`, `criadoEm`, `atualizadoEm`, `ativo`
+   - ID é UUID: usar package `uuid` para gerar IDs únicos
    - Timestamps automáticos no save via `DatabaseService` (atualiza `atualizadoEm`)
    - Incluir `copyWith()` method em todos os modelos
 
-7. **Enums**
+9. **Enums**
 
    - Usar PascalCase para enum names
    - Valores em lowercase sem separadores
    - Exemplo: `enum Duracao { dozeHoras, vinteQuatroHoras }`
    - Incluir Hive annotations: `@HiveType(typeId: X)` e `@HiveField(N)` em cada valor
 
-8. **Async Context Safety**
+10. **Async Context Safety**
    - Capturar `Navigator.of(context)` e `ScaffoldMessenger.of(context)` ANTES de awaits
    - Verificar `if (!mounted) return;` após cada operação async
    - Usar builders como `builder: (_) =>` em dialogs para evitar captura de context
+
+## Segurança
+
+### Regras de Segurança Obrigatórias
+
+1. **NUNCA commitar credenciais**
+   - Secrets devem estar em arquivos de configuração ignorados (.gitignore)
+   - Firebase config e Supabase URLs/keys não devem ser expostos
+   - Usar variáveis de ambiente quando possível
+   - Verificar `.gitignore` antes de commit
+
+2. **Isolamento de Dados**
+   - Row Level Security (RLS) habilitado no Supabase
+   - Filtro por userId em TODAS as queries (local e remoto)
+   - Validar `AuthService.userId != null` antes de qualquer operação de dados
+   - NUNCA confiar apenas no frontend para segurança
+
+3. **Autenticação**
+   - Sempre verificar autenticação antes de operações sensíveis
+   - Redirecionar para login se não autenticado
+   - Email verification obrigatório antes de usar o app
+   - Implementar timeout de sessão quando apropriado
+
+4. **Validação de Entrada**
+   - SEMPRE validar dados do usuário antes de salvar
+   - Sanitizar strings para evitar problemas de encoding
+   - Validar ranges de valores (datas, moedas, etc)
+   - TextFormField com validators obrigatórios em formulários
+
+5. **Tratamento de Erros**
+   - NUNCA expor stack traces ou mensagens técnicas ao usuário
+   - Logging apropriado para debugging sem expor dados sensíveis
+   - Try-catch em operações de rede e banco de dados
+   - Mensagens de erro amigáveis em português
+
+## Performance
+
+### Otimizações Importantes
+
+1. **Hive Performance**
+   - Usar `.values` ao invés de `.toMap().values` quando possível
+   - Evitar operações `.length` repetidas, cachear quando necessário
+   - Não fazer queries complexas no `build()` - usar FutureBuilder/StreamBuilder
+   - Fechar boxes que não estão em uso (não aplicável no projeto atual)
+
+2. **Flutter Performance**
+   - Usar `const` constructors sempre que possível
+   - `ListView.builder` para listas longas (não ListView simples)
+   - Evitar rebuilds desnecessários - usar keys quando apropriado
+   - Não fazer operações pesadas no `build()`
+   - Usar `setState()` com escopo mínimo
+
+3. **Network Performance**
+   - Supabase Realtime só para mudanças críticas
+   - Offline-first: sempre ler de Hive primeiro, sync em background
+   - Batch operations quando possível
+   - Debounce em operações de sync frequentes
+
+4. **DateTime & Formatting**
+   - Cachear DateFormat e NumberFormat instances para reuso
+   - Evitar parsing repetido de mesmas datas
+   - Usar UTC para armazenamento, local apenas para display
 
 ## Convenções de Código
 
@@ -375,7 +457,7 @@ Ao implementar novas features, considerar:
 R: Para manter histórico, permitir "desfazer" e integridade referencial (Plantoes de Locais deletados).
 
 **P: Por que Hive e não SQLite?**
-R: Hive é mais simples, sem SQL, type-safe, e suficiente para este use case.
+R: Hive é mais simples, sem SQL, type-safe, e suficiente para cache local. Supabase PostgreSQL é a fonte de verdade.
 
 **P: Por que não usar Provider/Bloc?**
 R: Projeto pequeno, setState é suficiente. Considerar state management se crescer.
@@ -383,10 +465,23 @@ R: Projeto pequeno, setState é suficiente. Considerar state management se cresc
 **P: Posso usar inglês nos nomes?**
 R: Preferir português para domínio (Local, Plantao), inglês para técnico (DatabaseService).
 
+**P: Como funciona a sincronização com Supabase?**
+R: Offline-first com Hive como cache. Sync bidirecional com Last-Write-Wins baseado em timestamps. Realtime subscriptions detectam mudanças remotas automaticamente.
+
+**P: Como garantir segurança dos dados?**
+R: Row Level Security no Supabase + filtro userId em todas as queries + email verification obrigatório + validação de entrada.
+
 ## Histórico de Atualizações
 
 ### Novembro 2025
 
+- **Copilot Instructions Enhancements:**
+  - Adicionadas seções de Segurança e Performance
+  - Documentação de Supabase sync pattern
+  - User Isolation Pattern explicitado
+  - UUID para IDs ao invés de timestamps
+  - Guidelines de tratamento de erros
+  - Best practices de otimização
 - Migração para WidgetStateProperty/WidgetState (Material 3)
 - Async context safety implementado (captured navigator/messenger)
 - Timestamps automáticos no DatabaseService
