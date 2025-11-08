@@ -44,6 +44,7 @@ jobs:
             --skip_upload_screenshots true \
             --track internal \
             --track_promote_to production \
+            --track_promote_release_status completed \
             --version_codes $VERSION_CODE \
             --release_status completed
 
@@ -53,6 +54,24 @@ jobs:
           fastlane run google_play_track_version_codes json_key:service_account.json package_name:br.com.rodrigolanes.fizplantao track:production
           echo "Internal track version codes:"
           fastlane run google_play_track_version_codes json_key:service_account.json package_name:br.com.rodrigolanes.fizplantao track:internal
+
+      - name: Ensure Production Has Version
+        if: always()
+        env:
+          VERSION_CODE: ${{ inputs.version_code }}
+        run: |
+          # Directly ensure production track references the desired version code
+          fastlane supply \
+            --json_key service_account.json \
+            --package_name br.com.rodrigolanes.fizplantao \
+            --skip_upload_apk true \
+            --skip_upload_aab true \
+            --skip_upload_metadata true \
+            --skip_upload_images true \
+            --skip_upload_screenshots true \
+            --track production \
+            --version_codes $VERSION_CODE \
+            --release_status completed
 
       - name: Verify Tracks - Release Names (Production)
         run: |
