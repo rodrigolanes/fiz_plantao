@@ -69,7 +69,7 @@ class DatabaseService {
     final userId = AuthService.userId;
     if (userId == null) return [];
     return plantoesBox.values.where((p) => p.ativo && p.userId == userId).toList()
-      ..sort((a, b) => b.dataHora.compareTo(a.dataHora));
+      ..sort((a, b) => a.dataHora.compareTo(b.dataHora));
   }
 
   static Future<void> savePlantao(Plantao plantao) async {
