@@ -1,5 +1,35 @@
 # Notas de Versão - Fiz Plantão
 
+## Versão 1.2.4 (Build 12) - 7 de novembro de 2025
+
+### 🔗 Deep Links e Autenticação
+
+**Email de Confirmação**
+- Corrigido redirect URL para usar deep link no mobile (`br.com.rodrigolanes.fizplantao://login-callback/`)
+- Emails de confirmação agora abrem o app automaticamente ao clicar no link
+- Configurado `emailRedirectTo` explícito em cadastro, reset de senha e reenvio de confirmação
+
+**Deep Linking**
+- Implementado suporte completo a deep links para callbacks de autenticação
+- Adicionado intent-filter no AndroidManifest.xml
+- Scheme configurado: `br.com.rodrigolanes.fizplantao://`
+
+### 🗑️ Remoções
+
+**Página de Perfil**
+- Removida funcionalidade de vinculação de contas Google
+- Supabase Flutter ainda não suporta `linkIdentity()` para mobile
+- Interface simplificada: mantidos apenas botões de Sincronização, Relatórios, Locais e Logout
+
+### ⚙️ Configuração Necessária
+
+**Supabase Dashboard**
+- Adicionar em Authentication → URL Configuration → Redirect URLs:
+  - `br.com.rodrigolanes.fizplantao://**`
+- Documentação completa em `CONFIGURAR_DEEP_LINK.md`
+
+---
+
 ## Versão 1.2.3 (Build 11) - 7 de novembro de 2025
 
 ### 🔐 Correções de Autenticação

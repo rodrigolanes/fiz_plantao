@@ -53,6 +53,9 @@ class AuthService {
       final response = await _supabase.auth.signUp(
         email: email,
         password: senha,
+        emailRedirectTo: kIsWeb 
+          ? 'http://localhost:3000' 
+          : 'br.com.rodrigolanes.fizplantao://login-callback/',
       );
 
       // Salvar userId no Hive para cache
@@ -122,15 +125,74 @@ class AuthService {
         }
         return response;
       }
+    } on AuthException catch (e) {
+      // Se o email já existe, retornar erro específico
+      if (e.message.toLowerCase().contains('email') && 
+          e.message.toLowerCase().contains('already')) {
+        throw 'Este email já possui uma conta. Faça login com email/senha primeiro e vincule o Google nas configurações.';
+      }
+      throw _handleAuthException(e);
     } catch (e) {
       throw 'Erro ao fazer login com Google: $e';
     }
   }
 
+  // Vincular conta Google à conta atual
+  static Future<void> linkGoogleAccount() async {
+    try {
+      final user = currentUser;
+      if (user == null) throw 'Nenhum usuário logado';
+
+      // Verificar se já tem Google vinculado
+      final identities = user.identities;
+      if (identities != null && identities.any((i) => i.provider == 'google')) {
+        throw 'Conta Google já vinculada';
+      }
+
+      // NOTA: O Supabase Flutter ainda não tem suporte completo para linkIdentity em mobile
+      // Por enquanto, vamos informar ao usuário que ele pode fazer login com Google diretamente
+      throw 'Vincular contas não está disponível no momento. Você pode fazer logout e entrar com Google para acessar com ambos os métodos.';
+
+      // TODO: Quando o Supabase Flutter adicionar suporte completo, usar:
+      // if (kIsWeb) {
+      //   await _supabase.auth.linkIdentity(OAuthProvider.google);
+      // } else {
+      //   final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
+      //   if (googleUser == null) return;
+      //   final googleAuth = await googleUser.authentication;
+      //   if (googleAuth.idToken == null) throw 'Token Google ausente';
+      //   // Usar API REST diretamente para linkIdentity
+      // }
+    } on AuthException catch (e) {
+      throw _handleAuthException(e);
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  // Obter lista de identidades vinculadas
+  static List<String> getLinkedProviders() {
+    final user = currentUser;
+    if (user == null) return [];
+    
+    final identities = user.identities;
+    if (identities == null || identities.isEmpty) {
+      // Se não tem identities, provavelmente é email/password
+      return ['email'];
+    }
+    
+    return identities.map((i) => i.provider).toList();
+  }
+
   // Redefinir senha
   static Future<void> redefinirSenha(String email) async {
     try {
-      await _supabase.auth.resetPasswordForEmail(email);
+      await _supabase.auth.resetPasswordForEmail(
+        email,
+        redirectTo: kIsWeb 
+          ? 'http://localhost:3000' 
+          : 'br.com.rodrigolanes.fizplantao://login-callback/',
+      );
     } on AuthException catch (e) {
       throw _handleAuthException(e);
     } catch (e) {
@@ -173,6 +235,9 @@ class AuthService {
       await _supabase.auth.resend(
         type: OtpType.signup,
         email: user.email!,
+        emailRedirectTo: kIsWeb 
+          ? 'http://localhost:3000' 
+          : 'br.com.rodrigolanes.fizplantao://login-callback/',
       );
     } on AuthException catch (e) {
       throw _handleAuthException(e);
