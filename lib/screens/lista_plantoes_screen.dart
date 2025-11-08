@@ -643,7 +643,7 @@ class _ListaPlantoesScreenState extends State<ListaPlantoesScreen> {
                                                 ),
                                                 const SizedBox(width: 4),
                                                 Text(
-                                                  plantao.pago ? 'Pago' : 'Pendente',
+                                                  plantao.pago ? 'Pago' : 'Pagamento Pendente',
                                                   style: TextStyle(
                                                     fontSize: 11,
                                                     fontWeight: FontWeight.bold,
