@@ -1,71 +1,27 @@
-name: Deploy Production
+name: Promote to Production
 on:
-  push:
-    tags:
-      - "v*"
+  workflow_dispatch:
+    inputs:
+      version_code:
+        description: 'Version code to promote from internal testing'
+        required: true
+        type: string
 
 jobs:
-  deploy:
+  promote:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup Java
-        uses: actions/setup-java@v4
-        with:
-          distribution: "temurin"
-          java-version: "17"
-
-      - name: Setup Flutter
-        uses: subosito/flutter-action@v2
-        with:
-          flutter-version: "3.35.6"
-          channel: "stable"
-          cache: true
-
-      - name: Verify Flutter Version
+      - name: Promote to Production
         run: |
-          flutter --version
-          flutter doctor -v
+          echo "Promoting version ${{ inputs.version_code }} from internal to production"
+          echo "This requires manual promotion in Play Console for now"
+          echo "Go to: https://play.google.com/console"
+          echo "1. Select app"
+          echo "2. Testing > Internal testing"
+          echo "3. Find release with version code ${{ inputs.version_code }}"
+          echo "4. Click 'Promote release' > 'Production'"
 
-      - name: Decode Keystore
-        run: |
-          echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode > android/upload-keystore.jks
 
-      - name: Create key.properties
-        run: |
-          cat > android/key.properties << EOF
-          storePassword=${{ secrets.KEYSTORE_PASSWORD }}
-          keyPassword=${{ secrets.KEY_PASSWORD }}
-          keyAlias=${{ secrets.KEY_ALIAS }}
-          storeFile=../upload-keystore.jks
-          EOF
-
-      - name: Create Supabase config
-        run: |
-          cat > lib/config/supabase_config.dart << EOF
-          /// Gerado automaticamente pelo CI (Deploy Production)
-          class SupabaseConfig {
-            static const String supabaseUrl = '${{ secrets.SUPABASE_URL }}';
-            static const String supabaseAnonKey = '${{ secrets.SUPABASE_ANON_KEY }}';
-            static const String googleWebClientId = '${{ secrets.GOOGLE_WEB_CLIENT_ID }}';
-          }
-          EOF
-
-      - name: Flutter Pub Get
-        run: flutter pub get
-
-      - name: Build AppBundle (Release)
-        run: flutter build appbundle --release
-
-      - name: Upload to Production
-        uses: r0adkll/upload-google-play@v1
-        with:
-          serviceAccountJsonPlainText: ${{ secrets.SERVICE_ACCOUNT_JSON }}
-          packageName: br.com.rodrigolanes.fizplantao
-          releaseFiles: build/app/outputs/bundle/release/app-release.aab
-          track: production
-          status: completed
-          whatsNewDirectory: android/
-          mappingFile: build/app/outputs/mapping/release/mapping.txt

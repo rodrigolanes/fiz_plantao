@@ -283,10 +283,11 @@ flutter:
 - Deploy para Play Store Internal Track
 - Prefixos que NÃO disparam deploy: `docs:`, `chore:`, `style:`, `test:`
 
-**Main → Production (Manual)**
+**Main → Production (Manual Promotion)**
 
-- Branch `main` + tag de versão dispara deploy para produção
-- Requer merge de `develop` → `main` e criação de tag
+- Branch `main` + tag de versão para marcar a release
+- Versão já está em Internal Testing, apenas promover para Production
+- **NÃO faz novo build**, promove o AAB já testado
 
 ### Processo de Release para Produção
 
@@ -294,7 +295,7 @@ flutter:
 
 1. **Garantir que develop está estável**
 
-   - Testar versão Internal Testing
+   - Testar versão Internal Testing na Play Store
    - Validar todas funcionalidades
    - Confirmar versão no `pubspec.yaml` (ex: `1.2.5+13`)
 
@@ -320,9 +321,14 @@ flutter:
    git push origin v1.2.5
    ```
 
-5. **Monitorar GitHub Actions**
-   - Workflow `Deploy Production` será disparado pela tag
-   - Verificar em: https://github.com/rodrigolanes/fiz_plantao/actions
+5. **Promover no Play Console (MANUAL)**
+   - Acesse: https://play.google.com/console
+   - Selecione o app "Fiz Plantão"
+   - Vá em **Testing → Internal testing**
+   - Encontre o release com a versão (ex: 1.2.5 - Build 13)
+   - Clique em **"Promote release"** → **"Production"**
+   - Revise e confirme a promoção
+   - Release notes são copiados automaticamente do Internal Testing
 
 ### Gerar APK Local
 
