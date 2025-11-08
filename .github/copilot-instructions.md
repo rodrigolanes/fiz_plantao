@@ -12,6 +12,50 @@
 - **Design:** Material Design 3 com tema Teal (#00897B)
 - **Build Tools:** build_runner, hive_generator, flutter_launcher_icons
 
+## Organização de Trabalho
+
+### Gestão de Tarefas
+
+**SEMPRE usar TODO lists para trabalhos complexos:**
+
+1. **Quando criar TODO list:**
+
+   - Tarefas multi-step ou com múltiplas mudanças em arquivos
+   - Quando usuário fornece múltiplas solicitações (numeradas ou separadas por vírgula)
+   - Debugging que requer investigação em várias áreas
+   - Implementação de novas features que envolvem models, services, screens e widgets
+   - Refatorações significativas
+
+2. **Quando NÃO criar TODO list:**
+
+   - Tarefas simples e diretas (uma única mudança)
+   - Leitura de arquivos ou buscas
+   - Perguntas informacionais
+   - Correções de typos ou formatação simples
+
+3. **Workflow obrigatório:**
+
+   - Criar lista ANTES de começar o trabalho
+   - Marcar item como "in-progress" ANTES de trabalhar nele
+   - Marcar como "completed" IMEDIATAMENTE após concluir
+   - Não fazer batch de completions - marcar um por um
+
+4. **Estrutura da lista:**
+   - Títulos descritivos e acionáveis (3-7 palavras)
+   - Descrição detalhada com arquivos/métodos específicos
+   - Status: not-started, in-progress (máximo 1), completed
+   - IDs sequenciais começando em 1
+
+**Exemplo:**
+
+```
+1. Analisar código existente - not-started
+2. Implementar método X no service Y - not-started
+3. Criar/atualizar screen Z - not-started
+4. Atualizar documentação - not-started
+5. Testar e commitar - not-started
+```
+
 ## Arquitetura e Padrões
 
 ### Estrutura de Pastas
