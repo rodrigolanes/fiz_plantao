@@ -2,11 +2,14 @@ import 'package:google_sign_in/google_sign_in.dart';
 import 'package:hive/hive.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:flutter/foundation.dart';
+import '../config/supabase_config.dart';
 
 class AuthService {
   static final SupabaseClient _supabase = Supabase.instance.client;
   static final GoogleSignIn _googleSignIn = GoogleSignIn(
     scopes: ['email', 'profile'],
+    // Web Client ID é necessário no Android para obter idToken
+    serverClientId: kIsWeb ? null : SupabaseConfig.googleWebClientId,
   );
 
   // Stream do estado de autenticação

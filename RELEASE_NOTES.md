@@ -1,5 +1,28 @@
 # Notas de Versão - Fiz Plantão
 
+## Versão 1.2.2 (Build 10) - 7 de novembro de 2025
+
+### 🐛 Correções
+
+**Autenticação Google Android**
+- Corrigido erro "Token Google ausente" no login Android
+- Adicionado `serverClientId` (Web Client ID) na configuração do GoogleSignIn
+- Login com Google agora funciona corretamente em dispositivos Android físicos e emuladores
+
+**Configuração**
+- `SupabaseConfig` agora inclui `googleWebClientId`
+- GitHub Actions atualizado para incluir `GOOGLE_WEB_CLIENT_ID` nos secrets
+- Documentação atualizada com instruções para SHA-1/SHA-256 no Google Cloud Console
+
+### 📝 Para Desenvolvedores
+
+Se estiver configurando o projeto:
+1. Adicione SHA-1 e SHA-256 do keystore no Google Cloud Console
+2. Configure o secret `GOOGLE_WEB_CLIENT_ID` no GitHub
+3. Atualize `lib/config/supabase_config.dart` localmente com o Web Client ID
+
+---
+
 ## Versão 1.2.1 (Build 9) - 7 de novembro de 2025
 
 ### 🐛 Correções Críticas

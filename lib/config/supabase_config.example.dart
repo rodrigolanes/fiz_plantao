@@ -12,4 +12,9 @@ class SupabaseConfig {
   /// Anon/Public Key
   /// Encontre em: Project Settings > API > Project API keys > anon public
   static const String supabaseAnonKey = 'sua-anon-key-aqui';
+  
+  /// Google Web Client ID (para Android)
+  /// Encontre em: Google Cloud Console > APIs & Services > Credentials
+  /// Copie o Client ID do tipo "Web application" (não Android)
+  static const String googleWebClientId = 'seu-client-id.apps.googleusercontent.com';
 }

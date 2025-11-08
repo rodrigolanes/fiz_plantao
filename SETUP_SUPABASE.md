@@ -294,6 +294,7 @@ Estes secrets são usados para gerar automaticamente o arquivo `lib/config/supab
 |----------------|-----------|------------|
 | `SUPABASE_URL` | URL do projeto Supabase | Settings > API > Project URL |
 | `SUPABASE_ANON_KEY` | Chave pública (anon) | Settings > API > anon public key |
+| `GOOGLE_WEB_CLIENT_ID` | Web Client ID do Google OAuth | Google Cloud Console > Credentials > Web application Client ID |
 
 > NÃO adicionar `service_role` aqui. Ela nunca deve ficar exposta em builds mobile.
 
@@ -309,6 +310,7 @@ No final, você deve ter estes secrets:
 ✅ SERVICE_ACCOUNT_JSON
 ✅ SUPABASE_URL
 ✅ SUPABASE_ANON_KEY
+✅ GOOGLE_WEB_CLIENT_ID
 ```
 
 > ✨ **Nota:** O projeto não usa mais Firebase. O `google-services.json` não é necessário e o arquivo `supabase_config.dart` é gerado dinamicamente pelo CI.

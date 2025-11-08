@@ -43,6 +43,7 @@ jobs:
           class SupabaseConfig {
             static const String supabaseUrl = '${{ secrets.SUPABASE_URL }}';
             static const String supabaseAnonKey = '${{ secrets.SUPABASE_ANON_KEY }}';
+            static const String googleWebClientId = '${{ secrets.GOOGLE_WEB_CLIENT_ID }}';
           }
           EOF
 
