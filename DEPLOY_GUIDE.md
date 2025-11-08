@@ -210,11 +210,11 @@ Após o primeiro upload ser aprovado:
 
 ## 🚀 Parte 5: Workflows Automatizados
 
-### 5.1 Deploy Internal Testing (Branch `develop`)
+### 5.1 Deploy Internal Testing (Branch `main`)
 
 Arquivo: `.github/workflows/deploy-internal.yml`
 
-**Trigger:** Push para branch `develop`
+**Trigger:** Push para branch `main`
 
 **Faz:**
 
@@ -228,10 +228,10 @@ Arquivo: `.github/workflows/deploy-internal.yml`
 **Como usar:**
 
 ```bash
-git checkout develop
+git checkout main
 git add .
 git commit -m "Nova funcionalidade"
-git push origin develop
+git push origin main
 ```
 
 ### 5.2 Deploy Production (Tag `v*`)
@@ -277,13 +277,12 @@ git push origin v1.0.1
 - [ ] App criado no Google Play Console (nome, descrição, ícone, screenshots)
 - [ ] **PRIMEIRO UPLOAD MANUAL do AAB feito** ⚠️ **OBRIGATÓRIO**
 - [ ] Aguardar aprovação do primeiro upload pelo Google Play
-- [ ] Branch `develop` criada no repositório
 
 ### Para Cada Deploy Internal
 
 - [ ] Testar funcionalidades localmente
 - [ ] Atualizar README se necessário
-- [ ] Commit e push para `develop`
+- [ ] Commit e push para `main`
 - [ ] Aguardar workflow completar
 - [ ] Verificar no Google Play Console → Internal testing
 
@@ -326,7 +325,7 @@ git push origin v1.0.1
 
 ### Workflow não dispara
 
-- Verifique nome da branch (`develop` ou tag `v*`)
+- Verifique nome da branch (`main` ou tag `v*`)
 - Confirme que workflow está em `.github/workflows/`
 - Veja aba "Actions" no GitHub para logs
 

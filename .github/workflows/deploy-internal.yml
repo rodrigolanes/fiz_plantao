@@ -1,7 +1,7 @@
 name: Deploy Internal Testing
 on:
   push:
-    branches: [develop]
+    branches: [main]
 
 jobs:
   deploy:
