@@ -22,6 +22,12 @@ jobs:
         with:
           flutter-version: "3.27.0"
           channel: "stable"
+          cache: true
+
+      - name: Verify Flutter Version
+        run: |
+          flutter --version
+          flutter doctor -v
 
       - name: Decode Keystore
         run: |
