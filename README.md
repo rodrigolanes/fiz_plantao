@@ -470,7 +470,30 @@ Este projeto está sob a licença MIT.
 
 **Status do Projeto:** ✅ MVP Funcional com Autenticação e Sincronização em Tempo Real
 
-**Versão Atual:** 1.1.0+7
+**Versão Atual:** 1.3.2+16
+
+## 🧩 Símbolos Nativos (Android)
+
+Para melhorar os relatórios de falhas/ANRs no Google Play Console, o app agora embute símbolos nativos no App Bundle.
+
+- Configuração: já adicionada em `android/app/build.gradle.kts` com `ndk { debugSymbolLevel = "FULL" }` no buildType `release`.
+- Gerar AAB com símbolos embutidos:
+  ```bash
+  flutter clean
+  flutter pub get
+  flutter build appbundle --release
+  ```
+- Onde verificar: no Play Console, em “App bundle explorer” do release, o item "Native debug symbols" deve aparecer como “Included”.
+- Upload manual (se necessário): após o build, o zip de símbolos costuma estar em:
+  - `android/app/build/outputs/native-debug-symbols/release/native-debug-symbols.zip`
+  Faça upload em “Android vitals → Native crash symbols”.
+
+Opcional (Dart stack traces):
+- Para facilitar a de-ofuscação de stack traces Dart, gere símbolos de Dart também:
+  ```bash
+  flutter build appbundle --release --split-debug-info=build/symbols
+  ```
+  Guarde a pasta `build/symbols/` para simbolicar rastros de erro Dart fora do Play Console.
 
 ## 🔧 Upgrade Técnico
 
