@@ -7,12 +7,11 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     # Pula deploy se commit não envolve mudanças de código
-    # Prefixos ignorados: docs, chore, style, refactor (sem mudança funcional), test
+    # Prefixos ignorados: docs, chore, style, refactor (sem mudança funcional)
     if: |
       !startsWith(github.event.head_commit.message, 'docs:') &&
       !startsWith(github.event.head_commit.message, 'chore:') &&
-      !startsWith(github.event.head_commit.message, 'style:') &&
-      !startsWith(github.event.head_commit.message, 'test:')
+      !startsWith(github.event.head_commit.message, 'style:')
     steps:
       - name: Checkout
         uses: actions/checkout@v4

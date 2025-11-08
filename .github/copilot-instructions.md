@@ -227,8 +227,11 @@ import '../services/database_service.dart';
 
 ### Antes de Commitar
 
+- [ ] **Executar testes unitários**: `flutter test` (OBRIGATÓRIO)
+  - Todos os testes devem passar antes de commitar
+  - Se houver falhas, corrija antes de prosseguir
+  - CI no GitHub Actions também executará os testes
 - [ ] **Rodar a aplicação** em pelo menos um dispositivo/emulador para validar mudanças
-- [ ] **Executar testes** (se existirem): `flutter test`
 - [ ] Rodar `flutter analyze` para verificar problemas no código
 - [ ] Rodar `flutter pub run build_runner build` se alterou modelos Hive
 - [ ] Verificar que dados persistem após restart (se mudou persistência)
