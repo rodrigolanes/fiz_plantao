@@ -569,7 +569,7 @@ class _RelatoriosScreenState extends State<RelatoriosScreen> {
                             value,
                           );
                         },
-                        activeColor: Colors.green[600],
+                        activeThumbColor: Colors.green[600],
                         thumbIcon: WidgetStateProperty.resolveWith<Icon?>((states) {
                           if (states.contains(WidgetState.selected)) {
                             return const Icon(Icons.check, color: Colors.white);
@@ -651,17 +651,14 @@ class _RelatoriosScreenState extends State<RelatoriosScreen> {
     final navigator = Navigator.of(context);
     final messenger = ScaffoldMessenger.of(context);
 
-    final quantidadeAfetados = marcarComoPago
-        ? plantoes.where((p) => !p.pago).length
-        : plantoes.where((p) => p.pago).length;
+    final quantidadeAfetados =
+        marcarComoPago ? plantoes.where((p) => !p.pago).length : plantoes.where((p) => p.pago).length;
 
     if (quantidadeAfetados == 0) {
       messenger.showSnackBar(
         SnackBar(
           content: Text(
-            marcarComoPago
-                ? 'Todos os plantões já estão marcados como pagos'
-                : 'Nenhum plantão está marcado como pago',
+            marcarComoPago ? 'Todos os plantões já estão marcados como pagos' : 'Nenhum plantão está marcado como pago',
           ),
           backgroundColor: Colors.orange,
         ),

@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:uuid/uuid.dart';
 
 import '../models/local.dart';
@@ -10,6 +11,7 @@ import 'database_service.dart';
 /// IMPORTANTE: Só executa em modo debug e precisa ter userId
 class TestDataService {
   static const _uuid = Uuid();
+  static final SupabaseClient _supabase = Supabase.instance.client;
 
   /// Gera uma massa de dados para testes
   static Future<void> generateTestData() async {
@@ -19,22 +21,36 @@ class TestDataService {
     final userId = AuthService.userId;
     if (userId == null) return;
 
-    // Limpa dados existentes (soft delete)
+    // Remove dados existentes do usuário (local e remoto)
     final locaisBox = DatabaseService.locaisBox;
     final plantoesBox = DatabaseService.plantoesBox;
 
-    for (final local in locaisBox.values) {
-      await locaisBox.put(
-        local.id,
-        local.copyWith(ativo: false),
-      );
+    // Deletar plantões locais do usuário
+    final plantoesParaDeletar = plantoesBox.values.where((p) => p.userId == userId).map((p) => p.id).toList();
+
+    for (final id in plantoesParaDeletar) {
+      await plantoesBox.delete(id);
     }
 
-    for (final plantao in plantoesBox.values) {
-      await plantoesBox.put(
-        plantao.id,
-        plantao.copyWith(ativo: false),
-      );
+    // Deletar locais locais do usuário
+    final locaisParaDeletar = locaisBox.values.where((l) => l.userId == userId).map((l) => l.id).toList();
+
+    for (final id in locaisParaDeletar) {
+      await locaisBox.delete(id);
+    }
+
+    // Deletar plantões remotos do usuário
+    try {
+      await _supabase.from('plantoes').delete().eq('user_id', userId);
+    } catch (e) {
+      debugPrint('Erro ao deletar plantões remotos: $e');
+    }
+
+    // Deletar locais remotos do usuário
+    try {
+      await _supabase.from('locais').delete().eq('user_id', userId);
+    } catch (e) {
+      debugPrint('Erro ao deletar locais remotos: $e');
     }
 
     // Cria locais de teste
