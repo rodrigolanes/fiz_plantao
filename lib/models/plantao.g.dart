@@ -27,13 +27,14 @@ class PlantaoAdapter extends TypeAdapter<Plantao> {
       atualizadoEm: fields[7] as DateTime,
       ativo: fields[8] as bool,
       userId: fields[9] as String,
+      pago: fields[10] as bool,
     );
   }
 
   @override
   void write(BinaryWriter writer, Plantao obj) {
     writer
-      ..writeByte(10)
+      ..writeByte(11)
       ..writeByte(0)
       ..write(obj.id)
       ..writeByte(1)
@@ -53,7 +54,9 @@ class PlantaoAdapter extends TypeAdapter<Plantao> {
       ..writeByte(8)
       ..write(obj.ativo)
       ..writeByte(9)
-      ..write(obj.userId);
+      ..write(obj.userId)
+      ..writeByte(10)
+      ..write(obj.pago);
   }
 
   @override

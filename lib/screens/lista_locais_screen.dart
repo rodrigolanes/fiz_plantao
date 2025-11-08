@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../models/local.dart';
 import '../services/database_service.dart';
+import '../services/test_data_service.dart';
 import 'cadastro_local_screen.dart';
 
 class ListaLocaisScreen extends StatefulWidget {
@@ -13,6 +14,7 @@ class ListaLocaisScreen extends StatefulWidget {
 
 class _ListaLocaisScreenState extends State<ListaLocaisScreen> {
   bool _mostrarInativos = false;
+  bool _isGenerating = false;
 
   @override
   void initState() {
@@ -103,6 +105,31 @@ class _ListaLocaisScreenState extends State<ListaLocaisScreen> {
               },
               tooltip: _mostrarInativos ? 'Ocultar inativos' : 'Mostrar inativos',
             ),
+            // Botão só aparece em modo debug
+            if (const bool.fromEnvironment('dart.vm.product') == false)
+              IconButton(
+                icon: const Icon(Icons.bug_report),
+                onPressed: _isGenerating
+                    ? null
+                    : () async {
+                        try {
+                          setState(() => _isGenerating = true);
+                          final messenger = ScaffoldMessenger.of(context);
+                          await TestDataService.generateTestData();
+                          if (!mounted) return;
+                          _carregarLocais();
+                          if (!mounted) return;
+                          messenger.showSnackBar(
+                            const SnackBar(content: Text('Dados de teste gerados!')),
+                          );
+                        } finally {
+                          if (mounted) {
+                            setState(() => _isGenerating = false);
+                          }
+                        }
+                      },
+                tooltip: 'Gerar dados de teste',
+              ),
           ],
         ),
         body: locaisExibidos.isEmpty

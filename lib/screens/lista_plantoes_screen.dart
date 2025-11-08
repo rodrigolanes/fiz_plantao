@@ -27,7 +27,7 @@ class _ListaPlantoesScreenState extends State<ListaPlantoesScreen> {
   void initState() {
     super.initState();
     _dataInicio = DateTime.now(); // Padrão: a partir de hoje
-    
+
     // Inicializar serviço de sincronização após login
     SyncService.initialize();
   }
@@ -619,6 +619,38 @@ class _ListaPlantoesScreenState extends State<ListaPlantoesScreen> {
                                             style: const TextStyle(
                                               fontSize: 16,
                                               fontWeight: FontWeight.bold,
+                                            ),
+                                          ),
+                                          const SizedBox(width: 8),
+                                          Container(
+                                            padding: const EdgeInsets.symmetric(
+                                              horizontal: 8,
+                                              vertical: 2,
+                                            ),
+                                            decoration: BoxDecoration(
+                                              color: plantao.pago
+                                                  ? Colors.green.withValues(alpha: 0.15)
+                                                  : Colors.orange.withValues(alpha: 0.15),
+                                              borderRadius: BorderRadius.circular(8),
+                                            ),
+                                            child: Row(
+                                              mainAxisSize: MainAxisSize.min,
+                                              children: [
+                                                Icon(
+                                                  plantao.pago ? Icons.check_circle : Icons.pending,
+                                                  size: 14,
+                                                  color: plantao.pago ? Colors.green : Colors.orange,
+                                                ),
+                                                const SizedBox(width: 4),
+                                                Text(
+                                                  plantao.pago ? 'Pago' : 'Pendente',
+                                                  style: TextStyle(
+                                                    fontSize: 11,
+                                                    fontWeight: FontWeight.bold,
+                                                    color: plantao.pago ? Colors.green : Colors.orange,
+                                                  ),
+                                                ),
+                                              ],
                                             ),
                                           ),
                                         ],

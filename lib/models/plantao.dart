@@ -37,6 +37,8 @@ class Plantao {
   final bool ativo; // soft delete flag
   @HiveField(9)
   final String userId; // ID do usuário proprietário
+  @HiveField(10)
+  final bool pago; // Indica se o plantão foi pago
 
   Plantao({
     required this.id,
@@ -49,6 +51,7 @@ class Plantao {
     required this.atualizadoEm,
     this.ativo = true,
     required this.userId,
+    this.pago = false,
   });
 
   Plantao copyWith({
@@ -62,6 +65,7 @@ class Plantao {
     DateTime? atualizadoEm,
     bool? ativo,
     String? userId,
+    bool? pago,
   }) {
     return Plantao(
       id: id ?? this.id,
@@ -74,6 +78,7 @@ class Plantao {
       atualizadoEm: atualizadoEm ?? this.atualizadoEm,
       ativo: ativo ?? this.ativo,
       userId: userId ?? this.userId,
+      pago: pago ?? this.pago,
     );
   }
 }

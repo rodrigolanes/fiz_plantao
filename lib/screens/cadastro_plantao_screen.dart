@@ -34,6 +34,7 @@ class _CadastroPlantaoScreenState extends State<CadastroPlantaoScreen> {
   Duracao _duracaoSelecionada = Duracao.dozeHoras;
   Local? _localSelecionado;
   late List<Local> _locaisDisponiveis;
+  bool _pago = false;
 
   @override
   void initState() {
@@ -48,6 +49,7 @@ class _CadastroPlantaoScreenState extends State<CadastroPlantaoScreen> {
       _previsaoPagamentoSelecionada = widget.plantao!.previsaoPagamento;
       _previsaoPagamentoController.text = _formatarData(_previsaoPagamentoSelecionada!);
       _duracaoSelecionada = widget.plantao!.duracao;
+      _pago = widget.plantao!.pago;
     }
   }
 
@@ -185,6 +187,7 @@ class _CadastroPlantaoScreenState extends State<CadastroPlantaoScreen> {
         duracao: _duracaoSelecionada,
         valor: valorDouble,
         previsaoPagamento: _previsaoPagamentoSelecionada!,
+        pago: _pago,
         criadoEm: widget.plantao?.criadoEm ?? agora,
         atualizadoEm: agora,
         userId: widget.plantao?.userId ?? userId,
@@ -328,6 +331,23 @@ class _CadastroPlantaoScreenState extends State<CadastroPlantaoScreen> {
                 }
                 return null;
               },
+            ),
+            const SizedBox(height: 16),
+            Card(
+              child: SwitchListTile(
+                title: const Text('Plantão Pago'),
+                subtitle: Text(_pago ? 'Pagamento recebido' : 'Pagamento pendente'),
+                value: _pago,
+                onChanged: (value) {
+                  setState(() {
+                    _pago = value;
+                  });
+                },
+                secondary: Icon(
+                  _pago ? Icons.check_circle : Icons.pending,
+                  color: _pago ? Colors.green : Colors.orange,
+                ),
+              ),
             ),
             const SizedBox(height: 32),
             PrimaryActionButtons(

@@ -13,6 +13,7 @@ class RelatoriosScreen extends StatefulWidget {
 
 class _RelatoriosScreenState extends State<RelatoriosScreen> {
   bool _apenasProximos = true;
+  String _filtroPagamento = 'todos'; // 'todos', 'pagos', 'pendentes'
 
   String _formatarValor(double valor) {
     return NumberFormat.currency(
@@ -37,19 +38,30 @@ class _RelatoriosScreenState extends State<RelatoriosScreen> {
   }
 
   List<Plantao> _filtrarPlantoes(List<Plantao> plantoes) {
-    if (!_apenasProximos) return plantoes;
+    // Filtro de tempo
+    List<Plantao> filtrados = plantoes;
+    if (_apenasProximos) {
+      final hoje = DateTime.now();
+      final inicioDia = DateTime(hoje.year, hoje.month, hoje.day);
 
-    final hoje = DateTime.now();
-    final inicioDia = DateTime(hoje.year, hoje.month, hoje.day);
+      filtrados = filtrados.where((p) {
+        final previsao = DateTime(
+          p.previsaoPagamento.year,
+          p.previsaoPagamento.month,
+          p.previsaoPagamento.day,
+        );
+        return previsao.isAtSameMomentAs(inicioDia) || previsao.isAfter(inicioDia);
+      }).toList();
+    }
 
-    return plantoes.where((p) {
-      final previsao = DateTime(
-        p.previsaoPagamento.year,
-        p.previsaoPagamento.month,
-        p.previsaoPagamento.day,
-      );
-      return previsao.isAtSameMomentAs(inicioDia) || previsao.isAfter(inicioDia);
-    }).toList();
+    // Filtro de pagamento
+    if (_filtroPagamento == 'pagos') {
+      filtrados = filtrados.where((p) => p.pago).toList();
+    } else if (_filtroPagamento == 'pendentes') {
+      filtrados = filtrados.where((p) => !p.pago).toList();
+    }
+
+    return filtrados;
   }
 
   @override
@@ -60,12 +72,23 @@ class _RelatoriosScreenState extends State<RelatoriosScreen> {
 
     // Calcular totais
     double totalGeral = 0;
+    double totalPago = 0;
+    double totalPendente = 0;
     int quantidadeGeral = 0;
+    int quantidadePagos = 0;
+    int quantidadePendentes = 0;
 
     for (final plantoes in plantoesPorLocal.values) {
       for (final plantao in plantoes) {
         totalGeral += plantao.valor;
         quantidadeGeral++;
+        if (plantao.pago) {
+          totalPago += plantao.valor;
+          quantidadePagos++;
+        } else {
+          totalPendente += plantao.valor;
+          quantidadePendentes++;
+        }
       }
     }
 
@@ -121,6 +144,46 @@ class _RelatoriosScreenState extends State<RelatoriosScreen> {
                     const Text(
                       'Apenas pagamentos futuros',
                       style: TextStyle(fontSize: 13),
+                    ),
+                  ],
+                ),
+                const Divider(height: 24),
+                const Text(
+                  'Status de Pagamento',
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    Expanded(
+                      child: SegmentedButton<String>(
+                        segments: const [
+                          ButtonSegment<String>(
+                            value: 'todos',
+                            label: Text('Todos'),
+                            icon: Icon(Icons.all_inclusive, size: 16),
+                          ),
+                          ButtonSegment<String>(
+                            value: 'pagos',
+                            label: Text('Pagos'),
+                            icon: Icon(Icons.check_circle, size: 16),
+                          ),
+                          ButtonSegment<String>(
+                            value: 'pendentes',
+                            label: Text('Pendentes'),
+                            icon: Icon(Icons.pending, size: 16),
+                          ),
+                        ],
+                        selected: {_filtroPagamento},
+                        onSelectionChanged: (Set<String> newSelection) {
+                          setState(() {
+                            _filtroPagamento = newSelection.first;
+                          });
+                        },
+                      ),
                     ),
                   ],
                 ),
@@ -192,6 +255,72 @@ class _RelatoriosScreenState extends State<RelatoriosScreen> {
                     ),
                   ),
                 ),
+                if (_filtroPagamento == 'todos' && (quantidadePagos > 0 || quantidadePendentes > 0)) ...[
+                  const Divider(color: Colors.white54, height: 24),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                const Icon(Icons.check_circle, color: Colors.white70, size: 16),
+                                const SizedBox(width: 4),
+                                Text(
+                                  'Pagos ($quantidadePagos)',
+                                  style: const TextStyle(
+                                    color: Colors.white70,
+                                    fontSize: 12,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              _formatarValor(totalPago),
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                const Icon(Icons.pending, color: Colors.white70, size: 16),
+                                const SizedBox(width: 4),
+                                Text(
+                                  'Pendentes ($quantidadePendentes)',
+                                  style: const TextStyle(
+                                    color: Colors.white70,
+                                    fontSize: 12,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              _formatarValor(totalPendente),
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
               ],
             ),
           ),
@@ -385,6 +514,8 @@ class _RelatoriosScreenState extends State<RelatoriosScreen> {
     return datasOrdenadas.map((dataPagamento) {
       final plantoesDaData = plantoesPorData[dataPagamento]!;
       final totalData = plantoesDaData.fold<double>(0, (sum, p) => sum + p.valor);
+      final todosPagos = plantoesDaData.every((p) => p.pago);
+      final algumPago = plantoesDaData.any((p) => p.pago);
 
       return Container(
         margin: const EdgeInsets.only(bottom: 12),
@@ -400,30 +531,69 @@ class _RelatoriosScreenState extends State<RelatoriosScreen> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
+                Expanded(
+                  child: Row(
+                    children: [
+                      Icon(Icons.calendar_today, size: 16, color: Colors.teal[700]),
+                      const SizedBox(width: 8),
+                      Text(
+                        dataPagamento,
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.grey[800],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
                 Row(
                   children: [
-                    Icon(Icons.calendar_today, size: 16, color: Colors.teal[700]),
-                    const SizedBox(width: 8),
                     Text(
-                      dataPagamento,
+                      _formatarValor(totalData),
                       style: TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.bold,
-                        color: Colors.grey[800],
+                        color: Colors.teal[700],
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Transform.scale(
+                      scale: 0.8,
+                      child: Switch(
+                        value: todosPagos,
+                        onChanged: (value) async {
+                          await _confirmarMarcarPagamentoData(
+                            dataPagamento,
+                            plantoesDaData,
+                            value,
+                          );
+                        },
+                        activeColor: Colors.green[600],
+                        thumbIcon: WidgetStateProperty.resolveWith<Icon?>((states) {
+                          if (states.contains(WidgetState.selected)) {
+                            return const Icon(Icons.check, color: Colors.white);
+                          }
+                          return null;
+                        }),
                       ),
                     ),
                   ],
                 ),
-                Text(
-                  _formatarValor(totalData),
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.teal[700],
-                  ),
-                ),
               ],
             ),
+            if (algumPago && !todosPagos)
+              Padding(
+                padding: const EdgeInsets.only(left: 24, top: 4, bottom: 4),
+                child: Text(
+                  'Alguns plantões já foram pagos',
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: Colors.orange[700],
+                    fontStyle: FontStyle.italic,
+                  ),
+                ),
+              ),
             const SizedBox(height: 8),
             ...plantoesDaData.map((plantao) {
               return Padding(
@@ -432,12 +602,26 @@ class _RelatoriosScreenState extends State<RelatoriosScreen> {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Expanded(
-                      child: Text(
-                        DateFormat('dd/MM/yyyy HH:mm', 'pt_BR').format(plantao.dataHora),
-                        style: TextStyle(
-                          fontSize: 13,
-                          color: Colors.grey[700],
-                        ),
+                      child: Row(
+                        children: [
+                          if (plantao.pago)
+                            Icon(
+                              Icons.check_circle,
+                              size: 14,
+                              color: Colors.green[600],
+                            ),
+                          if (plantao.pago) const SizedBox(width: 4),
+                          Expanded(
+                            child: Text(
+                              DateFormat('dd/MM/yyyy HH:mm', 'pt_BR').format(plantao.dataHora),
+                              style: TextStyle(
+                                fontSize: 13,
+                                color: Colors.grey[700],
+                                decoration: plantao.pago ? TextDecoration.lineThrough : null,
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                     Text(
@@ -445,7 +629,8 @@ class _RelatoriosScreenState extends State<RelatoriosScreen> {
                       style: TextStyle(
                         fontSize: 13,
                         fontWeight: FontWeight.w500,
-                        color: Colors.grey[800],
+                        color: plantao.pago ? Colors.grey[500] : Colors.grey[800],
+                        decoration: plantao.pago ? TextDecoration.lineThrough : null,
                       ),
                     ),
                   ],
@@ -456,6 +641,108 @@ class _RelatoriosScreenState extends State<RelatoriosScreen> {
         ),
       );
     }).toList();
+  }
+
+  Future<void> _confirmarMarcarPagamentoData(
+    String dataPagamento,
+    List<Plantao> plantoes,
+    bool marcarComoPago,
+  ) async {
+    final navigator = Navigator.of(context);
+    final messenger = ScaffoldMessenger.of(context);
+
+    final quantidadeAfetados = marcarComoPago
+        ? plantoes.where((p) => !p.pago).length
+        : plantoes.where((p) => p.pago).length;
+
+    if (quantidadeAfetados == 0) {
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text(
+            marcarComoPago
+                ? 'Todos os plantões já estão marcados como pagos'
+                : 'Nenhum plantão está marcado como pago',
+          ),
+          backgroundColor: Colors.orange,
+        ),
+      );
+      return;
+    }
+
+    final confirmar = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Row(
+          children: [
+            Icon(
+              marcarComoPago ? Icons.check_circle : Icons.cancel,
+              color: marcarComoPago ? Colors.green[600] : Colors.orange[700],
+            ),
+            const SizedBox(width: 8),
+            const Expanded(child: Text('Confirmar Ação')),
+          ],
+        ),
+        content: Text(
+          marcarComoPago
+              ? 'Deseja marcar $quantidadeAfetados plantão(ões) com previsão de pagamento em $dataPagamento como PAGOS?'
+              : 'Deseja desmarcar $quantidadeAfetados plantão(ões) com previsão de pagamento em $dataPagamento como NÃO PAGOS?',
+          style: const TextStyle(fontSize: 16),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => navigator.pop(false),
+            child: const Text('Cancelar'),
+          ),
+          FilledButton(
+            onPressed: () => navigator.pop(true),
+            style: FilledButton.styleFrom(
+              backgroundColor: marcarComoPago ? Colors.green[600] : Colors.orange[700],
+            ),
+            child: const Text('Confirmar'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmar != true) return;
+    if (!mounted) return;
+
+    try {
+      // Atualizar todos os plantões da data
+      for (final plantao in plantoes) {
+        if (plantao.pago != marcarComoPago) {
+          final plantaoAtualizado = plantao.copyWith(
+            pago: marcarComoPago,
+            atualizadoEm: DateTime.now(),
+          );
+          await DatabaseService.savePlantao(plantaoAtualizado);
+        }
+      }
+
+      if (!mounted) return;
+
+      setState(() {});
+
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text(
+            marcarComoPago
+                ? '$quantidadeAfetados plantão(ões) marcado(s) como pago(s)'
+                : '$quantidadeAfetados plantão(ões) desmarcado(s)',
+          ),
+          backgroundColor: Colors.green,
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text('Erro ao atualizar plantões: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
   }
 
   Widget _buildMetricaCard(String label, String valor, IconData icon) {
