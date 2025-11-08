@@ -1,5 +1,44 @@
 # Notas de Versão - Fiz Plantão
 
+## Versão 1.3.1 (Build 15) - 8 de novembro de 2025
+
+### 💰 Pagamento em Massa
+
+**Toggle de Pagamento por Data**
+- Marque todos os plantões de uma data como pagos com um único toggle
+- Diálogo de confirmação mostrando quantos plantões serão afetados
+- Indicadores visuais: ícone de check verde e texto riscado para plantões pagos
+- Aviso quando alguns plantões já foram pagos
+- Função de desmarcar pagamento também disponível
+
+**Relatórios Aprimorados**
+- Visualização clara do status de pagamento por data
+- Facilita reconciliação bancária
+- Totais pagos/pendentes sempre visíveis
+
+### 🧪 Qualidade e Testes
+
+**Testes Unitários**
+- 36 testes implementados para models (Local e Plantao)
+- Cobertura completa de construtores, copyWith() e validações
+- Testes executados automaticamente no CI antes de cada deploy
+- Build só acontece se todos os testes passarem
+
+**Melhorias no Gerador de Dados de Teste**
+- Correção de IDs para usar UUID padrão
+- Limpeza completa (delete físico) de dados locais e remotos
+- Geração de massa de dados realista com status de pagamento variado
+
+### 🔧 DevOps
+
+**CI/CD**
+- Testes automatizados no GitHub Actions
+- Relatório de cobertura enviado para Codecov
+- Deploy bloqueado se testes falharem
+- Workflow otimizado para feedback rápido
+
+---
+
 ## Versão 1.3.0 (Build 14) - 8 de novembro de 2025
 
 ### ✨ Rastreamento de Pagamentos
