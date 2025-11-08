@@ -47,4 +47,15 @@ jobs:
             --version_codes $VERSION_CODE \
             --release_status completed
 
+      - name: Verify Tracks - Version Codes
+        run: |
+          echo "Production track version codes:"
+          fastlane run google_play_track_version_codes json_key:service_account.json package_name:br.com.rodrigolanes.fizplantao track:production
+          echo "Internal track version codes:"
+          fastlane run google_play_track_version_codes json_key:service_account.json package_name:br.com.rodrigolanes.fizplantao track:internal
+
+      - name: Verify Tracks - Release Names (Production)
+        run: |
+          fastlane run google_play_track_release_names json_key:service_account.json package_name:br.com.rodrigolanes.fizplantao track:production
+
 
