@@ -1,7 +1,8 @@
+import 'package:flutter/foundation.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:hive/hive.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:flutter/foundation.dart';
+
 import '../config/supabase_config.dart';
 
 class AuthService {
@@ -21,8 +22,22 @@ class AuthService {
   // Verificar se está logado
   static bool get isLoggedIn => currentUser != null;
 
-  // Obter userId (UUID do Supabase)
-  static String? get userId => currentUser?.id;
+  // Override de userId para testes (quando definido, tem precedência)
+  static String? _overrideUserId;
+
+  // Obter userId (UUID do Supabase) com suporte a override em testes
+  static String? get userId => _overrideUserId ?? currentUser?.id;
+
+  // Setter exposto para testes: permite definir um userId fake durante o teste
+  // Em produção, não utilizar este setter.
+  static set userId(String? value) {
+    _overrideUserId = value;
+  }
+
+  // Limpar override (útil em suites de teste)
+  static void clearTestOverride() {
+    _overrideUserId = null;
+  }
 
   // Login com email e senha
   static Future<AuthResponse?> login(String email, String senha) async {
@@ -53,9 +68,7 @@ class AuthService {
       final response = await _supabase.auth.signUp(
         email: email,
         password: senha,
-        emailRedirectTo: kIsWeb 
-          ? 'http://localhost:3000' 
-          : 'br.com.rodrigolanes.fizplantao://login-callback/',
+        emailRedirectTo: kIsWeb ? 'http://localhost:3000' : 'br.com.rodrigolanes.fizplantao://login-callback/',
       );
 
       // Salvar userId no Hive para cache
@@ -127,8 +140,7 @@ class AuthService {
       }
     } on AuthException catch (e) {
       // Se o email já existe, retornar erro específico
-      if (e.message.toLowerCase().contains('email') && 
-          e.message.toLowerCase().contains('already')) {
+      if (e.message.toLowerCase().contains('email') && e.message.toLowerCase().contains('already')) {
         throw 'Este email já possui uma conta. Faça login com email/senha primeiro e vincule o Google nas configurações.';
       }
       throw _handleAuthException(e);
@@ -174,13 +186,13 @@ class AuthService {
   static List<String> getLinkedProviders() {
     final user = currentUser;
     if (user == null) return [];
-    
+
     final identities = user.identities;
     if (identities == null || identities.isEmpty) {
       // Se não tem identities, provavelmente é email/password
       return ['email'];
     }
-    
+
     return identities.map((i) => i.provider).toList();
   }
 
@@ -189,9 +201,7 @@ class AuthService {
     try {
       await _supabase.auth.resetPasswordForEmail(
         email,
-        redirectTo: kIsWeb 
-          ? 'http://localhost:3000' 
-          : 'br.com.rodrigolanes.fizplantao://login-callback/',
+        redirectTo: kIsWeb ? 'http://localhost:3000' : 'br.com.rodrigolanes.fizplantao://login-callback/',
       );
     } on AuthException catch (e) {
       throw _handleAuthException(e);
@@ -235,9 +245,7 @@ class AuthService {
       await _supabase.auth.resend(
         type: OtpType.signup,
         email: user.email!,
-        emailRedirectTo: kIsWeb 
-          ? 'http://localhost:3000' 
-          : 'br.com.rodrigolanes.fizplantao://login-callback/',
+        emailRedirectTo: kIsWeb ? 'http://localhost:3000' : 'br.com.rodrigolanes.fizplantao://login-callback/',
       );
     } on AuthException catch (e) {
       throw _handleAuthException(e);

@@ -470,7 +470,7 @@ Este projeto está sob a licença MIT.
 
 **Status do Projeto:** ✅ MVP Funcional com Autenticação e Sincronização em Tempo Real
 
-**Versão Atual:** 1.3.2+16
+**Versão Atual:** 1.3.3+17
 
 ## 🧩 Símbolos Nativos (Android)
 

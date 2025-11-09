@@ -100,7 +100,7 @@ lib/
    - Toda operação de banco DEVE passar por `DatabaseService`
    - Métodos estáticos e síncronos para operações apenas no Hive (local)
    - Métodos que interagem com Supabase (sync, cloud) DEVEM ser assíncronos (`Future`) e estáticos
-   - Nomenclatura: 
+   - Nomenclatura:
      - Hive: `getNomeAtivos()`, `saveNome()`, `deleteNome()`
      - Supabase: `syncNomeUp()`, `syncNomeDown()`, etc. (sempre async)
    - Box names: lowercase plural (ex: 'locais', 'plantoes')
@@ -147,33 +147,38 @@ lib/
    - Incluir Hive annotations: `@HiveType(typeId: X)` e `@HiveField(N)` em cada valor
 
 10. **Async Context Safety**
-   - Capturar `Navigator.of(context)` e `ScaffoldMessenger.of(context)` ANTES de awaits
-   - Verificar `if (!mounted) return;` após cada operação async
-   - Usar builders como `builder: (_) =>` em dialogs para evitar captura de context
+
+- Capturar `Navigator.of(context)` e `ScaffoldMessenger.of(context)` ANTES de awaits
+- Verificar `if (!mounted) return;` após cada operação async
+- Usar builders como `builder: (_) =>` em dialogs para evitar captura de context
 
 ## Segurança
 
 ### Regras de Segurança Obrigatórias
 
 1. **NUNCA commitar credenciais**
+
    - Secrets devem estar em arquivos de configuração ignorados (.gitignore)
    - Supabase URLs e anon keys são públicos e podem estar no app; apenas a service_role key NUNCA deve ser exposta
    - Para Flutter, usar `--dart-define` durante o build ou arquivos de configuração gitignored (ex: `config.dart`, JSON) para secrets e chaves; variáveis de ambiente não são suportadas diretamente em builds mobile
    - Verificar `.gitignore` antes de commit
 
 2. **Isolamento de Dados**
+
    - Row Level Security (RLS) habilitado no Supabase
    - Filtro por userId em TODAS as queries (local e remoto)
    - Validar `AuthService.userId != null` antes de qualquer operação de dados
    - NUNCA confiar apenas no frontend para segurança
 
 3. **Autenticação**
+
    - Sempre verificar autenticação antes de operações sensíveis
    - Redirecionar para login se não autenticado
    - Email verification obrigatório antes de usar o app
    - Implementar timeout de sessão quando apropriado
 
 4. **Validação de Entrada**
+
    - SEMPRE validar dados do usuário antes de salvar
    - Sanitizar strings para evitar problemas de encoding
    - Validar ranges de valores (datas, moedas, etc)
@@ -190,12 +195,14 @@ lib/
 ### Otimizações Importantes
 
 1. **Hive Performance**
+
    - Usar `.values` ao invés de `.toMap().values` quando possível
    - Evitar operações `.length` repetidas, cachear quando necessário
    - Não fazer queries complexas no `build()` - usar FutureBuilder/StreamBuilder
    - Fechar boxes que não estão em uso (não aplicável no projeto atual)
 
 2. **Flutter Performance**
+
    - Usar `const` constructors sempre que possível
    - `ListView.builder` para listas longas (não ListView simples)
    - Evitar rebuilds desnecessários - usar keys quando apropriado
@@ -203,6 +210,7 @@ lib/
    - Usar `setState()` com escopo mínimo
 
 3. **Network Performance**
+
    - Supabase Realtime só para mudanças críticas
    - Offline-first: sempre ler de Hive primeiro, sync em background
    - Batch operations quando possível
@@ -505,4 +513,4 @@ R: Row Level Security no Supabase + filtro userId em todas as queries + email ve
 ---
 
 **Última atualização:** Novembro 2025
-**Versão do projeto:** 1.3.2+16
+**Versão do projeto:** 1.3.3+17

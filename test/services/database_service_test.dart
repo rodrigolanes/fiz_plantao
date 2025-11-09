@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:fizplantao/models/local.dart';
 import 'package:fizplantao/models/plantao.dart';
 import 'package:fizplantao/services/auth_service.dart';
@@ -8,15 +10,19 @@ import 'package:hive_flutter/hive_flutter.dart';
 
 void main() {
   group('DatabaseService - Plantão Sorting', () {
+    late Directory hiveTempDir;
     late Box<Local> locaisBox;
     late Box<Plantao> plantoesBox;
     late Local localTeste;
     final userId = 'test-user-123';
 
     setUpAll(() async {
-      // Inicializa Hive em memória para testes
-      await Hive.initFlutter();
-      
+      // Inicializa bindings de teste
+      TestWidgetsFlutterBinding.ensureInitialized();
+      // Inicializa Hive em diretório temporário sem depender de plugins
+      hiveTempDir = await Directory.systemTemp.createTemp('hive_test_');
+      Hive.init(hiveTempDir.path);
+
       // Registra os adapters se ainda não estiverem registrados
       if (!Hive.isAdapterRegistered(0)) {
         Hive.registerAdapter(LocalAdapter());
@@ -29,11 +35,27 @@ void main() {
       }
     });
 
+    tearDownAll(() async {
+      try {
+        if (hiveTempDir.existsSync()) {
+          await hiveTempDir.delete(recursive: true);
+        }
+      } catch (_) {}
+    });
+
     setUp(() async {
-      // Cria boxes temporários para cada teste
-      locaisBox = await Hive.openBox<Local>('locais_test_${DateTime.now().millisecondsSinceEpoch}');
-      plantoesBox = await Hive.openBox<Plantao>('plantoes_test_${DateTime.now().millisecondsSinceEpoch}');
-      
+      // Garante boxes padrão usados pelo DatabaseService
+      if (!Hive.isBoxOpen('locais')) {
+        locaisBox = await Hive.openBox<Local>('locais');
+      } else {
+        locaisBox = Hive.box<Local>('locais');
+      }
+      if (!Hive.isBoxOpen('plantoes')) {
+        plantoesBox = await Hive.openBox<Plantao>('plantoes');
+      } else {
+        plantoesBox = Hive.box<Plantao>('plantoes');
+      }
+
       // Mock do AuthService.userId
       AuthService.userId = userId;
 
@@ -52,14 +74,12 @@ void main() {
     tearDown(() async {
       // Limpa os boxes após cada teste
       await locaisBox.clear();
-      await locaisBox.close();
       await plantoesBox.clear();
-      await plantoesBox.close();
     });
 
     test('getPlantoesAtivos deve ordenar por data do mais antigo para o mais novo', () async {
       final agora = DateTime.now();
-      
+
       // Cria plantões em datas diferentes
       final plantao1 = Plantao(
         id: 'plantao-1',
@@ -131,9 +151,9 @@ void main() {
       for (int i = 0; i < plantoesOrdenados.length - 1; i++) {
         expect(
           plantoesOrdenados[i].dataHora.isBefore(plantoesOrdenados[i + 1].dataHora) ||
-          plantoesOrdenados[i].dataHora.isAtSameMomentAs(plantoesOrdenados[i + 1].dataHora),
+              plantoesOrdenados[i].dataHora.isAtSameMomentAs(plantoesOrdenados[i + 1].dataHora),
           true,
-          reason: 'Plantão ${i} deve ser anterior ou igual ao plantão ${i + 1}',
+          reason: 'Plantão $i deve ser anterior ou igual ao plantão ${i + 1}',
         );
       }
     });
@@ -141,7 +161,7 @@ void main() {
     test('getPlantoesAtivos deve ordenar corretamente plantões na mesma data', () async {
       final agora = DateTime.now();
       final mesmaData = DateTime(2025, 11, 15);
-      
+
       // Cria plantões na mesma data, mas horários diferentes
       final plantao1 = Plantao(
         id: 'plantao-1',
@@ -196,7 +216,7 @@ void main() {
 
     test('getPlantoesAtivos deve incluir apenas plantões ativos', () async {
       final agora = DateTime.now();
-      
+
       final plantaoAtivo = Plantao(
         id: 'plantao-ativo',
         local: localTeste,
