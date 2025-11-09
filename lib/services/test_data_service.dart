@@ -6,6 +6,7 @@ import '../models/local.dart';
 import '../models/plantao.dart';
 import 'auth_service.dart';
 import 'database_service.dart';
+import 'log_service.dart';
 
 /// Serviço para gerar massa de dados para testes
 /// IMPORTANTE: Só executa em modo debug e precisa ter userId
@@ -42,15 +43,17 @@ class TestDataService {
     // Deletar plantões remotos do usuário
     try {
       await _supabase.from('plantoes').delete().eq('user_id', userId);
+      LogService.sync('Plantões remotos deletados para usuário $userId');
     } catch (e) {
-      debugPrint('Erro ao deletar plantões remotos: $e');
+      LogService.sync('Erro ao deletar plantões remotos', e);
     }
 
     // Deletar locais remotos do usuário
     try {
       await _supabase.from('locais').delete().eq('user_id', userId);
+      LogService.sync('Locais remotos deletados para usuário $userId');
     } catch (e) {
-      debugPrint('Erro ao deletar locais remotos: $e');
+      LogService.sync('Erro ao deletar locais remotos', e);
     }
 
     // Cria locais de teste

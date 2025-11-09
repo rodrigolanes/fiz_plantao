@@ -8,7 +8,7 @@ import 'calendar_service.dart';
 
 class DatabaseService {
   static const _uuid = Uuid();
-  
+
   static Box<Local> get locaisBox => Hive.box<Local>('locais');
   static Box<Plantao> get plantoesBox => Hive.box<Plantao>('plantoes');
 
@@ -36,7 +36,7 @@ class DatabaseService {
     );
     await locaisBox.put(id, novo);
   }
-  
+
   static bool _isUuid(String value) {
     final uuidRegex = RegExp(r'^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$');
     return uuidRegex.hasMatch(value);
@@ -83,7 +83,7 @@ class DatabaseService {
       atualizadoEm: agora,
     );
     await plantoesBox.put(id, novo);
-    
+
     // Sincronizar com Google Calendar se habilitado
     await CalendarService.criarEventoPlantao(novo);
     await CalendarService.criarEventoPagamento(
@@ -98,7 +98,7 @@ class DatabaseService {
     final agora = DateTime.now();
     final atualizado = plantao.copyWith(atualizadoEm: agora);
     await plantoesBox.put(atualizado.id, atualizado);
-    
+
     // Atualizar status de pagamento no Google Calendar se mudou
     final anterior = plantoesBox.get(plantao.id);
     if (anterior != null && anterior.pago != plantao.pago) {
@@ -117,7 +117,7 @@ class DatabaseService {
         atualizadoEm: DateTime.now(),
       );
       await plantoesBox.put(id, updated);
-      
+
       // Remover eventos do Google Calendar
       await CalendarService.removerEventosPlantao(id);
     }

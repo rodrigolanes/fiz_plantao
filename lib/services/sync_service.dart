@@ -1,12 +1,12 @@
 import 'dart:async';
 
 import 'package:connectivity_plus/connectivity_plus.dart';
-import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../models/local.dart';
 import '../models/plantao.dart';
 import 'database_service.dart';
+import 'log_service.dart';
 
 /// Serviço de sincronização entre Hive (local) e Supabase (remoto)
 /// Estratégia: Last-write-wins baseado em timestamps
@@ -90,7 +90,9 @@ class SyncService {
 
       _lastSyncTime = DateTime.now();
       _updateStatus(SyncStatus.synced);
+      LogService.sync('Sincronização completa realizada');
     } catch (e) {
+      LogService.sync('Erro na sincronização completa', e);
       _updateStatus(SyncStatus.error, e.toString());
       rethrow;
     }
@@ -103,7 +105,9 @@ class SyncService {
       final userId = _getCurrentUserId();
       await _uploadLocalChanges(userId);
       _updateStatus(SyncStatus.synced);
+      LogService.sync('Upload de dados locais concluído');
     } catch (e) {
+      LogService.sync('Erro no upload de dados locais', e);
       _updateStatus(SyncStatus.error, e.toString());
       rethrow;
     }
@@ -116,7 +120,9 @@ class SyncService {
       final userId = _getCurrentUserId();
       await _downloadRemoteChanges(userId);
       _updateStatus(SyncStatus.synced);
+      LogService.sync('Download de dados remotos concluído');
     } catch (e) {
+      LogService.sync('Erro no download de dados remotos', e);
       _updateStatus(SyncStatus.error, e.toString());
       rethrow;
     }
@@ -325,7 +331,7 @@ class SyncService {
       // Atualiza timestamp da última sincronização
       _lastSyncTime = DateTime.now();
     } catch (e) {
-      debugPrint('Erro ao processar mudanças remotas de Locais: $e');
+      LogService.sync('Erro ao processar mudanças remotas de Locais', e);
     }
   }
 
@@ -349,7 +355,7 @@ class SyncService {
           final local = locaisBox.get(localId);
 
           if (local == null) {
-            debugPrint('Local $localId não encontrado para Plantão $id');
+            LogService.warning('Local $localId não encontrado para Plantão $id - pulando');
             continue; // Pula este plantão se o local não existe
           }
 
@@ -378,7 +384,7 @@ class SyncService {
       // Atualiza timestamp da última sincronização
       _lastSyncTime = DateTime.now();
     } catch (e) {
-      debugPrint('Erro ao processar mudanças remotas de Plantões: $e');
+      LogService.sync('Erro ao processar mudanças remotas de Plantões', e);
     }
   }
 

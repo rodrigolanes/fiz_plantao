@@ -5,6 +5,7 @@ import 'package:hive/hive.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../config/supabase_config.dart';
+import 'log_service.dart';
 
 class AuthService {
   static final SupabaseClient _supabase = Supabase.instance.client;
@@ -57,12 +58,15 @@ class AuthService {
         final box = await Hive.openBox('config');
         await box.put('userId', response.user!.id);
         await box.put('userEmail', response.user!.email);
+        LogService.auth('Login realizado: ${response.user!.email}');
       }
 
       return response;
     } on AuthException catch (e) {
+      LogService.auth('Erro de autenticação no login', e);
       throw _handleAuthException(e);
     } catch (e) {
+      LogService.auth('Erro inesperado no login', e);
       throw 'Erro ao fazer login: $e';
     }
   }
@@ -81,6 +85,7 @@ class AuthService {
         final box = await Hive.openBox('config');
         await box.put('userId', response.user!.id);
         await box.put('userEmail', response.user!.email);
+        LogService.auth('Cadastro realizado: ${response.user!.email}');
       }
 
       // Nota: Supabase envia email de confirmação automaticamente
@@ -88,8 +93,10 @@ class AuthService {
 
       return response;
     } on AuthException catch (e) {
+      LogService.auth('Erro de autenticação no cadastro', e);
       throw _handleAuthException(e);
     } catch (e) {
+      LogService.auth('Erro inesperado no cadastro', e);
       throw 'Erro ao cadastrar: $e';
     }
   }
@@ -104,7 +111,9 @@ class AuthService {
       final box = await Hive.openBox('config');
       await box.delete('userId');
       await box.delete('userEmail');
+      LogService.auth('Logout realizado');
     } catch (e) {
+      LogService.auth('Erro ao fazer logout', e);
       throw 'Erro ao fazer logout: $e';
     }
   }
@@ -140,16 +149,20 @@ class AuthService {
           final box = await Hive.openBox('config');
           await box.put('userId', response.user!.id);
           await box.put('userEmail', response.user!.email);
+          LogService.auth('Login com Google realizado: ${response.user!.email}');
         }
         return response;
       }
     } on AuthException catch (e) {
       // Se o email já existe, retornar erro específico
       if (e.message.toLowerCase().contains('email') && e.message.toLowerCase().contains('already')) {
+        LogService.auth('Tentativa de login com Google - email já cadastrado', e);
         throw 'Este email já possui uma conta. Faça login com email/senha primeiro e vincule o Google nas configurações.';
       }
+      LogService.auth('Erro de autenticação com Google', e);
       throw _handleAuthException(e);
     } catch (e) {
+      LogService.auth('Erro inesperado no login com Google', e);
       throw 'Erro ao fazer login com Google: $e';
     }
   }
@@ -181,8 +194,10 @@ class AuthService {
       //   // Usar API REST diretamente para linkIdentity
       // }
     } on AuthException catch (e) {
+      LogService.auth('Erro ao vincular conta Google', e);
       throw _handleAuthException(e);
     } catch (e) {
+      LogService.auth('Erro inesperado ao vincular conta', e);
       rethrow;
     }
   }
@@ -208,9 +223,12 @@ class AuthService {
         email,
         redirectTo: kIsWeb ? 'http://localhost:3000' : 'br.com.rodrigolanes.fizplantao://login-callback/',
       );
+      LogService.auth('Email de redefinição de senha enviado: $email');
     } on AuthException catch (e) {
+      LogService.auth('Erro ao redefinir senha', e);
       throw _handleAuthException(e);
     } catch (e) {
+      LogService.auth('Erro inesperado ao redefinir senha', e);
       throw 'Erro ao redefinir senha: $e';
     }
   }

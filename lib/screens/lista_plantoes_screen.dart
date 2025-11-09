@@ -5,6 +5,7 @@ import '../models/plantao.dart';
 import '../services/auth_service.dart';
 import '../services/calendar_service.dart';
 import '../services/database_service.dart';
+import '../services/log_service.dart';
 import '../services/sync_service.dart';
 import 'cadastro_plantao_screen.dart';
 import 'lista_locais_screen.dart';
@@ -250,10 +251,10 @@ class _ListaPlantoesScreenState extends State<ListaPlantoesScreen> {
 
   Future<void> _configurarGoogleCalendar() async {
     final syncAtual = await CalendarService.isSyncEnabled;
-    
+
     if (!mounted) return;
     final messenger = ScaffoldMessenger.of(context);
-    
+
     final resultado = await showDialog<bool>(
       context: context,
       builder: (_) => AlertDialog(
@@ -269,9 +270,7 @@ class _ListaPlantoesScreenState extends State<ListaPlantoesScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              syncAtual
-                  ? 'Sincronização ativa'
-                  : 'Sincronização desativada',
+              syncAtual ? 'Sincronização ativa' : 'Sincronização desativada',
               style: const TextStyle(fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 12),
@@ -362,6 +361,7 @@ class _ListaPlantoesScreenState extends State<ListaPlantoesScreen> {
       // Recarrega a lista após sincronização
       _carregarDados();
     } catch (e) {
+      LogService.ui('Erro ao configurar Google Calendar', e);
       if (!mounted) return;
 
       ScaffoldMessenger.of(context).showSnackBar(

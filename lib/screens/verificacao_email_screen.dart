@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 
 import '../services/auth_service.dart';
+import '../services/log_service.dart';
 import 'lista_plantoes_screen.dart';
 import 'login_screen.dart';
 
@@ -57,6 +58,7 @@ class _VerificacaoEmailScreenState extends State<VerificacaoEmailScreen> {
         );
       }
     } catch (e) {
+      LogService.ui('Erro ao verificar email', e);
       // Ignora erros durante verificação automática
     } finally {
       if (mounted) {
@@ -99,6 +101,7 @@ class _VerificacaoEmailScreenState extends State<VerificacaoEmailScreen> {
         });
       });
     } catch (e) {
+      LogService.ui('Erro ao reenviar email de verificação', e);
       if (!mounted) return;
 
       ScaffoldMessenger.of(context).showSnackBar(

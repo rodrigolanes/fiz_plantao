@@ -5,6 +5,7 @@ import 'package:hive/hive.dart';
 import 'package:intl/intl.dart';
 
 import '../models/plantao.dart';
+import 'log_service.dart';
 
 /// Serviço para integração com Google Calendar
 ///
@@ -70,6 +71,7 @@ class CalendarService {
         return cachedId; // Calendário existe
       } catch (e) {
         // Calendário foi deletado, criar novo
+        LogService.calendar('Calendário em cache não encontrado, criando novo', e);
       }
     }
 
@@ -161,9 +163,10 @@ Criado via app Fiz Plantão
       );
 
       await calendarApi.events.insert(evento, calendarId);
+      LogService.calendar('Evento de plantão criado: ${plantao.local.apelido}');
     } catch (e) {
       // Falha silenciosa - não bloqueia o save do plantão
-      // Log: Erro ao criar evento de plantão no Google Calendar
+      LogService.calendar('Erro ao criar evento de plantão no Google Calendar', e);
     }
   }
 
@@ -225,8 +228,9 @@ Criado via app Fiz Plantão
       );
 
       await calendarApi.events.insert(evento, calendarId);
+      LogService.calendar('Evento de pagamento criado: $localNome');
     } catch (e) {
-      // Log: Erro ao criar evento de pagamento no Google Calendar
+      LogService.calendar('Erro ao criar evento de pagamento no Google Calendar', e);
     }
   }
 
@@ -272,8 +276,9 @@ Criado via app Fiz Plantão
           evento.id!,
         );
       }
+      LogService.calendar('Status de pagamento atualizado para plantão $plantaoId');
     } catch (e) {
-      // Log: Erro ao atualizar status de pagamento no Google Calendar
+      LogService.calendar('Erro ao atualizar status de pagamento', e);
     }
   }
 
@@ -302,8 +307,9 @@ Criado via app Fiz Plantão
           await calendarApi.events.delete(calendarId, evento.id!);
         }
       }
+      LogService.calendar('Eventos do plantão $plantaoId removidos');
     } catch (e) {
-      // Log: Erro ao remover eventos do Google Calendar
+      LogService.calendar('Erro ao remover eventos do Google Calendar', e);
     }
   }
 
@@ -312,9 +318,10 @@ Criado via app Fiz Plantão
   static Future<bool> requestCalendarPermission() async {
     try {
       final account = await _googleSignIn.signIn();
+      LogService.calendar('Permissão do Google Calendar concedida');
       return account != null;
     } catch (e) {
-      // Log: Erro ao solicitar permissão do Google Calendar
+      LogService.calendar('Erro ao solicitar permissão do Google Calendar', e);
       return false;
     }
   }
