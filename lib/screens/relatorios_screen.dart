@@ -3,6 +3,7 @@ import 'package:intl/intl.dart';
 
 import '../models/plantao.dart';
 import '../services/database_service.dart';
+import '../services/log_service.dart';
 
 class RelatoriosScreen extends StatefulWidget {
   const RelatoriosScreen({super.key});
@@ -731,6 +732,7 @@ class _RelatoriosScreenState extends State<RelatoriosScreen> {
         ),
       );
     } catch (e) {
+      LogService.ui('Erro ao exportar relatório', e);
       if (!mounted) return;
 
       messenger.showSnackBar(

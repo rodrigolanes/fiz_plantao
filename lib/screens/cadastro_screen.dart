@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../services/auth_service.dart';
+import '../services/log_service.dart';
 import 'lista_plantoes_screen.dart';
 import 'verificacao_email_screen.dart';
 
@@ -54,6 +55,7 @@ class _CadastroScreenState extends State<CadastroScreen> {
         MaterialPageRoute(builder: (_) => const VerificacaoEmailScreen()),
       );
     } catch (e) {
+      LogService.ui('Erro ao cadastrar usuário', e);
       if (!mounted) return;
 
       ScaffoldMessenger.of(context).showSnackBar(
@@ -82,6 +84,7 @@ class _CadastroScreenState extends State<CadastroScreen> {
         MaterialPageRoute(builder: (_) => const ListaPlantoesScreen()),
       );
     } catch (e) {
+      LogService.ui('Erro ao fazer cadastro com Google', e);
       if (!mounted) return;
 
       ScaffoldMessenger.of(context).showSnackBar(

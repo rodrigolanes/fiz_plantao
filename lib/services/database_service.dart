@@ -4,10 +4,11 @@ import 'package:uuid/uuid.dart';
 import '../models/local.dart';
 import '../models/plantao.dart';
 import 'auth_service.dart';
+import 'calendar_service.dart';
 
 class DatabaseService {
   static const _uuid = Uuid();
-  
+
   static Box<Local> get locaisBox => Hive.box<Local>('locais');
   static Box<Plantao> get plantoesBox => Hive.box<Plantao>('plantoes');
 
@@ -35,7 +36,7 @@ class DatabaseService {
     );
     await locaisBox.put(id, novo);
   }
-  
+
   static bool _isUuid(String value) {
     final uuidRegex = RegExp(r'^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$');
     return uuidRegex.hasMatch(value);
@@ -82,12 +83,39 @@ class DatabaseService {
       atualizadoEm: agora,
     );
     await plantoesBox.put(id, novo);
+
+    // Sincronizar com Google Calendar se habilitado e salvar ID do evento
+    final calendarEventId = await CalendarService.criarEventoPlantao(novo);
+    if (calendarEventId != null) {
+      final comEventId = novo.copyWith(calendarEventId: calendarEventId);
+      await plantoesBox.put(id, comEventId);
+    }
+
+    await CalendarService.criarEventoPagamento(
+      dataPagamento: novo.previsaoPagamento,
+      valor: novo.valor,
+      localNome: novo.local.nome,
+      plantaoId: novo.id,
+    );
   }
 
   static Future<void> updatePlantao(Plantao plantao) async {
     final agora = DateTime.now();
     final atualizado = plantao.copyWith(atualizadoEm: agora);
-    await plantoesBox.put(atualizado.id, atualizado);
+
+    // Sincronizar com Google Calendar se habilitado e atualizar ID do evento
+    final calendarEventId = await CalendarService.criarEventoPlantao(atualizado);
+    final comEventId = calendarEventId != null ? atualizado.copyWith(calendarEventId: calendarEventId) : atualizado;
+
+    await plantoesBox.put(comEventId.id, comEventId);
+
+    // Atualizar evento de pagamento
+    await CalendarService.criarEventoPagamento(
+      dataPagamento: comEventId.previsaoPagamento,
+      valor: comEventId.valor,
+      localNome: comEventId.local.nome,
+      plantaoId: comEventId.id,
+    );
   }
 
   static Future<void> deletePlantao(String id) async {
@@ -98,6 +126,17 @@ class DatabaseService {
         atualizadoEm: DateTime.now(),
       );
       await plantoesBox.put(id, updated);
+
+      // Remover evento do plantão do Google Calendar
+      await CalendarService.removerEventoPlantao(plantao.calendarEventId);
+
+      // Atualizar evento de pagamento (remove este plantão da lista)
+      await CalendarService.criarEventoPagamento(
+        dataPagamento: plantao.previsaoPagamento,
+        valor: 0, // Será recalculado na função
+        localNome: plantao.local.nome,
+        plantaoId: plantao.id,
+      );
     }
   }
 

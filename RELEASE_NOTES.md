@@ -1,5 +1,93 @@
 # Notas de Versão - Fiz Plantão
 
+## Versão 1.4.0 (Build 18) - 8 de novembro de 2025
+
+### 📅 Integração Google Calendar
+
+**Sincronização Automática de Plantões**
+- Calendário dedicado "Fiz Plantão" criado automaticamente
+- Eventos de plantão com informações completas:
+  - Horário de início e término baseado na duração
+  - Local (apelido e nome completo)
+  - Valor do plantão formatado em R$
+  - Data prevista de pagamento
+  - Status de pagamento (✅ Pago / ⏳ Pendente)
+- Lembretes automáticos: 1 hora e 1 dia antes do plantão
+- Cor personalizada (azul) para fácil identificação
+
+**Eventos de Pagamento Agrupados**
+- Um único evento por data de pagamento prevista
+- Lista todos os plantões com pagamento na mesma data
+- Mostra total a receber e valores individuais
+- Atualização automática quando plantões são marcados como pagos
+- Evento de dia inteiro no calendário
+- Cor personalizada (verde) para pagamentos
+
+**Gerenciamento Inteligente de Eventos**
+- Criação automática ao salvar novo plantão
+- Atualização de eventos existentes ao editar plantão
+- Detecção de eventos deletados manualmente no Google Calendar
+- Recriação automática de eventos deletados quando plantão é editado
+- Remoção de evento ao deletar plantão
+- Verificação de status (cancelled) para eventos deletados
+- Sincronização dos IDs de eventos no Hive e Supabase
+
+**OAuth e Segurança**
+- Autenticação via Google Sign-In
+- SHA-1 fingerprint configurado para Android
+- Firebase + Google Cloud Console integrados
+- Permissão apenas para escopo de calendário (CalendarApi.calendarScope)
+- Configuração documentada em `GOOGLE_CALENDAR_SETUP.md`
+
+**Correções de Timezone**
+- Ajuste automático de 3 horas para compensar interpretação UTC
+- Eventos aparecem no horário correto (Brasil UTC-3)
+- Datas de pagamento sem horário (formato dd/MM/yyyy)
+
+**Logs e Debug**
+- Sistema centralizado de logging com `LogService.calendar()`
+- Logs detalhados de criação, atualização e remoção de eventos
+- Identificação de IDs de eventos e calendários nos logs
+- Rastreamento de falhas e exceções
+
+### 🗄️ Banco de Dados
+
+**Novos Campos no Modelo Plantao**
+- `calendarEventId`: ID do evento do plantão no Google Calendar
+- `calendarPaymentEventId`: ID do evento de pagamento
+- Campos opcionais (nullable) para compatibilidade
+- Migração SQL criada para Supabase
+- Índices para otimizar consultas
+
+**SyncService Atualizado**
+- Sincronização bidirecional dos IDs de eventos do Calendar
+- Campos preservados em insert, update e realtime
+- Compatibilidade com dados antigos (sem IDs de eventos)
+
+### 🧪 Dados de Teste
+
+**Locais Atualizados**
+- Hospital São Lucas (HSL)
+- CTICor (CTICor)
+- Hospital da Mulher Heloneida Studart (HMHS)
+
+**Plantões de Teste**
+- Datas espalhadas entre outubro e dezembro de 2025
+- Mix de plantões pagos e pendentes
+- Diferentes valores e durações (12h e 24h)
+- Datas de pagamento variadas para testar agrupamento
+
+### 📚 Documentação
+
+**Novo Arquivo: GOOGLE_CALENDAR_SETUP.md**
+- Guia completo de configuração OAuth em português
+- Comandos para gerar SHA-1 fingerprint
+- Passo a passo no Firebase Console
+- Configuração do Google Cloud Console
+- Troubleshooting para erro 12500
+
+---
+
 ## Versão 1.3.3 (Build 17) - 8 de novembro de 2025
 
 ### 🧪 Qualidade de Testes
