@@ -4,6 +4,7 @@ import 'package:uuid/uuid.dart';
 import '../models/local.dart';
 import '../models/plantao.dart';
 import 'auth_service.dart';
+import 'calendar_service.dart';
 
 class DatabaseService {
   static const _uuid = Uuid();
@@ -82,12 +83,30 @@ class DatabaseService {
       atualizadoEm: agora,
     );
     await plantoesBox.put(id, novo);
+    
+    // Sincronizar com Google Calendar se habilitado
+    await CalendarService.criarEventoPlantao(novo);
+    await CalendarService.criarEventoPagamento(
+      dataPagamento: novo.previsaoPagamento,
+      valor: novo.valor,
+      localNome: novo.local.nome,
+      plantaoId: novo.id,
+    );
   }
 
   static Future<void> updatePlantao(Plantao plantao) async {
     final agora = DateTime.now();
     final atualizado = plantao.copyWith(atualizadoEm: agora);
     await plantoesBox.put(atualizado.id, atualizado);
+    
+    // Atualizar status de pagamento no Google Calendar se mudou
+    final anterior = plantoesBox.get(plantao.id);
+    if (anterior != null && anterior.pago != plantao.pago) {
+      await CalendarService.atualizarStatusPagamento(
+        plantaoId: plantao.id,
+        pago: plantao.pago,
+      );
+    }
   }
 
   static Future<void> deletePlantao(String id) async {
@@ -98,6 +117,9 @@ class DatabaseService {
         atualizadoEm: DateTime.now(),
       );
       await plantoesBox.put(id, updated);
+      
+      // Remover eventos do Google Calendar
+      await CalendarService.removerEventosPlantao(id);
     }
   }
 

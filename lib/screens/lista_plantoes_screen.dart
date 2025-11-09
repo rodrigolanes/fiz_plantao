@@ -3,6 +3,7 @@ import 'package:intl/intl.dart';
 
 import '../models/plantao.dart';
 import '../services/auth_service.dart';
+import '../services/calendar_service.dart';
 import '../services/database_service.dart';
 import '../services/sync_service.dart';
 import 'cadastro_plantao_screen.dart';
@@ -247,6 +248,104 @@ class _ListaPlantoesScreenState extends State<ListaPlantoesScreen> {
     }
   }
 
+  Future<void> _configurarGoogleCalendar() async {
+    final syncAtual = await CalendarService.isSyncEnabled;
+    
+    if (!mounted) return;
+    final messenger = ScaffoldMessenger.of(context);
+    
+    final resultado = await showDialog<bool>(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Row(
+          children: [
+            Icon(Icons.calendar_month, color: Colors.teal),
+            SizedBox(width: 8),
+            Text('Google Calendar'),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              syncAtual
+                  ? 'Sincronização ativa'
+                  : 'Sincronização desativada',
+              style: const TextStyle(fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 12),
+            const Text(
+              'Quando ativada, seus plantões e previsões de pagamento serão adicionados automaticamente ao Google Calendar.',
+            ),
+            const SizedBox(height: 12),
+            const Text(
+              '✓ Calendário dedicado "Fiz Plantão"\n'
+              '✓ Eventos com data, hora e valor\n'
+              '✓ Lembretes automáticos\n'
+              '✓ Sincronização em todos os dispositivos',
+              style: TextStyle(fontSize: 13),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, null),
+            child: const Text('Cancelar'),
+          ),
+          if (syncAtual)
+            FilledButton(
+              onPressed: () => Navigator.pop(context, false),
+              style: FilledButton.styleFrom(backgroundColor: Colors.red),
+              child: const Text('Desativar'),
+            )
+          else
+            FilledButton(
+              onPressed: () => Navigator.pop(context, true),
+              child: const Text('Ativar'),
+            ),
+        ],
+      ),
+    );
+
+    if (resultado == null) return;
+
+    if (!mounted) return;
+
+    if (resultado) {
+      // Ativar sincronização
+      final permissao = await CalendarService.requestCalendarPermission();
+      if (!permissao) {
+        if (!mounted) return;
+        messenger.showSnackBar(
+          const SnackBar(
+            content: Text('Permissão do Google Calendar negada'),
+            backgroundColor: Colors.red,
+          ),
+        );
+        return;
+      }
+
+      await CalendarService.setSyncEnabled(true);
+      if (!mounted) return;
+      messenger.showSnackBar(
+        const SnackBar(
+          content: Text('Google Calendar ativado! Novos plantões serão sincronizados.'),
+          backgroundColor: Colors.green,
+        ),
+      );
+    } else {
+      // Desativar sincronização
+      await CalendarService.disconnect();
+      if (!mounted) return;
+      messenger.showSnackBar(
+        const SnackBar(
+          content: Text('Google Calendar desativado'),
+        ),
+      );
+    }
+  }
+
   Future<void> _sincronizar() async {
     try {
       await SyncService.syncAll();
@@ -321,7 +420,9 @@ class _ListaPlantoesScreenState extends State<ListaPlantoesScreen> {
           PopupMenuButton<String>(
             icon: const Icon(Icons.more_vert),
             onSelected: (value) async {
-              if (value == 'logout') {
+              if (value == 'calendar') {
+                _configurarGoogleCalendar();
+              } else if (value == 'logout') {
                 final navigator = Navigator.of(context);
                 final confirm = await showDialog<bool>(
                   context: context,
@@ -352,6 +453,16 @@ class _ListaPlantoesScreenState extends State<ListaPlantoesScreen> {
               }
             },
             itemBuilder: (context) => [
+              const PopupMenuItem(
+                value: 'calendar',
+                child: Row(
+                  children: [
+                    Icon(Icons.calendar_month),
+                    SizedBox(width: 8),
+                    Text('Google Calendar'),
+                  ],
+                ),
+              ),
               const PopupMenuItem(
                 value: 'logout',
                 child: Row(

@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:google_sign_in/google_sign_in.dart';
+import 'package:googleapis/calendar/v3.dart' show CalendarApi;
 import 'package:hive/hive.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -8,7 +9,11 @@ import '../config/supabase_config.dart';
 class AuthService {
   static final SupabaseClient _supabase = Supabase.instance.client;
   static final GoogleSignIn _googleSignIn = GoogleSignIn(
-    scopes: ['email', 'profile'],
+    scopes: [
+      'email',
+      'profile',
+      CalendarApi.calendarScope, // Acesso ao Google Calendar
+    ],
     // Web Client ID é necessário no Android para obter idToken
     serverClientId: kIsWeb ? null : SupabaseConfig.googleWebClientId,
   );
