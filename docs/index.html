@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Fiz Plantão - Aplicativo para gerenciamento de plantões médicos com sincronização Google Calendar">
+    <meta name="keywords" content="plantão, médico, saúde, gestão, calendário, pagamento">
+    <meta name="author" content="Rodrigo Lanes">
+    <title>Fiz Plantão - Gestão de Plantões Médicos</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: linear-gradient(135deg, #00897B 0%, #00695C 100%);
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        header {
+            text-align: center;
+            padding: 60px 20px 40px;
+            color: white;
+        }
+
+        .logo {
+            width: 120px;
+            height: 120px;
+            margin: 0 auto 20px;
+            background: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 8px 16px rgba(0,0,0,0.2);
+        }
+
+        h1 {
+            font-size: 3em;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+        }
+
+        .subtitle {
+            font-size: 1.3em;
+            opacity: 0.95;
+            margin-bottom: 30px;
+        }
+
+        .main-content {
+            background: white;
+            border-radius: 20px;
+            padding: 50px;
+            margin: 40px auto;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+        }
+
+        .features {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 30px;
+            margin: 40px 0;
+        }
+
+        .feature {
+            padding: 25px;
+            border-radius: 12px;
+            background: #f5f5f5;
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+
+        .feature:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 20px rgba(0,137,123,0.2);
+        }
+
+        .feature-icon {
+            font-size: 3em;
+            margin-bottom: 15px;
+        }
+
+        .feature h3 {
+            color: #00897B;
+            margin-bottom: 10px;
+            font-size: 1.4em;
+        }
+
+        .cta {
+            text-align: center;
+            margin: 50px 0;
+        }
+
+        .btn {
+            display: inline-block;
+            padding: 15px 40px;
+            margin: 10px;
+            background: #00897B;
+            color: white;
+            text-decoration: none;
+            border-radius: 50px;
+            font-size: 1.1em;
+            font-weight: bold;
+            transition: all 0.3s;
+            box-shadow: 0 4px 15px rgba(0,137,123,0.3);
+        }
+
+        .btn:hover {
+            background: #00695C;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0,137,123,0.4);
+        }
+
+        .btn-secondary {
+            background: white;
+            color: #00897B;
+            border: 2px solid #00897B;
+        }
+
+        .btn-secondary:hover {
+            background: #f5f5f5;
+        }
+
+        .section {
+            margin: 50px 0;
+        }
+
+        .section h2 {
+            color: #00897B;
+            font-size: 2em;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        ul {
+            list-style: none;
+            padding-left: 0;
+        }
+
+        ul li {
+            padding: 10px 0;
+            padding-left: 30px;
+            position: relative;
+        }
+
+        ul li:before {
+            content: "✓";
+            position: absolute;
+            left: 0;
+            color: #00897B;
+            font-weight: bold;
+            font-size: 1.3em;
+        }
+
+        footer {
+            text-align: center;
+            padding: 40px 20px;
+            color: white;
+            margin-top: 60px;
+        }
+
+        footer a {
+            color: white;
+            text-decoration: none;
+            border-bottom: 1px solid rgba(255,255,255,0.5);
+            transition: border-color 0.3s;
+        }
+
+        footer a:hover {
+            border-bottom-color: white;
+        }
+
+        .privacy-notice {
+            background: #E8F5E9;
+            border-left: 4px solid #00897B;
+            padding: 20px;
+            margin: 30px 0;
+            border-radius: 8px;
+        }
+
+        @media (max-width: 768px) {
+            h1 {
+                font-size: 2em;
+            }
+
+            .main-content {
+                padding: 30px 20px;
+            }
+
+            .features {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="container">
+            <div class="logo">
+                <span style="font-size: 60px;">🏥</span>
+            </div>
+            <h1>Fiz Plantão</h1>
+            <p class="subtitle">Gestão Profissional de Plantões Médicos</p>
+        </div>
+    </header>
+
+    <div class="container">
+        <div class="main-content">
+            <div class="section">
+                <h2>📱 Sobre o Aplicativo</h2>
+                <p style="text-align: center; font-size: 1.2em; color: #666; margin: 20px 0;">
+                    O <strong>Fiz Plantão</strong> é a solução completa para profissionais de saúde gerenciarem seus plantões, 
+                    pagamentos e agenda de forma simples, segura e integrada com o Google Calendar.
+                </p>
+            </div>
+
+            <div class="features">
+                <div class="feature">
+                    <div class="feature-icon">📅</div>
+                    <h3>Google Calendar</h3>
+                    <p>Sincronização automática dos seus plantões com o Google Calendar. Visualize sua agenda em qualquer dispositivo.</p>
+                </div>
+
+                <div class="feature">
+                    <div class="feature-icon">💰</div>
+                    <h3>Gestão Financeira</h3>
+                    <p>Acompanhe pagamentos, veja totais por período e marque plantões como pagos. Relatórios detalhados por local.</p>
+                </div>
+
+                <div class="feature">
+                    <div class="feature-icon">🏥</div>
+                    <h3>Múltiplos Locais</h3>
+                    <p>Cadastre e gerencie todos os seus locais de trabalho. Filtre e organize plantões por hospital ou clínica.</p>
+                </div>
+
+                <div class="feature">
+                    <div class="feature-icon">🔒</div>
+                    <h3>100% Seguro</h3>
+                    <p>Seus dados são protegidos com autenticação Firebase. Sincronização criptografada e backup automático.</p>
+                </div>
+
+                <div class="feature">
+                    <div class="feature-icon">📊</div>
+                    <h3>Relatórios</h3>
+                    <p>Visualize estatísticas, totais por local, valores médios e acompanhe sua evolução financeira.</p>
+                </div>
+
+                <div class="feature">
+                    <div class="feature-icon">🌐</div>
+                    <h3>Offline First</h3>
+                    <p>Funciona sem internet. Dados salvos localmente e sincronizados automaticamente quando conectar.</p>
+                </div>
+            </div>
+
+            <div class="section">
+                <h2>✨ Funcionalidades</h2>
+                <div style="columns: 2; column-gap: 40px;">
+                    <ul>
+                        <li>Cadastro de plantões com data, horário e duração</li>
+                        <li>Sincronização automática com Google Calendar</li>
+                        <li>Eventos de pagamento agrupados por data</li>
+                        <li>Marcar plantões como pagos</li>
+                        <li>Filtros por período e status de pagamento</li>
+                        <li>Gestão de múltiplos locais de trabalho</li>
+                        <li>Relatórios detalhados por local</li>
+                        <li>Autenticação com Google ou Email</li>
+                        <li>Sincronização em tempo real</li>
+                        <li>Interface Material Design 3</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="privacy-notice">
+                <h3 style="color: #00897B; margin-bottom: 10px;">🔐 Privacidade e Segurança</h3>
+                <p>
+                    O Fiz Plantão utiliza o Google Calendar apenas para sincronizar seus eventos de plantão. 
+                    Não coletamos, armazenamos ou compartilhamos seus dados com terceiros. Você tem controle total 
+                    sobre suas informações e pode revogar o acesso a qualquer momento nas configurações da sua conta Google.
+                </p>
+            </div>
+
+            <div class="cta">
+                <h2 style="color: #00897B; margin-bottom: 30px;">Baixe Agora</h2>
+                <a href="https://play.google.com/store/apps/details?id=br.com.rodrigolanes.fizplantao" class="btn" target="_blank">
+                    📱 Google Play Store
+                </a>
+                <a href="https://github.com/rodrigolanes/fiz_plantao" class="btn btn-secondary" target="_blank">
+                    💻 Ver no GitHub
+                </a>
+            </div>
+
+            <div class="section">
+                <h2>💬 Contato e Suporte</h2>
+                <p style="text-align: center; font-size: 1.1em; color: #666;">
+                    Dúvidas, sugestões ou problemas? Entre em contato:<br>
+                    <strong>Email:</strong> <a href="mailto:rodrigolanes@gmail.com" style="color: #00897B;">rodrigolanes@gmail.com</a>
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <footer>
+        <div class="container">
+            <p>&copy; 2025 Fiz Plantão - Desenvolvido por Rodrigo Lanes</p>
+            <p style="margin-top: 10px;">
+                <a href="https://github.com/rodrigolanes/fiz_plantao">GitHub</a> • 
+                <a href="privacy.html">Política de Privacidade</a> • 
+                <a href="terms.html">Termos de Uso</a>
+            </p>
+        </div>
+    </footer>
+</body>
+</html>

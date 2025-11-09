@@ -1,0 +1,155 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    line-height: 1.6;
+    color: #333;
+    background: linear-gradient(135deg, #00897B 0%, #00695C 100%);
+    min-height: 100vh;
+}
+
+.container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+header {
+    text-align: center;
+    padding: 60px 20px 40px;
+    color: white;
+}
+
+h1 {
+    font-size: 2.5em;
+    margin-bottom: 10px;
+    text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+}
+
+.subtitle {
+    font-size: 1.2em;
+    opacity: 0.95;
+}
+
+.main-content {
+    background: white;
+    border-radius: 20px;
+    padding: 50px;
+    margin: 40px auto;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+}
+
+section {
+    margin: 40px 0;
+}
+
+h2 {
+    color: #00897B;
+    font-size: 1.8em;
+    margin-bottom: 20px;
+    padding-bottom: 10px;
+    border-bottom: 2px solid #E0F2F1;
+}
+
+p {
+    margin-bottom: 15px;
+    color: #555;
+}
+
+ul {
+    list-style: none;
+    padding-left: 0;
+}
+
+ul li {
+    padding: 10px 0;
+    padding-left: 30px;
+    position: relative;
+}
+
+ul li:before {
+    content: "•";
+    position: absolute;
+    left: 10px;
+    color: #00897B;
+    font-weight: bold;
+    font-size: 1.5em;
+}
+
+a {
+    color: #00897B;
+    text-decoration: none;
+    font-weight: 500;
+}
+
+a:hover {
+    text-decoration: underline;
+}
+
+.btn {
+    display: inline-block;
+    padding: 15px 40px;
+    margin: 10px;
+    background: #00897B;
+    color: white;
+    text-decoration: none;
+    border-radius: 50px;
+    font-size: 1.1em;
+    font-weight: bold;
+    transition: all 0.3s;
+    box-shadow: 0 4px 15px rgba(0,137,123,0.3);
+}
+
+.btn:hover {
+    background: #00695C;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(0,137,123,0.4);
+    text-decoration: none;
+}
+
+.btn-secondary {
+    background: white;
+    color: #00897B;
+    border: 2px solid #00897B;
+}
+
+.btn-secondary:hover {
+    background: #f5f5f5;
+}
+
+.cta {
+    text-align: center;
+    margin: 50px 0;
+}
+
+footer {
+    text-align: center;
+    padding: 40px 20px;
+    color: white;
+    margin-top: 60px;
+}
+
+footer a {
+    color: white;
+    text-decoration: none;
+    border-bottom: 1px solid rgba(255,255,255,0.5);
+    transition: border-color 0.3s;
+}
+
+footer a:hover {
+    border-bottom-color: white;
+}
+
+@media (max-width: 768px) {
+    h1 {
+        font-size: 2em;
+    }
+
+    .main-content {
+        padding: 30px 20px;
+    }
+}
