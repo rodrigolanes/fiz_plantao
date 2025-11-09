@@ -1,5 +1,49 @@
 # Notas de Versão - Fiz Plantão
 
+## Versão 1.3.3 (Build 17) - 8 de novembro de 2025
+
+### 🧪 Qualidade de Testes
+
+**Correções de Testes**
+- Adicionado override de `userId` em `AuthService` para compatibilidade com testes
+- Setter `AuthService.userId` permite mocking de usuário durante testes
+- Método `clearTestOverride()` para limpeza entre testes
+- Inicialização do Hive com diretório temporário nos testes (sem depender de path_provider)
+
+**Cobertura Completa**
+- 39 testes unitários executados com sucesso
+- DatabaseService completamente testado (ordenação, filtros, soft delete)
+- Models validados (copyWith, timestamps, campos opcionais)
+- CI/CD integrado: testes obrigatórios antes de build
+
+### 🔧 DevOps
+
+**Build e Deploy**
+- Workflow migrado para rodar em branch `main` ao invés de `develop`
+- Trigger automático em commits com mudanças de código
+- Filtros para ignorar commits de documentação/estilo
+- Builds bloqueados se testes falharem
+- Symbols nativos Android inclusos no AAB (melhor crash reporting)
+
+---
+
+## Versão 1.3.2 (Build 16) - 8 de novembro de 2025
+
+### 🧩 Símbolos Nativos
+
+**Android Debug Symbols**
+- Configurado `ndk { debugSymbolLevel = "FULL" }` no build.gradle.kts
+- Símbolos nativos automaticamente inclusos no App Bundle
+- Melhora significativa nos relatórios de crash e ANR no Play Console
+- Opcional: Dart split-debug-info com `--split-debug-info=build/symbols`
+
+**Documentação**
+- README atualizado com guia de configuração
+- Instruções de build e verificação no App Bundle Explorer
+- Passos para upload manual se necessário
+
+---
+
 ## Versão 1.3.1 (Build 15) - 8 de novembro de 2025
 
 ### 💰 Pagamento em Massa
