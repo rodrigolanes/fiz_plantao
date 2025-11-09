@@ -39,6 +39,10 @@ class Plantao {
   final String userId; // ID do usuário proprietário
   @HiveField(10)
   final bool pago; // Indica se o plantão foi pago
+  @HiveField(11)
+  final String? calendarEventId; // ID do evento do plantão no Google Calendar
+  @HiveField(12)
+  final String? calendarPaymentEventId; // ID do evento de pagamento no Google Calendar (obsoleto, agora é por data)
 
   Plantao({
     required this.id,
@@ -52,6 +56,8 @@ class Plantao {
     this.ativo = true,
     required this.userId,
     this.pago = false,
+    this.calendarEventId,
+    this.calendarPaymentEventId,
   });
 
   Plantao copyWith({
@@ -66,6 +72,8 @@ class Plantao {
     bool? ativo,
     String? userId,
     bool? pago,
+    String? calendarEventId,
+    String? calendarPaymentEventId,
   }) {
     return Plantao(
       id: id ?? this.id,
@@ -79,6 +87,8 @@ class Plantao {
       ativo: ativo ?? this.ativo,
       userId: userId ?? this.userId,
       pago: pago ?? this.pago,
+      calendarEventId: calendarEventId ?? this.calendarEventId,
+      calendarPaymentEventId: calendarPaymentEventId ?? this.calendarPaymentEventId,
     );
   }
 }

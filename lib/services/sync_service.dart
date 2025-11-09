@@ -1,12 +1,12 @@
 import 'dart:async';
 
 import 'package:connectivity_plus/connectivity_plus.dart';
-import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../models/local.dart';
 import '../models/plantao.dart';
 import 'database_service.dart';
+import 'log_service.dart';
 
 /// Serviço de sincronização entre Hive (local) e Supabase (remoto)
 /// Estratégia: Last-write-wins baseado em timestamps
@@ -90,7 +90,9 @@ class SyncService {
 
       _lastSyncTime = DateTime.now();
       _updateStatus(SyncStatus.synced);
+      LogService.sync('Sincronização completa realizada');
     } catch (e) {
+      LogService.sync('Erro na sincronização completa', e);
       _updateStatus(SyncStatus.error, e.toString());
       rethrow;
     }
@@ -103,7 +105,9 @@ class SyncService {
       final userId = _getCurrentUserId();
       await _uploadLocalChanges(userId);
       _updateStatus(SyncStatus.synced);
+      LogService.sync('Upload de dados locais concluído');
     } catch (e) {
+      LogService.sync('Erro no upload de dados locais', e);
       _updateStatus(SyncStatus.error, e.toString());
       rethrow;
     }
@@ -116,7 +120,9 @@ class SyncService {
       final userId = _getCurrentUserId();
       await _downloadRemoteChanges(userId);
       _updateStatus(SyncStatus.synced);
+      LogService.sync('Download de dados remotos concluído');
     } catch (e) {
+      LogService.sync('Erro no download de dados remotos', e);
       _updateStatus(SyncStatus.error, e.toString());
       rethrow;
     }
@@ -174,6 +180,8 @@ class SyncService {
           'valor': plantao.valor,
           'previsao_pagamento': plantao.previsaoPagamento.toIso8601String(),
           'pago': plantao.pago,
+          'calendar_event_id': plantao.calendarEventId,
+          'calendar_payment_event_id': plantao.calendarPaymentEventId,
           'criado_em': plantao.criadoEm.toIso8601String(),
           'atualizado_em': plantao.atualizadoEm.toIso8601String(),
           'ativo': plantao.ativo,
@@ -190,6 +198,8 @@ class SyncService {
             'valor': plantao.valor,
             'previsao_pagamento': plantao.previsaoPagamento.toIso8601String(),
             'pago': plantao.pago,
+            'calendar_event_id': plantao.calendarEventId,
+            'calendar_payment_event_id': plantao.calendarPaymentEventId,
             'atualizado_em': plantao.atualizadoEm.toIso8601String(),
             'ativo': plantao.ativo,
           }).eq('id', plantao.id);
@@ -258,6 +268,8 @@ class SyncService {
           valor: (remotePlantao['valor'] as num).toDouble(),
           previsaoPagamento: DateTime.parse(remotePlantao['previsao_pagamento']),
           pago: _getRemoteBooleanField(remotePlantao, 'pago'),
+          calendarEventId: remotePlantao['calendar_event_id'],
+          calendarPaymentEventId: remotePlantao['calendar_payment_event_id'],
           criadoEm: DateTime.parse(remotePlantao['criado_em']),
           atualizadoEm: remoteUpdatedAt,
           ativo: remotePlantao['ativo'] ?? true,
@@ -272,6 +284,8 @@ class SyncService {
           valor: (remotePlantao['valor'] as num).toDouble(),
           previsaoPagamento: DateTime.parse(remotePlantao['previsao_pagamento']),
           pago: remotePlantao['pago'] ?? false,
+          calendarEventId: remotePlantao['calendar_event_id'],
+          calendarPaymentEventId: remotePlantao['calendar_payment_event_id'],
           atualizadoEm: remoteUpdatedAt,
           ativo: remotePlantao['ativo'] ?? true,
         );
@@ -325,7 +339,7 @@ class SyncService {
       // Atualiza timestamp da última sincronização
       _lastSyncTime = DateTime.now();
     } catch (e) {
-      debugPrint('Erro ao processar mudanças remotas de Locais: $e');
+      LogService.sync('Erro ao processar mudanças remotas de Locais', e);
     }
   }
 
@@ -349,7 +363,7 @@ class SyncService {
           final local = locaisBox.get(localId);
 
           if (local == null) {
-            debugPrint('Local $localId não encontrado para Plantão $id');
+            LogService.warning('Local $localId não encontrado para Plantão $id - pulando');
             continue; // Pula este plantão se o local não existe
           }
 
@@ -365,6 +379,8 @@ class SyncService {
             valor: (data['valor'] as num).toDouble(),
             previsaoPagamento: DateTime.parse(data['previsao_pagamento'] as String),
             pago: _getRemoteBooleanField(data, 'pago'),
+            calendarEventId: data['calendar_event_id'] as String?,
+            calendarPaymentEventId: data['calendar_payment_event_id'] as String?,
             criadoEm: DateTime.parse(data['criado_em'] as String),
             atualizadoEm: remoteUpdatedAt,
             ativo: data['ativo'] as bool? ?? true,
@@ -378,7 +394,7 @@ class SyncService {
       // Atualiza timestamp da última sincronização
       _lastSyncTime = DateTime.now();
     } catch (e) {
-      debugPrint('Erro ao processar mudanças remotas de Plantões: $e');
+      LogService.sync('Erro ao processar mudanças remotas de Plantões', e);
     }
   }
 

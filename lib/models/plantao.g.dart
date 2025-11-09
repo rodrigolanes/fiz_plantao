@@ -28,13 +28,15 @@ class PlantaoAdapter extends TypeAdapter<Plantao> {
       ativo: fields[8] as bool,
       userId: fields[9] as String,
       pago: fields[10] as bool,
+      calendarEventId: fields[11] as String?,
+      calendarPaymentEventId: fields[12] as String?,
     );
   }
 
   @override
   void write(BinaryWriter writer, Plantao obj) {
     writer
-      ..writeByte(11)
+      ..writeByte(13)
       ..writeByte(0)
       ..write(obj.id)
       ..writeByte(1)
@@ -56,7 +58,11 @@ class PlantaoAdapter extends TypeAdapter<Plantao> {
       ..writeByte(9)
       ..write(obj.userId)
       ..writeByte(10)
-      ..write(obj.pago);
+      ..write(obj.pago)
+      ..writeByte(11)
+      ..write(obj.calendarEventId)
+      ..writeByte(12)
+      ..write(obj.calendarPaymentEventId);
   }
 
   @override

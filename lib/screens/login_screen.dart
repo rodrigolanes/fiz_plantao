@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../services/auth_service.dart';
+import '../services/log_service.dart';
 import 'cadastro_screen.dart';
 import 'lista_plantoes_screen.dart';
 import 'verificacao_email_screen.dart';
@@ -53,6 +54,7 @@ class _LoginScreenState extends State<LoginScreen> {
         MaterialPageRoute(builder: (_) => const ListaPlantoesScreen()),
       );
     } catch (e) {
+      LogService.ui('Erro ao fazer login com email', e);
       if (!mounted) return;
 
       ScaffoldMessenger.of(context).showSnackBar(
@@ -81,6 +83,7 @@ class _LoginScreenState extends State<LoginScreen> {
         MaterialPageRoute(builder: (_) => const ListaPlantoesScreen()),
       );
     } catch (e) {
+      LogService.ui('Erro ao fazer login com Google', e);
       if (!mounted) return;
 
       ScaffoldMessenger.of(context).showSnackBar(
@@ -121,6 +124,7 @@ class _LoginScreenState extends State<LoginScreen> {
         ),
       );
     } catch (e) {
+      LogService.ui('Erro ao redefinir senha', e);
       if (!mounted) return;
 
       ScaffoldMessenger.of(context).showSnackBar(
