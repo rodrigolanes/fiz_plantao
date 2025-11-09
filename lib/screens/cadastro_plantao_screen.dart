@@ -32,17 +32,25 @@ class _CadastroPlantaoScreenState extends State<CadastroPlantaoScreen> {
   DateTime? _dataHoraSelecionada;
   DateTime? _previsaoPagamentoSelecionada;
   Duracao _duracaoSelecionada = Duracao.dozeHoras;
-  Local? _localSelecionado;
+  String? _localIdSelecionado;
   late List<Local> _locaisDisponiveis;
   bool _pago = false;
 
   @override
   void initState() {
     super.initState();
-    _locaisDisponiveis = List.from(widget.locais);
+    // Remove duplicatas por ID (manter apenas o primeiro de cada ID)
+    final idsVistos = <String>{};
+    _locaisDisponiveis = widget.locais.where((local) {
+      if (idsVistos.contains(local.id)) {
+        return false; // Duplicata, pular
+      }
+      idsVistos.add(local.id);
+      return true;
+    }).toList();
 
     if (widget.plantao != null) {
-      _localSelecionado = widget.plantao!.local;
+      _localIdSelecionado = widget.plantao!.local.id;
       _valorController.text = widget.plantao!.valor.toStringAsFixed(2).replaceAll('.', ',');
       _dataHoraSelecionada = widget.plantao!.dataHora;
       _dataHoraController.text = _formatarDataHora(_dataHoraSelecionada!);
@@ -69,17 +77,20 @@ class _CadastroPlantaoScreenState extends State<CadastroPlantaoScreen> {
     );
     if (mounted) {
       setState(() {
-        // Recarrega locais do Hive
-        _locaisDisponiveis = DatabaseService.getLocaisAtivos();
+        // Recarrega locais do Hive e remove duplicatas
+        final locaisHive = DatabaseService.getLocaisAtivos();
+        final idsVistos = <String>{};
+        _locaisDisponiveis = locaisHive.where((local) {
+          if (idsVistos.contains(local.id)) {
+            return false;
+          }
+          idsVistos.add(local.id);
+          return true;
+        }).toList();
+        
         // Se o local selecionado foi removido/inativado, limpar seleção
-        if (_localSelecionado != null && !_locaisDisponiveis.any((l) => l.id == _localSelecionado!.id)) {
-          _localSelecionado = null;
-        } else if (_localSelecionado != null) {
-          // Atualiza referência caso tenha sido editado
-          _localSelecionado = _locaisDisponiveis.firstWhere(
-            (l) => l.id == _localSelecionado!.id,
-            orElse: () => _localSelecionado!,
-          );
+        if (_localIdSelecionado != null && !_locaisDisponiveis.any((l) => l.id == _localIdSelecionado)) {
+          _localIdSelecionado = null;
         }
       });
     }
@@ -142,7 +153,7 @@ class _CadastroPlantaoScreenState extends State<CadastroPlantaoScreen> {
 
   void _salvar() {
     if (_formKey.currentState!.validate()) {
-      if (_localSelecionado == null) {
+      if (_localIdSelecionado == null) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Selecione um local')),
         );
@@ -163,6 +174,11 @@ class _CadastroPlantaoScreenState extends State<CadastroPlantaoScreen> {
         return;
       }
 
+      // Buscar o objeto Local pelo ID
+      final localSelecionado = _locaisDisponiveis.firstWhere(
+        (l) => l.id == _localIdSelecionado,
+      );
+
       final agora = DateTime.now();
       // Converte texto com vírgula para double (pt-BR)
       final valorTexto = _valorController.text.trim().replaceAll('.', '').replaceAll(',', '.');
@@ -182,7 +198,7 @@ class _CadastroPlantaoScreenState extends State<CadastroPlantaoScreen> {
 
       final plantao = Plantao(
         id: widget.plantao?.id ?? DateTime.now().millisecondsSinceEpoch.toString(),
-        local: _localSelecionado!,
+        local: localSelecionado,
         dataHora: _dataHoraSelecionada!,
         duracao: _duracaoSelecionada,
         valor: valorDouble,
@@ -214,8 +230,8 @@ class _CadastroPlantaoScreenState extends State<CadastroPlantaoScreen> {
             Row(
               children: [
                 Expanded(
-                  child: DropdownButtonFormField<Local>(
-                    initialValue: _localSelecionado,
+                  child: DropdownButtonFormField<String>(
+                    value: _localIdSelecionado,
                     decoration: const InputDecoration(
                       labelText: 'Local',
                       border: OutlineInputBorder(),
@@ -224,13 +240,13 @@ class _CadastroPlantaoScreenState extends State<CadastroPlantaoScreen> {
                     hint: const Text('Selecione o local'),
                     items: _locaisDisponiveis.map((local) {
                       return DropdownMenuItem(
-                        value: local,
+                        value: local.id,
                         child: Text('${local.apelido} - ${local.nome}'),
                       );
                     }).toList(),
                     onChanged: (value) {
                       setState(() {
-                        _localSelecionado = value;
+                        _localIdSelecionado = value;
                       });
                     },
                     validator: (value) {
