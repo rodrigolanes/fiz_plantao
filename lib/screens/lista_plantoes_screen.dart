@@ -318,8 +318,12 @@ class _ListaPlantoesScreenState extends State<ListaPlantoesScreen> {
         if (!mounted) return;
         messenger.showSnackBar(
           const SnackBar(
-            content: Text('Permissão do Google Calendar negada'),
+            content: Text(
+              'Não foi possível conectar ao Google Calendar. '
+              'Verifique se você está conectado com uma conta Google.',
+            ),
             backgroundColor: Colors.red,
+            duration: Duration(seconds: 4),
           ),
         );
         return;
@@ -748,13 +752,13 @@ class _ListaPlantoesScreenState extends State<ListaPlantoesScreen> {
                                               mainAxisSize: MainAxisSize.min,
                                               children: [
                                                 Icon(
-                                                  plantao.pago ? Icons.check_circle : Icons.pending,
+                                                  plantao.pago ? Icons.check_circle : Icons.attach_money,
                                                   size: 14,
                                                   color: plantao.pago ? Colors.green : Colors.orange,
                                                 ),
                                                 const SizedBox(width: 4),
                                                 Text(
-                                                  plantao.pago ? 'Pago' : 'Pagamento Pendente',
+                                                  plantao.pago ? 'Pago' : 'Pendente',
                                                   style: TextStyle(
                                                     fontSize: 11,
                                                     fontWeight: FontWeight.bold,

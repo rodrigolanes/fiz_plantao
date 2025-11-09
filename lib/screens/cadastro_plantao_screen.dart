@@ -87,7 +87,7 @@ class _CadastroPlantaoScreenState extends State<CadastroPlantaoScreen> {
           idsVistos.add(local.id);
           return true;
         }).toList();
-        
+
         // Se o local selecionado foi removido/inativado, limpar seleção
         if (_localIdSelecionado != null && !_locaisDisponiveis.any((l) => l.id == _localIdSelecionado)) {
           _localIdSelecionado = null;
@@ -231,7 +231,7 @@ class _CadastroPlantaoScreenState extends State<CadastroPlantaoScreen> {
               children: [
                 Expanded(
                   child: DropdownButtonFormField<String>(
-                    value: _localIdSelecionado,
+                    initialValue: _localIdSelecionado,
                     decoration: const InputDecoration(
                       labelText: 'Local',
                       border: OutlineInputBorder(),

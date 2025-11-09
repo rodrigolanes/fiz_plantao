@@ -1,4 +1,5 @@
 import 'package:extension_google_sign_in_as_googleapis_auth/extension_google_sign_in_as_googleapis_auth.dart';
+import 'package:flutter/services.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:googleapis/calendar/v3.dart';
 import 'package:hive/hive.dart';
@@ -320,6 +321,13 @@ Criado via app Fiz Plantão
       final account = await _googleSignIn.signIn();
       LogService.calendar('Permissão do Google Calendar concedida');
       return account != null;
+    } on PlatformException catch (e) {
+      if (e.code == 'sign_in_failed' && e.message?.contains('12500') == true) {
+        LogService.warning('Erro de configuração OAuth - código 12500');
+      } else {
+        LogService.calendar('Erro ao solicitar permissão do Google Calendar', e);
+      }
+      return false;
     } catch (e) {
       LogService.calendar('Erro ao solicitar permissão do Google Calendar', e);
       return false;
