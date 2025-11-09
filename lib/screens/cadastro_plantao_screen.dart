@@ -207,6 +207,8 @@ class _CadastroPlantaoScreenState extends State<CadastroPlantaoScreen> {
         criadoEm: widget.plantao?.criadoEm ?? agora,
         atualizadoEm: agora,
         userId: widget.plantao?.userId ?? userId,
+        calendarEventId: widget.plantao?.calendarEventId,
+        calendarPaymentEventId: widget.plantao?.calendarPaymentEventId,
       );
 
       Navigator.of(context).pop(plantao);

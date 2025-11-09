@@ -57,95 +57,137 @@ class TestDataService {
     }
 
     // Cria locais de teste
-    final hospitalA = Local(
+    final hsl = Local(
       id: _uuid.v4(),
       nome: 'Hospital São Lucas',
-      apelido: 'São Lucas',
+      apelido: 'HSL',
       userId: userId,
       criadoEm: DateTime.now(),
       atualizadoEm: DateTime.now(),
     );
 
-    final hospitalB = Local(
+    final cticor = Local(
       id: _uuid.v4(),
-      nome: 'Hospital Santa Casa de Misericórdia',
-      apelido: 'Santa Casa',
+      nome: 'CTICor',
+      apelido: 'CTICor',
       userId: userId,
       criadoEm: DateTime.now(),
       atualizadoEm: DateTime.now(),
     );
 
-    final clinica = Local(
+    final hmhs = Local(
       id: _uuid.v4(),
-      nome: 'Clínica Médica Central',
-      apelido: 'Central',
+      nome: 'Hospital da Mulher Heloneida Studart',
+      apelido: 'HMHS',
       userId: userId,
       criadoEm: DateTime.now(),
       atualizadoEm: DateTime.now(),
     );
 
     await locaisBox.putAll({
-      hospitalA.id: hospitalA,
-      hospitalB.id: hospitalB,
-      clinica.id: clinica,
+      hsl.id: hsl,
+      cticor.id: cticor,
+      hmhs.id: hmhs,
     });
 
-    // Data base para os plantões (30 dias atrás)
-    final hoje = DateTime.now();
-    final inicio = DateTime(hoje.year, hoje.month - 1, hoje.day);
+    // Data base para os plantões - hoje é 08/11/2025
+    final hoje = DateTime(2025, 11, 8);
 
     // Cria plantões para cada local
     final plantoes = <String, Plantao>{};
 
-    // Hospital A - Plantões passados (pagos)
-    for (var i = 0; i < 5; i++) {
-      final dataHora = inicio.add(Duration(days: i * 2));
+    // HSL - Plantões 12h às 07:00 (passado e futuro, mistos)
+    // Pagamento: sem data específica, varia
+    final datasHSL = [
+      DateTime(2025, 10, 15, 7, 0), // Passado
+      DateTime(2025, 10, 28, 7, 0), // Passado
+      DateTime(2025, 11, 5, 7, 0), // Passado recente
+      DateTime(2025, 11, 12, 7, 0), // Futuro próximo
+      DateTime(2025, 11, 20, 7, 0), // Futuro
+      DateTime(2025, 12, 3, 7, 0), // Futuro distante
+    ];
+
+    for (var i = 0; i < datasHSL.length; i++) {
+      final dataHora = datasHSL[i];
+      final pagamentoDia = dataHora.add(Duration(days: 30 + (i * 3))); // Varia
+
       final plantao = Plantao(
         id: _uuid.v4(),
-        local: hospitalA,
+        local: hsl,
         dataHora: dataHora,
-        duracao: i % 2 == 0 ? Duracao.dozeHoras : Duracao.vinteQuatroHoras,
-        valor: i % 2 == 0 ? 1200.0 : 2400.0,
-        previsaoPagamento: dataHora.add(const Duration(days: 30)),
-        pago: true,
-        criadoEm: dataHora,
-        atualizadoEm: dataHora,
+        duracao: Duracao.dozeHoras,
+        valor: 1200.0,
+        previsaoPagamento: DateTime(pagamentoDia.year, pagamentoDia.month, pagamentoDia.day, 0, 0),
+        pago: dataHora.isBefore(hoje) && i < 2, // Apenas os 2 primeiros do passado estão pagos
+        criadoEm: dataHora.isBefore(hoje) ? dataHora : hoje,
+        atualizadoEm: dataHora.isBefore(hoje) ? dataHora : hoje,
         userId: userId,
       );
       plantoes[plantao.id] = plantao;
     }
 
-    // Hospital B - Plantões mistos (alguns pagos)
-    for (var i = 0; i < 5; i++) {
-      final dataHora = inicio.add(Duration(days: i * 3 + 10));
+    // CTICor - Plantões 24h às 19:00 (passado e futuro)
+    // Pagamento: dia 25 do mês
+    final datasCTICor = [
+      DateTime(2025, 10, 10, 19, 0), // Passado
+      DateTime(2025, 10, 22, 19, 0), // Passado
+      DateTime(2025, 11, 2, 19, 0), // Passado recente
+      DateTime(2025, 11, 14, 19, 0), // Futuro próximo
+      DateTime(2025, 11, 26, 19, 0), // Futuro
+    ];
+
+    for (var i = 0; i < datasCTICor.length; i++) {
+      final dataHora = datasCTICor[i];
+
+      // Pagamento sempre no dia 25 do mês seguinte ao plantão
+      final mesPagamento = dataHora.month == 12 ? 1 : dataHora.month + 1;
+      final anoPagamento = dataHora.month == 12 ? dataHora.year + 1 : dataHora.year;
+      final previsaoPagamento = DateTime(anoPagamento, mesPagamento, 25, 0, 0);
+
       final plantao = Plantao(
         id: _uuid.v4(),
-        local: hospitalB,
+        local: cticor,
         dataHora: dataHora,
-        duracao: i % 2 == 0 ? Duracao.dozeHoras : Duracao.vinteQuatroHoras,
-        valor: i % 2 == 0 ? 1500.0 : 3000.0,
-        previsaoPagamento: dataHora.add(const Duration(days: 45)),
-        pago: i < 3, // Primeiros pagos, últimos pendentes
-        criadoEm: dataHora,
-        atualizadoEm: dataHora,
+        duracao: Duracao.vinteQuatroHoras,
+        valor: 2400.0,
+        previsaoPagamento: previsaoPagamento,
+        pago: dataHora.isBefore(hoje) && i == 0, // Apenas o primeiro do passado está pago
+        criadoEm: dataHora.isBefore(hoje) ? dataHora : hoje,
+        atualizadoEm: dataHora.isBefore(hoje) ? dataHora : hoje,
         userId: userId,
       );
       plantoes[plantao.id] = plantao;
     }
 
-    // Clínica - Plantões futuros (pendentes)
-    for (var i = 0; i < 5; i++) {
-      final dataHora = hoje.add(Duration(days: i + 1));
+    // HMHS - Plantões 12h alternando 07:00 e 19:00 (passado e futuro)
+    // Pagamento: dia 20 do mês
+    final datasHMHS = [
+      DateTime(2025, 10, 8, 7, 0), // Passado
+      DateTime(2025, 10, 18, 19, 0), // Passado
+      DateTime(2025, 10, 30, 7, 0), // Passado
+      DateTime(2025, 11, 10, 19, 0), // Futuro próximo
+      DateTime(2025, 11, 18, 7, 0), // Futuro
+      DateTime(2025, 11, 28, 19, 0), // Futuro
+    ];
+
+    for (var i = 0; i < datasHMHS.length; i++) {
+      final dataHora = datasHMHS[i];
+
+      // Pagamento sempre no dia 20 do mês seguinte ao plantão
+      final mesPagamento = dataHora.month == 12 ? 1 : dataHora.month + 1;
+      final anoPagamento = dataHora.month == 12 ? dataHora.year + 1 : dataHora.year;
+      final previsaoPagamento = DateTime(anoPagamento, mesPagamento, 20, 0, 0);
+
       final plantao = Plantao(
         id: _uuid.v4(),
-        local: clinica,
+        local: hmhs,
         dataHora: dataHora,
         duracao: Duracao.dozeHoras,
         valor: 800.0,
-        previsaoPagamento: dataHora.add(const Duration(days: 15)),
-        pago: false,
-        criadoEm: DateTime.now(),
-        atualizadoEm: DateTime.now(),
+        previsaoPagamento: previsaoPagamento,
+        pago: dataHora.isBefore(hoje) && i < 1, // Apenas o primeiro do passado está pago
+        criadoEm: dataHora.isBefore(hoje) ? dataHora : hoje,
+        atualizadoEm: dataHora.isBefore(hoje) ? dataHora : hoje,
         userId: userId,
       );
       plantoes[plantao.id] = plantao;

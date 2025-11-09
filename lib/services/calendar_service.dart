@@ -110,13 +110,14 @@ class CalendarService {
     return await _googleSignIn.authenticatedClient();
   }
 
-  /// Cria um evento de plantão no Google Calendar
-  static Future<void> criarEventoPlantao(Plantao plantao) async {
-    if (!await isSyncEnabled) return;
+  /// Cria ou atualiza um evento de plantão no Google Calendar
+  /// Retorna o ID do evento criado/atualizado
+  static Future<String?> criarEventoPlantao(Plantao plantao) async {
+    if (!await isSyncEnabled) return null;
 
     try {
       final client = await _getAuthenticatedClient();
-      if (client == null) return;
+      if (client == null) return null;
 
       final calendarApi = CalendarApi(client);
       final calendarId = await _ensureCalendarExists();
@@ -125,7 +126,12 @@ class CalendarService {
           ? plantao.dataHora.add(const Duration(hours: 12))
           : plantao.dataHora.add(const Duration(hours: 24));
 
-      final dateFormat = DateFormat('dd/MM/yyyy HH:mm', 'pt_BR');
+      // Google Calendar interpreta dateTime como UTC, então adicionamos o offset do Brasil (-3h)
+      // Para compensar, adicionamos 3 horas antes de enviar
+      final dataHoraUtc = plantao.dataHora.add(const Duration(hours: 3));
+      final dataFimUtc = dataFim.add(const Duration(hours: 3));
+
+      final dateFormatSemHora = DateFormat('dd/MM/yyyy', 'pt_BR');
       final currencyFormat = NumberFormat.currency(
         locale: 'pt_BR',
         symbol: 'R\$',
@@ -138,14 +144,14 @@ class CalendarService {
 📍 Local: ${plantao.local.nome}
 ⏱️ Duração: ${plantao.duracao == Duracao.dozeHoras ? '12 horas' : '24 horas'}
 💰 Valor: ${currencyFormat.format(plantao.valor)}
-📅 Pagamento previsto: ${dateFormat.format(plantao.previsaoPagamento)}
+📅 Pagamento previsto: ${dateFormatSemHora.format(plantao.previsaoPagamento)}
 ${plantao.pago ? '✅ Pago' : '⏳ Pendente'}
 
 Criado via app Fiz Plantão
         '''
             .trim(),
-        start: EventDateTime(dateTime: plantao.dataHora),
-        end: EventDateTime(dateTime: dataFim),
+        start: EventDateTime(dateTime: dataHoraUtc),
+        end: EventDateTime(dateTime: dataFimUtc),
         colorId: _corPlantao,
         reminders: EventReminders(
           useDefault: false,
@@ -163,15 +169,53 @@ Criado via app Fiz Plantão
         ),
       );
 
-      await calendarApi.events.insert(evento, calendarId);
-      LogService.calendar('Evento de plantão criado: ${plantao.local.apelido}');
+      // Se já tem calendarEventId, verificar se o evento ainda existe
+      if (plantao.calendarEventId != null) {
+        try {
+          // Primeiro, verifica se o evento realmente existe
+          LogService.calendar('Verificando se evento existe: ${plantao.calendarEventId}');
+          final eventoExistente = await calendarApi.events.get(calendarId, plantao.calendarEventId!);
+
+          // Se chegou aqui, o evento existe - verificar se não está deletado
+          if (eventoExistente.status == 'cancelled') {
+            LogService.calendar('Evento foi deletado (status: cancelled), criando novo: ${plantao.local.apelido}');
+            // Continua para criar novo evento
+          } else {
+            // Evento existe e está ativo - pode atualizar
+            LogService.calendar('Evento existe e está ativo, atualizando: ${plantao.calendarEventId}');
+            final resultado = await calendarApi.events.patch(evento, calendarId, plantao.calendarEventId!);
+            LogService.calendar(
+                'Evento de plantão atualizado com sucesso: ${plantao.local.apelido} (ID: ${resultado.id})');
+            return plantao.calendarEventId;
+          }
+        } catch (e) {
+          // Se falhar ao buscar (evento não existe), logar e continuar para criar novo
+          LogService.calendar(
+              'Evento não encontrado (ID: ${plantao.calendarEventId}), criando novo: ${plantao.local.apelido}', e);
+          // Continua para criar novo evento abaixo
+        }
+      }
+
+      // Criar novo evento
+      try {
+        LogService.calendar('Criando novo evento de plantão: ${plantao.local.apelido}');
+        final eventoCriado = await calendarApi.events.insert(evento, calendarId);
+        LogService.calendar(
+            'Evento de plantão criado com sucesso: ${plantao.local.apelido} (Novo ID: ${eventoCriado.id})');
+        return eventoCriado.id;
+      } catch (e) {
+        LogService.calendar('Erro ao criar novo evento de plantão no Google Calendar', e);
+        return null;
+      }
     } catch (e) {
       // Falha silenciosa - não bloqueia o save do plantão
       LogService.calendar('Erro ao criar evento de plantão no Google Calendar', e);
+      return null;
     }
   }
 
   /// Cria um evento de pagamento previsto no Google Calendar
+  /// Agrupa todos os plantões com a mesma data de pagamento
   static Future<void> criarEventoPagamento({
     required DateTime dataPagamento,
     required double valor,
@@ -187,31 +231,96 @@ Criado via app Fiz Plantão
       final calendarApi = CalendarApi(client);
       final calendarId = await _ensureCalendarExists();
 
+      // Buscar todos os plantões com mesma data de pagamento
+      final plantoesBox = Hive.box<Plantao>('plantoes');
+      final userId = plantoesBox.values.first.userId;
+
+      final plantoesMesmaData = plantoesBox.values
+          .where((p) =>
+              p.userId == userId &&
+              p.ativo &&
+              p.previsaoPagamento.year == dataPagamento.year &&
+              p.previsaoPagamento.month == dataPagamento.month &&
+              p.previsaoPagamento.day == dataPagamento.day)
+          .toList();
+
+      // Ordenar por data do plantão
+      plantoesMesmaData.sort((a, b) => a.dataHora.compareTo(b.dataHora));
+
       final currencyFormat = NumberFormat.currency(
         locale: 'pt_BR',
         symbol: 'R\$',
         decimalDigits: 2,
       );
 
-      // Evento de dia inteiro
-      final dataInicio = DateTime(
-        dataPagamento.year,
-        dataPagamento.month,
-        dataPagamento.day,
+      final dateFormat = DateFormat('dd/MM', 'pt_BR');
+
+      // Calcular total
+      final total = plantoesMesmaData.fold<double>(0, (sum, p) => sum + p.valor);
+
+      // Montar descrição com lista de plantões
+      final buffer = StringBuffer();
+      buffer.writeln('💰 TOTAL: ${currencyFormat.format(total)}');
+      buffer.writeln();
+      buffer.writeln('📋 PLANTÕES:');
+
+      for (final p in plantoesMesmaData) {
+        final status = p.pago ? '✅' : '⏳';
+        buffer.writeln(
+            '$status ${dateFormat.format(p.dataHora)} - ${p.local.apelido}: ${currencyFormat.format(p.valor)}');
+      }
+
+      buffer.writeln();
+      buffer.writeln('Criado via app Fiz Plantão');
+
+      // Evento de dia inteiro - formato YYYY-MM-DD
+      final dataStr = '${dataPagamento.year.toString().padLeft(4, '0')}-'
+          '${dataPagamento.month.toString().padLeft(2, '0')}-'
+          '${dataPagamento.day.toString().padLeft(2, '0')}';
+
+      // Para dia inteiro, end date é o dia seguinte
+      final dataFimEvento = dataPagamento.add(const Duration(days: 1));
+      final dataFimStr = '${dataFimEvento.year.toString().padLeft(4, '0')}-'
+          '${dataFimEvento.month.toString().padLeft(2, '0')}-'
+          '${dataFimEvento.day.toString().padLeft(2, '0')}';
+
+      // Verificar se já existe evento de pagamento para esta data
+      final eventosExistentes = await calendarApi.events.list(
+        calendarId,
+        privateExtendedProperty: ['type=pagamento'],
+        timeMin: DateTime.parse(dataStr).toUtc(),
+        timeMax: DateTime.parse(dataFimStr).toUtc(),
       );
 
-      final evento = Event(
-        summary: '💰 Pagamento Previsto - $localNome',
-        description: '''
-💵 Valor: ${currencyFormat.format(valor)}
-📍 Local: $localNome
-⏳ Status: Pendente
+      if (eventosExistentes.items != null && eventosExistentes.items!.isNotEmpty) {
+        // Tentar atualizar evento existente
+        final eventoExistente = eventosExistentes.items!.first;
+        try {
+          // Atualizar evento diretamente - se não existir, vai lançar exceção
+          final eventoAtualizado = Event(
+            summary: '💰 Pagamento Previsto (${plantoesMesmaData.length} plantões)',
+            description: buffer.toString().trim(),
+          );
 
-Criado via app Fiz Plantão
-        '''
-            .trim(),
-        start: EventDateTime(date: dataInicio),
-        end: EventDateTime(date: dataInicio),
+          await calendarApi.events.patch(
+            eventoAtualizado,
+            calendarId,
+            eventoExistente.id!,
+          );
+          LogService.calendar('Evento de pagamento atualizado: ${plantoesMesmaData.length} plantões');
+          return; // Sucesso, sair da função
+        } catch (e) {
+          // Se o evento não existe mais, criar um novo
+          LogService.calendar('Evento de pagamento não encontrado (ID: ${eventoExistente.id}), criando novo');
+        }
+      }
+
+      // Criar novo evento (se não existia ou se a atualização falhou)
+      final evento = Event(
+        summary: '💰 Pagamento Previsto (${plantoesMesmaData.length} plantões)',
+        description: buffer.toString().trim(),
+        start: EventDateTime(date: DateTime.parse(dataStr)),
+        end: EventDateTime(date: DateTime.parse(dataFimStr)),
         colorId: _corPagamento,
         reminders: EventReminders(
           useDefault: false,
@@ -223,13 +332,13 @@ Criado via app Fiz Plantão
           private: {
             'app': 'fiz_plantao',
             'type': 'pagamento',
-            'plantao_id': plantaoId,
+            'data_pagamento': dataStr,
           },
         ),
       );
 
       await calendarApi.events.insert(evento, calendarId);
-      LogService.calendar('Evento de pagamento criado: $localNome');
+      LogService.calendar('Evento de pagamento criado: ${plantoesMesmaData.length} plantões');
     } catch (e) {
       LogService.calendar('Erro ao criar evento de pagamento no Google Calendar', e);
     }
@@ -283,7 +392,25 @@ Criado via app Fiz Plantão
     }
   }
 
-  /// Remove eventos relacionados a um plantão
+  /// Remove eventos relacionados a um plantão usando o ID do evento
+  static Future<void> removerEventoPlantao(String? calendarEventId) async {
+    if (!await isSyncEnabled || calendarEventId == null) return;
+
+    try {
+      final client = await _getAuthenticatedClient();
+      if (client == null) return;
+
+      final calendarApi = CalendarApi(client);
+      final calendarId = await _ensureCalendarExists();
+
+      await calendarApi.events.delete(calendarId, calendarEventId);
+      LogService.calendar('Evento de plantão removido: $calendarEventId');
+    } catch (e) {
+      LogService.calendar('Erro ao remover evento do plantão', e);
+    }
+  }
+
+  /// Remove eventos relacionados a um plantão (fallback para plantões antigos sem calendarEventId)
   static Future<void> removerEventosPlantao(String plantaoId) async {
     if (!await isSyncEnabled) return;
 

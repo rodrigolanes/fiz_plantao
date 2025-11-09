@@ -84,8 +84,13 @@ class DatabaseService {
     );
     await plantoesBox.put(id, novo);
 
-    // Sincronizar com Google Calendar se habilitado
-    await CalendarService.criarEventoPlantao(novo);
+    // Sincronizar com Google Calendar se habilitado e salvar ID do evento
+    final calendarEventId = await CalendarService.criarEventoPlantao(novo);
+    if (calendarEventId != null) {
+      final comEventId = novo.copyWith(calendarEventId: calendarEventId);
+      await plantoesBox.put(id, comEventId);
+    }
+
     await CalendarService.criarEventoPagamento(
       dataPagamento: novo.previsaoPagamento,
       valor: novo.valor,
@@ -97,16 +102,20 @@ class DatabaseService {
   static Future<void> updatePlantao(Plantao plantao) async {
     final agora = DateTime.now();
     final atualizado = plantao.copyWith(atualizadoEm: agora);
-    await plantoesBox.put(atualizado.id, atualizado);
 
-    // Atualizar status de pagamento no Google Calendar se mudou
-    final anterior = plantoesBox.get(plantao.id);
-    if (anterior != null && anterior.pago != plantao.pago) {
-      await CalendarService.atualizarStatusPagamento(
-        plantaoId: plantao.id,
-        pago: plantao.pago,
-      );
-    }
+    // Sincronizar com Google Calendar se habilitado e atualizar ID do evento
+    final calendarEventId = await CalendarService.criarEventoPlantao(atualizado);
+    final comEventId = calendarEventId != null ? atualizado.copyWith(calendarEventId: calendarEventId) : atualizado;
+
+    await plantoesBox.put(comEventId.id, comEventId);
+
+    // Atualizar evento de pagamento
+    await CalendarService.criarEventoPagamento(
+      dataPagamento: comEventId.previsaoPagamento,
+      valor: comEventId.valor,
+      localNome: comEventId.local.nome,
+      plantaoId: comEventId.id,
+    );
   }
 
   static Future<void> deletePlantao(String id) async {
@@ -118,8 +127,16 @@ class DatabaseService {
       );
       await plantoesBox.put(id, updated);
 
-      // Remover eventos do Google Calendar
-      await CalendarService.removerEventosPlantao(id);
+      // Remover evento do plantão do Google Calendar
+      await CalendarService.removerEventoPlantao(plantao.calendarEventId);
+
+      // Atualizar evento de pagamento (remove este plantão da lista)
+      await CalendarService.criarEventoPagamento(
+        dataPagamento: plantao.previsaoPagamento,
+        valor: 0, // Será recalculado na função
+        localNome: plantao.local.nome,
+        plantaoId: plantao.id,
+      );
     }
   }
 

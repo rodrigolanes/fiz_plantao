@@ -46,6 +46,15 @@ O **Fiz Plantão** é uma solução prática para médicos registrarem e acompan
 
 ### 📅 Gestão de Plantões
 
+- [x] **Integração Google Calendar**
+  - [x] Sincronização automática de plantões com Google Calendar
+  - [x] OAuth 2.0 com Google Sign-In
+  - [x] Criação de calendário dedicado "Fiz Plantão"
+  - [x] Eventos de plantão com horário, local e valor
+  - [x] Eventos de pagamento agrupados por data
+  - [x] Atualização inteligente de eventos existentes
+  - [x] Detecção e recriação de eventos deletados manualmente
+  - [x] Remoção automática ao deletar plantão
 - [x] **Cadastro de Plantões**
   - [x] Seleção de local via dropdown
   - [x] Data e hora do plantão
