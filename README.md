@@ -188,6 +188,254 @@ O **Fiz Plantão** é uma solução prática para médicos registrarem e acompan
 - **flutter_launcher_icons** - Geração automática de ícones
 - **Material Design 3** - Design system
 
+## 💻 Ambiente de Desenvolvimento
+
+### Requisitos de Sistema
+
+**Flutter SDK**
+- Versão: 3.35.6 (canal stable)
+- Dart SDK: 3.9.2
+- Constraint: `>=3.5.0 <4.0.0`
+
+**Android Development**
+- Android SDK: Platform API 34 (Android 14)
+- Android SDK Build-Tools: 34.0.0
+- Gradle: 8.11
+- Java/JDK: 17 ou superior
+- Kotlin: Plugin aplicado via Gradle
+
+**Google Cloud Services**
+- Firebase: 13.6.0
+- Google Services Plugin: 4.4.2
+
+**IDE Recomendadas**
+- Android Studio Arctic Fox ou superior
+- Visual Studio Code com extensões:
+  - Flutter
+  - Dart
+  - Flutter Intl (para internacionalização)
+
+**Ferramentas de Build**
+- Git 2.x
+- PowerShell (Windows) ou Bash (Linux/Mac)
+
+### Verificar Ambiente
+
+Execute os seguintes comandos para verificar se seu ambiente está configurado:
+
+```bash
+# Verificar Flutter
+flutter --version
+flutter doctor -v
+
+# Verificar Dart
+dart --version
+
+# Verificar Java (deve ser 17+)
+java -version
+
+# Verificar variáveis de ambiente (opcional)
+echo $ANDROID_HOME    # Linux/Mac
+echo %ANDROID_HOME%   # Windows CMD
+$env:ANDROID_HOME     # Windows PowerShell
+```
+
+**Saída esperada do `flutter doctor`:**
+```
+✓ Flutter (Channel stable, 3.35.6)
+✓ Android toolchain - develop for Android devices (Android SDK version 34.0.0)
+✓ Chrome - develop for the web
+✓ Android Studio (version 2024.x)
+✓ VS Code (version 1.x)
+✓ Connected device
+✓ Network resources
+```
+
+### Configuração Inicial
+
+1. **Instalar Flutter SDK**
+   ```bash
+   # Baixar de https://flutter.dev/docs/get-started/install
+   # Adicionar ao PATH do sistema
+   ```
+
+2. **Instalar Android Studio**
+   ```bash
+   # Baixar de https://developer.android.com/studio
+   # Instalar Android SDK Platform 34
+   # Instalar Android SDK Build-Tools
+   ```
+
+3. **Configurar variáveis de ambiente**
+   ```bash
+   # Windows (PowerShell)
+   $env:ANDROID_HOME = "C:\Users\<seu-usuario>\AppData\Local\Android\Sdk"
+   $env:JAVA_HOME = "C:\Program Files\Java\jdk-17"
+   
+   # Linux/Mac (Bash)
+   export ANDROID_HOME=$HOME/Android/Sdk
+   export JAVA_HOME=/usr/lib/jvm/java-17-openjdk
+   ```
+
+4. **Aceitar licenças Android**
+   ```bash
+   flutter doctor --android-licenses
+   ```
+
+### Dependências do Projeto
+
+**Core**
+- `flutter_localizations` (SDK) - Internacionalização
+- `cupertino_icons: ^1.0.8` - Ícones iOS
+
+**Persistência**
+- `hive: ^2.2.3` - Database NoSQL local
+- `hive_flutter: ^1.1.0` - Integração Flutter
+- `path_provider: ^2.1.5` - Caminhos do sistema
+
+**Backend & Auth**
+- `supabase_flutter: ^2.8.0` - Backend (PostgreSQL + Auth + Realtime)
+- `google_sign_in: ^6.2.2` - OAuth Google
+- `googleapis: ^13.2.0` - Google Calendar API
+- `extension_google_sign_in_as_googleapis_auth: ^2.0.12` - Bridge APIs
+
+**Utilidades**
+- `intl: ^0.20.2` - Formatação pt_BR
+- `connectivity_plus: ^6.0.5` - Status de rede
+- `uuid: ^4.5.1` - Geração de IDs únicos
+- `logger: ^2.5.0` - Logs estruturados
+
+**Dev Dependencies**
+- `flutter_lints: ^5.0.0` - Linting
+- `hive_generator: ^2.0.1` - Code generation
+- `build_runner: ^2.4.13` - Build system
+- `flutter_launcher_icons: ^0.14.4` - Geração de ícones
+
+### Instalação do Projeto
+
+```bash
+# 1. Clonar repositório
+git clone https://github.com/rodrigolanes/fiz_plantao.git
+cd fiz_plantao
+
+# 2. Instalar dependências
+flutter pub get
+
+# 3. Gerar código Hive (TypeAdapters)
+flutter pub run build_runner build --delete-conflicting-outputs
+
+# 4. Gerar ícones da aplicação (opcional)
+dart run flutter_launcher_icons
+
+# 5. Configurar secrets (copiar exemplos)
+# Supabase: criar lib/config/supabase_config.dart com suas credenciais
+# Android: criar android/key.properties para build release
+# Google: adicionar android/app/google-services.json
+
+# 6. Executar em modo debug
+flutter run
+
+# 7. Build release (local)
+flutter build apk --split-per-abi
+# ou
+flutter build appbundle --release
+```
+
+### Troubleshooting Comum
+
+**Erro: "Unable to locate Android SDK"**
+```bash
+# Configurar ANDROID_HOME
+flutter config --android-sdk <caminho-do-sdk>
+```
+
+**Erro: "Gradle sync failed"**
+```bash
+# Limpar cache e rebuild
+flutter clean
+flutter pub get
+cd android && ./gradlew clean
+cd ..
+flutter run
+```
+
+**Erro: "CocoaPods not installed" (iOS/macOS)**
+```bash
+sudo gem install cocoapods
+pod setup
+```
+
+**Erro: Build runner conflitos**
+```bash
+flutter pub run build_runner clean
+flutter pub run build_runner build --delete-conflicting-outputs
+```
+
+**Erro: "Waiting for another flutter command"**
+```bash
+# Remover lock file
+# Windows
+del "%USERPROFILE%\.flutter_tool_state"
+# Linux/Mac
+rm ~/.flutter_tool_state
+```
+
+### Estrutura de Secrets
+
+O projeto utiliza os seguintes arquivos de configuração que **NÃO** devem ser commitados:
+
+**`lib/config/supabase_config.dart`**
+```dart
+class SupabaseConfig {
+  static const String supabaseUrl = 'https://seu-projeto.supabase.co';
+  static const String supabaseAnonKey = 'sua-anon-key-aqui';
+  static const String googleWebClientId = 'seu-web-client-id.apps.googleusercontent.com';
+}
+```
+
+**`android/key.properties`**
+```properties
+storePassword=sua-senha-keystore
+keyPassword=sua-senha-key
+keyAlias=upload
+storeFile=../upload-keystore.jks
+```
+
+**`android/app/google-services.json`**
+```json
+{
+  "project_info": {
+    "project_id": "seu-projeto-id"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:123456789:android:abc...",
+        "android_client_info": {
+          "package_name": "br.com.rodrigolanes.fizplantao"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "seu-web-client-id.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ]
+    }
+  ]
+}
+```
+
+**GitHub Secrets (para CI/CD)**
+- `SUPABASE_URL`
+- `SUPABASE_ANON_KEY`
+- `GOOGLE_WEB_CLIENT_ID`
+- `GOOGLE_SERVICES_JSON` (base64 encoded)
+- `KEYSTORE_BASE64`
+- `KEY_STORE_PASSWORD`
+- `KEY_PASSWORD`
+- `KEY_ALIAS`
+
 ## 🌐 Desenvolvimento em Diferentes Ambientes
 
 ### Build Local vs CI/CD
