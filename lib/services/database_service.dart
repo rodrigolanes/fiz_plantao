@@ -121,6 +121,10 @@ class DatabaseService {
   static Future<void> deletePlantao(String id) async {
     final plantao = plantoesBox.get(id);
     if (plantao != null) {
+      // Guardar IDs dos eventos antes de marcar como inativo
+      final calendarEventId = plantao.calendarEventId;
+      final calendarPaymentEventId = plantao.calendarPaymentEventId;
+
       final updated = plantao.copyWith(
         ativo: false,
         atualizadoEm: DateTime.now(),
@@ -128,7 +132,9 @@ class DatabaseService {
       await plantoesBox.put(id, updated);
 
       // Remover evento do plantão do Google Calendar
-      await CalendarService.removerEventoPlantao(plantao.calendarEventId);
+      if (calendarEventId != null) {
+        await CalendarService.removerEventoPlantao(calendarEventId);
+      }
 
       // Atualizar evento de pagamento (remove este plantão da lista)
       await CalendarService.criarEventoPagamento(

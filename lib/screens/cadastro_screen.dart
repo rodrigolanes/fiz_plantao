@@ -75,7 +75,15 @@ class _CadastroScreenState extends State<CadastroScreen> {
     setState(() => _isLoading = true);
 
     try {
-      await AuthService.loginComGoogle();
+      final response = await AuthService.loginComGoogle();
+
+      // Se o usuário cancelou ou houve erro, não navegar
+      if (response == null) {
+        if (mounted) {
+          setState(() => _isLoading = false);
+        }
+        return;
+      }
 
       if (!mounted) return;
 

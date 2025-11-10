@@ -1,23 +1,16 @@
 import 'package:flutter/foundation.dart';
 import 'package:google_sign_in/google_sign_in.dart';
-import 'package:googleapis/calendar/v3.dart' show CalendarApi;
 import 'package:hive/hive.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-import '../config/supabase_config.dart';
+import '../models/local.dart';
+import '../models/plantao.dart';
+import 'google_sign_in_service.dart';
 import 'log_service.dart';
 
 class AuthService {
   static final SupabaseClient _supabase = Supabase.instance.client;
-  static final GoogleSignIn _googleSignIn = GoogleSignIn(
-    scopes: [
-      'email',
-      'profile',
-      CalendarApi.calendarScope, // Acesso ao Google Calendar
-    ],
-    // Web Client ID é necessário no Android para obter idToken
-    serverClientId: kIsWeb ? null : SupabaseConfig.googleWebClientId,
-  );
+  static final GoogleSignIn _googleSignIn = GoogleSignInService.instance;
 
   // Stream do estado de autenticação
   static Stream<AuthState> get authStateChanges => _supabase.auth.onAuthStateChange;
@@ -107,14 +100,35 @@ class AuthService {
       await _supabase.auth.signOut();
       await _googleSignIn.signOut();
 
-      // Limpar cache do Hive
-      final box = await Hive.openBox('config');
-      await box.delete('userId');
-      await box.delete('userEmail');
-      LogService.auth('Logout realizado');
+      // Limpar TODOS os dados locais do Hive
+      await _limparDadosLocais();
+
+      LogService.auth('Logout realizado e dados locais limpos');
     } catch (e) {
       LogService.auth('Erro ao fazer logout', e);
       throw 'Erro ao fazer logout: $e';
+    }
+  }
+
+  // Limpar todos os dados locais do usuário
+  static Future<void> _limparDadosLocais() async {
+    try {
+      // Limpar box de configurações
+      final configBox = await Hive.openBox('config');
+      await configBox.clear();
+
+      // Limpar box de plantões
+      final plantoesBox = await Hive.openBox<Plantao>('plantoes');
+      await plantoesBox.clear();
+
+      // Limpar box de locais
+      final locaisBox = await Hive.openBox<Local>('locais');
+      await locaisBox.clear();
+
+      LogService.auth('Dados locais limpos: config, plantões e locais');
+    } catch (e) {
+      LogService.auth('Erro ao limpar dados locais', e);
+      // Não propagar erro para não bloquear o logout
     }
   }
 
@@ -133,8 +147,16 @@ class AuthService {
         );
         return null;
       } else {
+        // Debug: imprimir escopos configurados
+        GoogleSignInService.printScopes();
+
+        // No mobile, fazer signOut primeiro para forçar nova solicitação de escopos
+        await _googleSignIn.signOut();
+
         final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
         if (googleUser == null) return null; // cancelado
+
+        LogService.auth('Login com Google concluído para: ${googleUser.email}');
 
         final googleAuth = await googleUser.authentication;
         if (googleAuth.idToken == null) throw 'Token Google ausente';

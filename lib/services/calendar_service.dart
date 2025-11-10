@@ -6,6 +6,7 @@ import 'package:hive/hive.dart';
 import 'package:intl/intl.dart';
 
 import '../models/plantao.dart';
+import 'google_sign_in_service.dart';
 import 'log_service.dart';
 
 /// Serviço para integração com Google Calendar
@@ -23,9 +24,7 @@ class CalendarService {
   static const String _corPlantao = '9'; // Azul
   static const String _corPagamento = '10'; // Verde
 
-  static final GoogleSignIn _googleSignIn = GoogleSignIn(
-    scopes: [CalendarApi.calendarScope],
-  );
+  static final GoogleSignIn _googleSignIn = GoogleSignInService.instance;
 
   /// Verifica se a sincronização com Google Calendar está habilitada
   static Future<bool> get isSyncEnabled async {
@@ -87,6 +86,26 @@ class CalendarService {
 
     final calendarApi = CalendarApi(client);
 
+    // Buscar se já existe um calendário com o nome "Fiz Plantão"
+    try {
+      final calendarios = await calendarApi.calendarList.list();
+      if (calendarios.items != null) {
+        for (final cal in calendarios.items!) {
+          if (cal.summary == _calendarName) {
+            LogService.calendar('Calendário "$_calendarName" já existe (ID: ${cal.id})');
+            // Salvar ID no cache
+            await _cacheCalendarId(cal.id!);
+            return cal.id!;
+          }
+        }
+      }
+    } catch (e) {
+      LogService.calendar('Erro ao buscar calendários existentes', e);
+      // Continuar e tentar criar
+    }
+
+    // Criar novo calendário se não existe
+    LogService.calendar('Criando novo calendário "$_calendarName"');
     final novoCalendario = Calendar(
       summary: _calendarName,
       description: 'Calendário de plantões e pagamentos do app Fiz Plantão',
@@ -99,6 +118,7 @@ class CalendarService {
     // Salvar ID no cache
     await _cacheCalendarId(calendarId);
 
+    LogService.calendar('Calendário criado com sucesso (ID: $calendarId)');
     return calendarId;
   }
 
@@ -126,11 +146,6 @@ class CalendarService {
           ? plantao.dataHora.add(const Duration(hours: 12))
           : plantao.dataHora.add(const Duration(hours: 24));
 
-      // Google Calendar interpreta dateTime como UTC, então adicionamos o offset do Brasil (-3h)
-      // Para compensar, adicionamos 3 horas antes de enviar
-      final dataHoraUtc = plantao.dataHora.add(const Duration(hours: 3));
-      final dataFimUtc = dataFim.add(const Duration(hours: 3));
-
       final dateFormatSemHora = DateFormat('dd/MM/yyyy', 'pt_BR');
       final currencyFormat = NumberFormat.currency(
         locale: 'pt_BR',
@@ -150,8 +165,14 @@ ${plantao.pago ? '✅ Pago' : '⏳ Pendente'}
 Criado via app Fiz Plantão
         '''
             .trim(),
-        start: EventDateTime(dateTime: dataHoraUtc),
-        end: EventDateTime(dateTime: dataFimUtc),
+        start: EventDateTime(
+          dateTime: plantao.dataHora,
+          timeZone: _timeZone,
+        ),
+        end: EventDateTime(
+          dateTime: dataFim,
+          timeZone: _timeZone,
+        ),
         colorId: _corPlantao,
         reminders: EventReminders(
           useDefault: false,
@@ -247,6 +268,42 @@ Criado via app Fiz Plantão
       // Ordenar por data do plantão
       plantoesMesmaData.sort((a, b) => a.dataHora.compareTo(b.dataHora));
 
+      // Se não há plantões ativos para esta data, remover evento de pagamento
+      if (plantoesMesmaData.isEmpty) {
+        LogService.calendar(
+            'Nenhum plantão ativo para data de pagamento ${dataPagamento.toString().substring(0, 10)}. Removendo evento de pagamento.');
+
+        // Buscar evento de pagamento existente para remover
+        final dataStr = '${dataPagamento.year.toString().padLeft(4, '0')}-'
+            '${dataPagamento.month.toString().padLeft(2, '0')}-'
+            '${dataPagamento.day.toString().padLeft(2, '0')}';
+        final dataFimEvento = dataPagamento.add(const Duration(days: 1));
+        final dataFimStr = '${dataFimEvento.year.toString().padLeft(4, '0')}-'
+            '${dataFimEvento.month.toString().padLeft(2, '0')}-'
+            '${dataFimEvento.day.toString().padLeft(2, '0')}';
+
+        final eventosExistentes = await calendarApi.events.list(
+          calendarId,
+          privateExtendedProperty: ['type=pagamento'],
+          timeMin: DateTime.parse(dataStr).toUtc(),
+          timeMax: DateTime.parse(dataFimStr).toUtc(),
+        );
+
+        if (eventosExistentes.items != null && eventosExistentes.items!.isNotEmpty) {
+          for (final evento in eventosExistentes.items!) {
+            if (evento.id != null) {
+              try {
+                await calendarApi.events.delete(calendarId, evento.id!);
+                LogService.calendar('Evento de pagamento removido: ${evento.id}');
+              } catch (e) {
+                LogService.calendar('Erro ao remover evento de pagamento (ID: ${evento.id})', e);
+              }
+            }
+          }
+        }
+        return; // Não criar novo evento
+      }
+
       final currencyFormat = NumberFormat.currency(
         locale: 'pt_BR',
         symbol: 'R\$',
@@ -262,7 +319,7 @@ Criado via app Fiz Plantão
       final buffer = StringBuffer();
       buffer.writeln('💰 TOTAL: ${currencyFormat.format(total)}');
       buffer.writeln();
-      buffer.writeln('📋 PLANTÕES:');
+      buffer.writeln(plantoesMesmaData.length == 1 ? '📋 PLANTÃO:' : '📋 PLANTÕES:');
 
       for (final p in plantoesMesmaData) {
         final status = p.pago ? '✅' : '⏳';
@@ -293,31 +350,44 @@ Criado via app Fiz Plantão
       );
 
       if (eventosExistentes.items != null && eventosExistentes.items!.isNotEmpty) {
-        // Tentar atualizar evento existente
+        // Verificar se o evento ainda existe e não foi deletado
         final eventoExistente = eventosExistentes.items!.first;
         try {
-          // Atualizar evento diretamente - se não existir, vai lançar exceção
-          final eventoAtualizado = Event(
-            summary: '💰 Pagamento Previsto (${plantoesMesmaData.length} plantões)',
-            description: buffer.toString().trim(),
-          );
+          // Primeiro, verificar se o evento existe e está ativo
+          final eventoAtual = await calendarApi.events.get(calendarId, eventoExistente.id!);
 
-          await calendarApi.events.patch(
-            eventoAtualizado,
-            calendarId,
-            eventoExistente.id!,
-          );
-          LogService.calendar('Evento de pagamento atualizado: ${plantoesMesmaData.length} plantões');
-          return; // Sucesso, sair da função
+          if (eventoAtual.status == 'cancelled') {
+            LogService.calendar('Evento de pagamento foi deletado (status: cancelled). Criando novo evento.');
+            // Não fazer return - criar novo evento abaixo
+          } else {
+            LogService.calendar('Evento de pagamento existe e está ativo. Atualizando...');
+
+            // Atualizar evento existente
+            final eventoAtualizado = Event(
+              summary:
+                  '💰 Pagamento Previsto (${plantoesMesmaData.length} ${plantoesMesmaData.length == 1 ? "plantão" : "plantões"})',
+              description: buffer.toString().trim(),
+            );
+
+            await calendarApi.events.patch(
+              eventoAtualizado,
+              calendarId,
+              eventoExistente.id!,
+            );
+            LogService.calendar(
+                'Evento de pagamento atualizado: ${plantoesMesmaData.length} ${plantoesMesmaData.length == 1 ? "plantão" : "plantões"}');
+            return; // Sucesso, sair da função
+          }
         } catch (e) {
           // Se o evento não existe mais, criar um novo
-          LogService.calendar('Evento de pagamento não encontrado (ID: ${eventoExistente.id}), criando novo');
+          LogService.calendar('Erro ao verificar evento de pagamento (ID: ${eventoExistente.id}), criando novo', e);
         }
       }
 
       // Criar novo evento (se não existia ou se a atualização falhou)
       final evento = Event(
-        summary: '💰 Pagamento Previsto (${plantoesMesmaData.length} plantões)',
+        summary:
+            '💰 Pagamento Previsto (${plantoesMesmaData.length} ${plantoesMesmaData.length == 1 ? "plantão" : "plantões"})',
         description: buffer.toString().trim(),
         start: EventDateTime(date: DateTime.parse(dataStr)),
         end: EventDateTime(date: DateTime.parse(dataFimStr)),
@@ -338,7 +408,8 @@ Criado via app Fiz Plantão
       );
 
       await calendarApi.events.insert(evento, calendarId);
-      LogService.calendar('Evento de pagamento criado: ${plantoesMesmaData.length} plantões');
+      LogService.calendar(
+          'Evento de pagamento criado: ${plantoesMesmaData.length} ${plantoesMesmaData.length == 1 ? "plantão" : "plantões"}');
     } catch (e) {
       LogService.calendar('Erro ao criar evento de pagamento no Google Calendar', e);
     }
@@ -394,19 +465,31 @@ Criado via app Fiz Plantão
 
   /// Remove eventos relacionados a um plantão usando o ID do evento
   static Future<void> removerEventoPlantao(String? calendarEventId) async {
-    if (!await isSyncEnabled || calendarEventId == null) return;
+    if (!await isSyncEnabled) {
+      LogService.calendar('Sync não habilitado, evento não será removido');
+      return;
+    }
+
+    if (calendarEventId == null) {
+      LogService.calendar('calendarEventId é null, não há evento para remover');
+      return;
+    }
 
     try {
       final client = await _getAuthenticatedClient();
-      if (client == null) return;
+      if (client == null) {
+        LogService.calendar('Cliente não autenticado, não pode remover evento');
+        return;
+      }
 
       final calendarApi = CalendarApi(client);
       final calendarId = await _ensureCalendarExists();
 
+      LogService.calendar('Removendo evento do Calendar: $calendarEventId');
       await calendarApi.events.delete(calendarId, calendarEventId);
-      LogService.calendar('Evento de plantão removido: $calendarEventId');
+      LogService.calendar('Evento de plantão removido com sucesso: $calendarEventId');
     } catch (e) {
-      LogService.calendar('Erro ao remover evento do plantão', e);
+      LogService.calendar('Erro ao remover evento do plantão (ID: $calendarEventId)', e);
     }
   }
 
