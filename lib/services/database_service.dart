@@ -121,9 +121,8 @@ class DatabaseService {
   static Future<void> deletePlantao(String id) async {
     final plantao = plantoesBox.get(id);
     if (plantao != null) {
-      // Guardar IDs dos eventos antes de marcar como inativo
+      // Guardar ID do evento antes de marcar como inativo
       final calendarEventId = plantao.calendarEventId;
-      final calendarPaymentEventId = plantao.calendarPaymentEventId;
 
       final updated = plantao.copyWith(
         ativo: false,
