@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../config/config_helper.dart';
 import '../services/auth_service.dart';
 import '../services/log_service.dart';
 import 'lista_plantoes_screen.dart';
@@ -261,44 +262,46 @@ class _CadastroScreenState extends State<CadastroScreen> {
                         ),
                         const SizedBox(height: 16),
 
-                        // Divisor "OU"
-                        Row(
-                          children: [
-                            const Expanded(child: Divider()),
-                            Padding(
-                              padding: const EdgeInsets.symmetric(horizontal: 16),
-                              child: Text(
-                                'OU',
-                                style: TextStyle(
-                                  color: Colors.grey[600],
-                                  fontWeight: FontWeight.w500,
+                        // Botão Google Sign-In (só exibe se habilitado)
+                        if (ConfigHelper.isGoogleIntegrationEnabled) ...[
+                          // Divisor "OU"
+                          Row(
+                            children: [
+                              const Expanded(child: Divider()),
+                              Padding(
+                                padding: const EdgeInsets.symmetric(horizontal: 16),
+                                child: Text(
+                                  'OU',
+                                  style: TextStyle(
+                                    color: Colors.grey[600],
+                                    fontWeight: FontWeight.w500,
+                                  ),
                                 ),
                               ),
-                            ),
-                            const Expanded(child: Divider()),
-                          ],
-                        ),
-                        const SizedBox(height: 16),
+                              const Expanded(child: Divider()),
+                            ],
+                          ),
+                          const SizedBox(height: 16),
 
-                        // Botão Google Sign-In
-                        SizedBox(
-                          width: double.infinity,
-                          height: 48,
-                          child: OutlinedButton.icon(
-                            onPressed: _isLoading ? null : _loginComGoogle,
-                            icon: Image.asset(
-                              'assets/images/google_logo.png',
-                              height: 24,
-                              errorBuilder: (context, error, stackTrace) {
-                                return const Icon(Icons.login, size: 24);
-                              },
-                            ),
-                            label: const Text('Entrar com Google'),
-                            style: OutlinedButton.styleFrom(
-                              side: BorderSide(color: Colors.grey[300]!),
+                          SizedBox(
+                            width: double.infinity,
+                            height: 48,
+                            child: OutlinedButton.icon(
+                              onPressed: _isLoading ? null : _loginComGoogle,
+                              icon: Image.asset(
+                                'assets/images/google_logo.png',
+                                height: 24,
+                                errorBuilder: (context, error, stackTrace) {
+                                  return const Icon(Icons.login, size: 24);
+                                },
+                              ),
+                              label: const Text('Entrar com Google'),
+                              style: OutlinedButton.styleFrom(
+                                side: BorderSide(color: Colors.grey[300]!),
+                              ),
                             ),
                           ),
-                        ),
+                        ],
                       ],
                     ),
                   ),

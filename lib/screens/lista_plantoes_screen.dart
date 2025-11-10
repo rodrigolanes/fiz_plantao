@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
+import '../config/config_helper.dart';
 import '../models/plantao.dart';
 import '../services/auth_service.dart';
 import '../services/calendar_service.dart';
@@ -457,16 +458,18 @@ class _ListaPlantoesScreenState extends State<ListaPlantoesScreen> {
               }
             },
             itemBuilder: (context) => [
-              const PopupMenuItem(
-                value: 'calendar',
-                child: Row(
-                  children: [
-                    Icon(Icons.calendar_month),
-                    SizedBox(width: 8),
-                    Text('Google Calendar'),
-                  ],
+              // Google Calendar (só exibe se habilitado)
+              if (ConfigHelper.isGoogleIntegrationEnabled)
+                const PopupMenuItem(
+                  value: 'calendar',
+                  child: Row(
+                    children: [
+                      Icon(Icons.calendar_month),
+                      SizedBox(width: 8),
+                      Text('Google Calendar'),
+                    ],
+                  ),
                 ),
-              ),
               const PopupMenuItem(
                 value: 'logout',
                 child: Row(

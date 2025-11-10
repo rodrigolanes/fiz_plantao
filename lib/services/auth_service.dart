@@ -3,6 +3,7 @@ import 'package:google_sign_in/google_sign_in.dart';
 import 'package:hive/hive.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../config/config_helper.dart';
 import '../models/local.dart';
 import '../models/plantao.dart';
 import 'google_sign_in_service.dart';
@@ -134,6 +135,11 @@ class AuthService {
 
   // Login com Google
   static Future<AuthResponse?> loginComGoogle() async {
+    // Verificar se integração com Google está habilitada
+    if (!_isGoogleIntegrationEnabled()) {
+      throw 'Login com Google está desabilitado. Configure enableGoogleIntegrations = true no SupabaseConfig.';
+    }
+
     try {
       if (kIsWeb) {
         // Web retorna bool (redirect/popup). Sessão chega via onAuthStateChange.
@@ -321,6 +327,11 @@ class AuthService {
     } else {
       return 'Erro ao autenticar: ${e.message}';
     }
+  }
+
+  /// Verificar se integração com Google está habilitada
+  static bool _isGoogleIntegrationEnabled() {
+    return ConfigHelper.isGoogleIntegrationEnabled;
   }
 
   // Obter userId do cache (para uso offline)

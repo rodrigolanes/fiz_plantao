@@ -5,6 +5,7 @@ import 'package:googleapis/calendar/v3.dart';
 import 'package:hive/hive.dart';
 import 'package:intl/intl.dart';
 
+import '../config/config_helper.dart';
 import '../models/plantao.dart';
 import 'google_sign_in_service.dart';
 import 'log_service.dart';
@@ -26,8 +27,14 @@ class CalendarService {
 
   static final GoogleSignIn _googleSignIn = GoogleSignInService.instance;
 
+  /// Verificar se integração com Google está habilitada
+  static bool get isGoogleIntegrationEnabled {
+    return ConfigHelper.isGoogleIntegrationEnabled;
+  }
+
   /// Verifica se a sincronização com Google Calendar está habilitada
   static Future<bool> get isSyncEnabled async {
+    if (!isGoogleIntegrationEnabled) return false;
     final box = await Hive.openBox('config');
     return box.get(_syncEnabledKey, defaultValue: false);
   }
