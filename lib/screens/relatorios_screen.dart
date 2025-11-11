@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:printing/printing.dart';
 
 import '../models/plantao.dart';
 import '../services/database_service.dart';
 import '../services/log_service.dart';
+import '../services/pdf_service.dart';
 
 class RelatoriosScreen extends StatefulWidget {
   const RelatoriosScreen({super.key});
@@ -15,6 +17,7 @@ class RelatoriosScreen extends StatefulWidget {
 class _RelatoriosScreenState extends State<RelatoriosScreen> {
   bool _apenasProximos = true;
   String _filtroPagamento = 'todos'; // 'todos', 'pagos', 'pendentes'
+  String? _localExpandido; // ID do local com card expandido (para exportação individual)
 
   String _formatarValor(double valor) {
     return NumberFormat.currency(
@@ -105,6 +108,47 @@ class _RelatoriosScreenState extends State<RelatoriosScreen> {
       appBar: AppBar(
         title: const Text('Relatórios'),
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
+        actions: [
+          PopupMenuButton<String>(
+            icon: const Icon(Icons.download),
+            tooltip: 'Exportar PDF',
+            onSelected: (value) async {
+              if (value == 'todos') {
+                await _exportarPdf(null, plantoesFiltrados);
+              } else if (value == 'local' && _localExpandido != null) {
+                await _exportarPdf(_localExpandido, plantoesFiltrados);
+              }
+            },
+            itemBuilder: (context) => [
+              const PopupMenuItem(
+                value: 'todos',
+                child: Row(
+                  children: [
+                    Icon(Icons.list_alt, size: 20),
+                    SizedBox(width: 12),
+                    Text('Exportar Todos Locais'),
+                  ],
+                ),
+              ),
+              if (_localExpandido != null)
+                PopupMenuItem(
+                  value: 'local',
+                  child: Row(
+                    children: [
+                      const Icon(Icons.location_on, size: 20),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Text(
+                          'Exportar Local Selecionado',
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+            ],
+          ),
+        ],
       ),
       body: Column(
         children: [
@@ -395,6 +439,11 @@ class _RelatoriosScreenState extends State<RelatoriosScreen> {
                               fontSize: 16,
                             ),
                           ),
+                          onExpansionChanged: (isExpanded) {
+                            setState(() {
+                              _localExpandido = isExpanded ? local.id : null;
+                            });
+                          },
                           subtitle: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
@@ -642,6 +691,86 @@ class _RelatoriosScreenState extends State<RelatoriosScreen> {
         ),
       );
     }).toList();
+  }
+
+  Future<void> _exportarPdf(String? localId, List<Plantao> plantoes) async {
+    final navigator = Navigator.of(context);
+    final messenger = ScaffoldMessenger.of(context);
+
+    // Mostrar loading dialog
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => const Center(
+        child: Card(
+          child: Padding(
+            padding: EdgeInsets.all(24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                CircularProgressIndicator(),
+                SizedBox(height: 16),
+                Text('Gerando PDF...'),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+
+    try {
+      // Preparar filtros
+      final filtros = {
+        'apenasProximos': _apenasProximos,
+        'filtroPagamento': _filtroPagamento,
+      };
+
+      // Gerar PDF
+      final pdfBytes = await PdfService.generateRelatorioPorLocal(
+        plantoes,
+        localId,
+        filtros,
+      );
+
+      if (!mounted) return;
+
+      // Fechar loading dialog
+      navigator.pop();
+
+      // Nome do arquivo
+      final dataHora = DateFormat('yyyy-MM-dd_HHmmss', 'pt_BR').format(DateTime.now());
+      final nomeLocal =
+          localId != null ? plantoes.firstWhere((p) => p.local.id == localId).local.apelido : 'todos-locais';
+      final filename = 'relatorio-plantoes-$nomeLocal-$dataHora.pdf';
+
+      // Compartilhar/baixar PDF usando printing package
+      await Printing.sharePdf(
+        bytes: pdfBytes,
+        filename: filename,
+      );
+
+      if (!mounted) return;
+
+      messenger.showSnackBar(
+        const SnackBar(
+          content: Text('PDF exportado com sucesso!'),
+          backgroundColor: Colors.green,
+        ),
+      );
+    } catch (e) {
+      LogService.ui('Erro ao exportar relatório', e);
+      if (!mounted) return;
+
+      // Fechar loading dialog
+      navigator.pop();
+
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text('Erro ao exportar PDF: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
   }
 
   Future<void> _confirmarMarcarPagamentoData(
