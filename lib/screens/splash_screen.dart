@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 
 import '../services/auth_service.dart';
+import '../services/sync_service.dart';
 import 'lista_plantoes_screen.dart';
 import 'login_screen.dart';
 import 'verificacao_email_screen.dart';
@@ -56,6 +57,9 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
           MaterialPageRoute(builder: (_) => const VerificacaoEmailScreen()),
         );
       } else {
+        // Inicializa sincronização em background ao entrar no app
+        SyncService.initialize();
+
         navigator.pushReplacement(
           MaterialPageRoute(builder: (_) => const ListaPlantoesScreen()),
         );

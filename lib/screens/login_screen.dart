@@ -299,9 +299,10 @@ class _LoginScreenState extends State<LoginScreen> {
                               onPressed: _isLoading ? null : _loginComGoogle,
                               icon: Image.asset(
                                 'assets/images/google_logo.png',
-                                height: 24,
+                                height: 20,
+                                width: 20,
                                 errorBuilder: (context, error, stackTrace) {
-                                  return const Icon(Icons.login, size: 24);
+                                  return const Icon(Icons.g_mobiledata, size: 28, color: Color(0xFF4285F4));
                                 },
                               ),
                               label: const Text('Entrar com Google'),

@@ -5,6 +5,7 @@ import '../models/local.dart';
 import '../models/plantao.dart';
 import 'auth_service.dart';
 import 'calendar_service.dart';
+import 'sync_service.dart';
 
 class DatabaseService {
   static const _uuid = Uuid();
@@ -35,6 +36,9 @@ class DatabaseService {
       atualizadoEm: agora,
     );
     await locaisBox.put(id, novo);
+
+    // Sincronização automática
+    SyncService.syncAll().catchError((e) => null);
   }
 
   static bool _isUuid(String value) {
@@ -46,6 +50,9 @@ class DatabaseService {
     final agora = DateTime.now();
     final atualizado = local.copyWith(atualizadoEm: agora);
     await locaisBox.put(atualizado.id, atualizado);
+
+    // Sincronização automática
+    SyncService.syncAll().catchError((e) => null);
   }
 
   static Future<void> deleteLocal(String id) async {
@@ -56,6 +63,9 @@ class DatabaseService {
         atualizadoEm: DateTime.now(),
       );
       await locaisBox.put(id, updated);
+
+      // Sincronização automática
+      SyncService.syncAll().catchError((e) => null);
     }
   }
 
@@ -97,6 +107,9 @@ class DatabaseService {
       localNome: novo.local.nome,
       plantaoId: novo.id,
     );
+
+    // Sincronização automática
+    SyncService.syncAll().catchError((e) => null);
   }
 
   static Future<void> updatePlantao(Plantao plantao) async {
@@ -116,6 +129,9 @@ class DatabaseService {
       localNome: comEventId.local.nome,
       plantaoId: comEventId.id,
     );
+
+    // Sincronização automática
+    SyncService.syncAll().catchError((e) => null);
   }
 
   static Future<void> deletePlantao(String id) async {
@@ -142,6 +158,9 @@ class DatabaseService {
         localNome: plantao.local.nome,
         plantaoId: plantao.id,
       );
+
+      // Sincronização automática
+      SyncService.syncAll().catchError((e) => null);
     }
   }
 

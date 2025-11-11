@@ -1,8 +1,6 @@
-import 'package:flutter/foundation.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:googleapis/calendar/v3.dart' show CalendarApi;
 
-import '../config/supabase_config.dart';
 import 'log_service.dart';
 
 /// Serviço centralizado para Google Sign-In
@@ -14,8 +12,8 @@ class GoogleSignInService {
       'profile',
       CalendarApi.calendarScope, // Acesso ao Google Calendar
     ],
-    // Web Client ID é necessário no Android para obter idToken
-    serverClientId: kIsWeb ? null : SupabaseConfig.googleWebClientId,
+    // Web Client ID desabilitado até ser configurado
+    // serverClientId: kIsWeb ? null : SupabaseConfig.googleWebClientId,
   );
 
   /// Debug: imprimir escopos configurados
