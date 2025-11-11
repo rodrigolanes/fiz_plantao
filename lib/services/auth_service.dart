@@ -156,16 +156,22 @@ class AuthService {
         // Debug: imprimir escopos configurados
         GoogleSignInService.printScopes();
 
-        // No mobile, fazer signOut primeiro para forçar nova solicitação de escopos
-        await _googleSignIn.signOut();
-
         final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
-        if (googleUser == null) return null; // cancelado
+        if (googleUser == null) {
+          LogService.auth('Login com Google cancelado pelo usuário');
+          return null; // cancelado
+        }
 
         LogService.auth('Login com Google concluído para: ${googleUser.email}');
 
         final googleAuth = await googleUser.authentication;
-        if (googleAuth.idToken == null) throw 'Token Google ausente';
+        LogService.auth(
+            'Token info - idToken: ${googleAuth.idToken != null ? "presente" : "AUSENTE"}, accessToken: ${googleAuth.accessToken != null ? "presente" : "ausente"}');
+
+        if (googleAuth.idToken == null) {
+          LogService.auth('ERRO: idToken está nulo após autenticação');
+          throw 'Token Google ausente';
+        }
 
         final response = await _supabase.auth.signInWithIdToken(
           provider: OAuthProvider.google,
