@@ -417,7 +417,6 @@ class _RelatoriosScreenState extends State<RelatoriosScreen> {
                         0,
                         (sum, p) => sum + p.valor,
                       );
-                      final percentual = (total / totalGeral * 100);
 
                       return Card(
                         margin: const EdgeInsets.only(bottom: 12),
@@ -444,45 +443,15 @@ class _RelatoriosScreenState extends State<RelatoriosScreen> {
                               _localExpandido = isExpanded ? local.id : null;
                             });
                           },
-                          subtitle: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              const SizedBox(height: 4),
-                              Text(
-                                '$quantidade plantões',
-                                style: TextStyle(
-                                  fontSize: 13,
-                                  color: Colors.grey[600],
-                                ),
+                          subtitle: Padding(
+                            padding: const EdgeInsets.only(top: 4),
+                            child: Text(
+                              '$quantidade plantões',
+                              style: TextStyle(
+                                fontSize: 13,
+                                color: Colors.grey[600],
                               ),
-                              const SizedBox(height: 8),
-                              Row(
-                                children: [
-                                  Expanded(
-                                    child: ClipRRect(
-                                      borderRadius: BorderRadius.circular(4),
-                                      child: LinearProgressIndicator(
-                                        value: percentual / 100,
-                                        minHeight: 6,
-                                        backgroundColor: Colors.grey[200],
-                                        valueColor: AlwaysStoppedAnimation(
-                                          Colors.teal[400],
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                  const SizedBox(width: 8),
-                                  Text(
-                                    '${percentual.toStringAsFixed(1)}%',
-                                    style: TextStyle(
-                                      fontSize: 12,
-                                      color: Colors.grey[600],
-                                      fontWeight: FontWeight.w500,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ],
+                            ),
                           ),
                           trailing: Text(
                             _formatarValor(total),
@@ -499,24 +468,6 @@ class _RelatoriosScreenState extends State<RelatoriosScreen> {
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  Row(
-                                    mainAxisAlignment: MainAxisAlignment.spaceAround,
-                                    children: [
-                                      _buildMetricaCard(
-                                        'Valor Médio',
-                                        _formatarValor(total / quantidade),
-                                        Icons.payments_outlined,
-                                      ),
-                                      _buildMetricaCard(
-                                        'Quantidade',
-                                        quantidade.toString(),
-                                        Icons.event_outlined,
-                                      ),
-                                    ],
-                                  ),
-                                  const SizedBox(height: 16),
-                                  const Divider(),
-                                  const SizedBox(height: 8),
                                   Text(
                                     'Plantões por Data de Pagamento',
                                     style: TextStyle(
@@ -871,37 +822,5 @@ class _RelatoriosScreenState extends State<RelatoriosScreen> {
         ),
       );
     }
-  }
-
-  Widget _buildMetricaCard(String label, String valor, IconData icon) {
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: Colors.teal[50],
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Column(
-        children: [
-          Icon(icon, size: 24, color: Colors.teal[700]),
-          const SizedBox(height: 8),
-          Text(
-            label,
-            style: TextStyle(
-              fontSize: 12,
-              color: Colors.grey[600],
-            ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            valor,
-            style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
-              color: Colors.teal[800],
-            ),
-          ),
-        ],
-      ),
-    );
   }
 }

@@ -155,39 +155,6 @@ class _ListaPlantoesScreenState extends State<ListaPlantoesScreen> {
     }
   }
 
-  void _confirmarExclusao(Plantao plantao) {
-    final navigator = Navigator.of(context);
-    final messenger = ScaffoldMessenger.of(context);
-    showDialog(
-      context: context,
-      builder: (_) => AlertDialog(
-        title: const Text('Confirmar Exclusão'),
-        content: Text(
-          'Deseja realmente excluir o plantão em ${plantao.local.apelido}?',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => navigator.pop(),
-            child: const Text('Cancelar'),
-          ),
-          TextButton(
-            onPressed: () async {
-              await DatabaseService.deletePlantao(plantao.id);
-              navigator.pop();
-              if (!mounted) return;
-              _carregarDados();
-              if (!mounted) return;
-              messenger.showSnackBar(
-                const SnackBar(content: Text('Plantão excluído com sucesso!')),
-              );
-            },
-            child: const Text('Excluir', style: TextStyle(color: Colors.red)),
-          ),
-        ],
-      ),
-    );
-  }
-
   Color _getStatusColor(DateTime previsaoPagamento) {
     final hoje = DateTime.now();
     final diferenca = previsaoPagamento.difference(hoje).inDays;
@@ -577,42 +544,22 @@ class _ListaPlantoesScreenState extends State<ListaPlantoesScreen> {
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Row(
+                                Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    Expanded(
-                                      child: Column(
-                                        crossAxisAlignment: CrossAxisAlignment.start,
-                                        children: [
-                                          Text(
-                                            plantao.local.apelido,
-                                            style: const TextStyle(
-                                              fontSize: 18,
-                                              fontWeight: FontWeight.bold,
-                                            ),
-                                          ),
-                                          Text(
-                                            plantao.local.nome,
-                                            style: TextStyle(
-                                              fontSize: 14,
-                                              color: Colors.grey[600],
-                                            ),
-                                          ),
-                                        ],
+                                    Text(
+                                      plantao.local.apelido,
+                                      style: const TextStyle(
+                                        fontSize: 18,
+                                        fontWeight: FontWeight.bold,
                                       ),
                                     ),
-                                    IconButton(
-                                      icon: const Icon(Icons.edit, size: 20),
-                                      onPressed: () => _navegarParaCadastro(plantao),
-                                      tooltip: 'Editar',
-                                    ),
-                                    IconButton(
-                                      icon: const Icon(
-                                        Icons.delete,
-                                        size: 20,
-                                        color: Colors.red,
+                                    Text(
+                                      plantao.local.nome,
+                                      style: TextStyle(
+                                        fontSize: 14,
+                                        color: Colors.grey[600],
                                       ),
-                                      onPressed: () => _confirmarExclusao(plantao),
-                                      tooltip: 'Excluir',
                                     ),
                                   ],
                                 ),

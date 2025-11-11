@@ -78,7 +78,7 @@ class PdfService {
           pw.SizedBox(height: 20),
 
           // Tabela resumo por local
-          _buildTabelaResumo(locaisOrdenados, totalGeral),
+          _buildTabelaResumo(locaisOrdenados),
           pw.SizedBox(height: 20),
 
           // Detalhamento por local
@@ -287,7 +287,6 @@ class PdfService {
 
   static pw.Widget _buildTabelaResumo(
     List<MapEntry<String, List<Plantao>>> locaisOrdenados,
-    double totalGeral,
   ) {
     return pw.Column(
       crossAxisAlignment: pw.CrossAxisAlignment.start,
@@ -311,8 +310,6 @@ class PdfService {
                 _buildTableCell('Local', isHeader: true),
                 _buildTableCell('Qtd', isHeader: true, alignment: pw.Alignment.center),
                 _buildTableCell('Total', isHeader: true, alignment: pw.Alignment.centerRight),
-                _buildTableCell('Média', isHeader: true, alignment: pw.Alignment.centerRight),
-                _buildTableCell('%', isHeader: true, alignment: pw.Alignment.center),
               ],
             ),
             // Dados
@@ -321,16 +318,12 @@ class PdfService {
               final local = plantoes.first.local;
               final quantidade = plantoes.length;
               final total = plantoes.fold<double>(0, (sum, p) => sum + p.valor);
-              final media = total / quantidade;
-              final percentual = (total / totalGeral * 100).toStringAsFixed(1);
 
               return pw.TableRow(
                 children: [
                   _buildTableCell(local.apelido),
                   _buildTableCell(quantidade.toString(), alignment: pw.Alignment.center),
                   _buildTableCell(_formatarValor(total), alignment: pw.Alignment.centerRight),
-                  _buildTableCell(_formatarValor(media), alignment: pw.Alignment.centerRight),
-                  _buildTableCell('$percentual%', alignment: pw.Alignment.center),
                 ],
               );
             }),

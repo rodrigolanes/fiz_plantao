@@ -151,11 +151,47 @@ class _CadastroPlantaoScreenState extends State<CadastroPlantaoScreen> {
     }
   }
 
+  void _confirmarExclusao() {
+    final navigator = Navigator.of(context);
+    showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text('Confirmar Exclusão'),
+        content: Text(
+          'Deseja realmente excluir o plantão em ${widget.plantao!.local.apelido}?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => navigator.pop(),
+            child: const Text('Cancelar'),
+          ),
+          FilledButton(
+            onPressed: () async {
+              await DatabaseService.deletePlantao(widget.plantao!.id);
+              if (!mounted) return;
+              navigator.pop(); // Fecha o dialog
+              navigator.pop(null); // Volta para lista
+              if (!mounted) return;
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Plantão excluído com sucesso!'),
+                  backgroundColor: Colors.green,
+                ),
+              );
+            },
+            style: FilledButton.styleFrom(backgroundColor: Colors.red),
+            child: const Text('Excluir'),
+          ),
+        ],
+      ),
+    );
+  }
+
   void _salvar() {
     if (_formKey.currentState!.validate()) {
       if (_localIdSelecionado == null) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Selecione um local')),
+          const SnackBar(content: Text('Por favor, selecione um local')),
         );
         return;
       }
@@ -223,6 +259,15 @@ class _CadastroPlantaoScreenState extends State<CadastroPlantaoScreen> {
       appBar: AppBar(
         title: Text(isEdicao ? 'Editar Plantão' : 'Novo Plantão'),
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
+        actions: isEdicao
+            ? [
+                IconButton(
+                  icon: const Icon(Icons.delete, color: Colors.red),
+                  onPressed: () => _confirmarExclusao(),
+                  tooltip: 'Excluir plantão',
+                ),
+              ]
+            : null,
       ),
       body: Form(
         key: _formKey,
