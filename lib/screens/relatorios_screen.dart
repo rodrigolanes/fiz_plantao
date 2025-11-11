@@ -278,7 +278,7 @@ class _RelatoriosScreenState extends State<RelatoriosScreen> {
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: Text(
-                        '$quantidadeGeral plantões',
+                        '$quantidadeGeral ${quantidadeGeral == 1 ? 'plantão' : 'plantões'}',
                         style: const TextStyle(
                           color: Colors.white,
                           fontSize: 12,
@@ -446,7 +446,7 @@ class _RelatoriosScreenState extends State<RelatoriosScreen> {
                           subtitle: Padding(
                             padding: const EdgeInsets.only(top: 4),
                             child: Text(
-                              '$quantidade plantões',
+                              '$quantidade ${quantidade == 1 ? 'plantão' : 'plantões'}',
                               style: TextStyle(
                                 fontSize: 13,
                                 color: Colors.grey[600],

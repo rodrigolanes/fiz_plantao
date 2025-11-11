@@ -209,7 +209,7 @@ class PdfService {
                   borderRadius: pw.BorderRadius.circular(12),
                 ),
                 child: pw.Text(
-                  '$quantidadeGeral plantões',
+                  '$quantidadeGeral ${quantidadeGeral == 1 ? 'plantão' : 'plantões'}',
                   style: pw.TextStyle(
                     fontSize: 12,
                     fontWeight: pw.FontWeight.bold,
@@ -442,18 +442,9 @@ class PdfService {
                                 width: 10,
                                 height: 10,
                                 margin: const pw.EdgeInsets.only(right: 4),
-                                decoration: pw.BoxDecoration(
+                                decoration: const pw.BoxDecoration(
                                   color: PdfColors.green600,
                                   shape: pw.BoxShape.circle,
-                                ),
-                                child: pw.Center(
-                                  child: pw.Text(
-                                    '✓',
-                                    style: const pw.TextStyle(
-                                      fontSize: 7,
-                                      color: PdfColors.white,
-                                    ),
-                                  ),
                                 ),
                               ),
                             pw.Text(
