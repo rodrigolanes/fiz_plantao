@@ -1,5 +1,26 @@
 # Notas de Versão - Fiz Plantão
 
+## Versão 1.4.2 (Build 20) - 10 de novembro de 2025
+
+### 🔧 Melhorias Técnicas
+
+**Autenticação Google**
+- Removido `signOut()` forçado antes do login para evitar perda de tokens
+- Adicionados logs detalhados para debug do fluxo OAuth
+- Corrigido problema de "Token Google ausente" em alguns cenários
+- Melhor tratamento de cancelamento de login
+
+**CI/CD**
+- Geração automática do `supabase_config.dart` no GitHub Actions
+- Campo `enableGoogleIntegrations` adicionado ao config gerado
+- Suporte completo a secrets do Supabase (URL, Anon Key, Google Client ID)
+
+**Documentação**
+- Instruções de configuração de secrets do GitHub
+- Processo de deploy simplificado
+
+---
+
 ## Versão 1.4.0 (Build 18) - 8 de novembro de 2025
 
 ### 📅 Integração Google Calendar
