@@ -19,7 +19,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
         with:
-          token: ${{ secrets.GITHUB_TOKEN }}
+          token: ${{ secrets.GH_TOKEN }}
 
       - name: Increment Version
         id: version
@@ -57,13 +57,16 @@ jobs:
           sed -i "s/^version: .*/version: $new_version/" pubspec.yaml
           
           # Configurar git
-          git config user.name "GitHub Actions"
-          git config user.email "actions@github.com"
+          git config --global user.name 'github-actions[bot]'
+          git config --global user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          
+          # Configurar remote com PAT
+          git remote set-url origin https://x-access-token:${{ secrets.GH_TOKEN }}@github.com/rodrigolanes/fiz_plantao.git
           
           # Commit e push
           git add pubspec.yaml
           git commit -m "chore: bump version to $new_version [skip ci]"
-          git push
+          git push origin HEAD:main
 
       - name: Setup Java
         uses: actions/setup-java@v4
