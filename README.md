@@ -454,15 +454,17 @@ Este projeto foi configurado para funcionar em dois cenários:
 - GitHub Actions faz todo o build e deploy automaticamente
 - Se houver problemas com SSL corporativo, apenas trabalhe no código - o CI/CD resolve
 
-### Deploy Automático
+### Deploy Manual
 
-Todo push para a branch `main` aciona automaticamente:
-1. ✅ Build do APK e AAB via GitHub Actions
-2. ✅ Incremento automático da versão (se configurado)
-3. ✅ Criação de release notes
-4. ✅ Publicação de artefatos
-
-**Importante**: Sempre incremente a versão no `pubspec.yaml` antes de fazer push para `main`.
+O deploy é feito manualmente via GitHub Actions:
+1. Acesse: [GitHub Actions](https://github.com/rodrigolanes/fiz_plantao/actions/workflows/deploy-internal.yml)
+2. Clique em **"Run workflow"**
+3. Escolha o tipo de incremento de versão (patch/minor/major)
+4. O workflow automaticamente:
+   - ✅ Incrementa a versão no `pubspec.yaml`
+   - ✅ Executa os testes
+   - ✅ Build do AAB
+   - ✅ Deploy para Internal Testing na Play Store
 
 ### Pacotes Principais
 
@@ -596,12 +598,6 @@ flutter build apk --split-per-abi
 ```
 
 Os APKs estarão em `build/app/outputs/flutter-apk/`
-
-**Importante:** Ao atualizar o app, incremente a versão no `pubspec.yaml`:
-
-```yaml
-version: 1.0.1+2 # formato: versionName+versionCode
-```
 
 ## 📝 Modelo de Dados
 
@@ -795,9 +791,8 @@ Esta seção documenta o processo de upgrade de SDK/dependências realizado e as
 - [x] Atualizar dependências seguras
 - [x] Rodar `flutter pub get`
 - [x] Rodar `flutter analyze` e resolver problemas
-- [ ] Rodar `flutter test` (pendente: adicionar testes)
-- [ ] Atualizar versão no `pubspec.yaml` (ex.: `1.0.1+2` após novo release)
-- [ ] Atualizar Changelog
+- [x] Rodar `flutter test`
+- [ ] Atualizar RELEASE_NOTES.md após deploy
 
 ### Próximos Passos
 

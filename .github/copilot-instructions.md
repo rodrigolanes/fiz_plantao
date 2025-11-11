@@ -337,14 +337,6 @@ import '../services/database_service.dart';
   - Descrever novidades, melhorias e correções
   - Usar linguagem clara para usuários finais
 
-### Antes de Push para Develop (OBRIGATÓRIO)
-
-- [ ] **SEMPRE incrementar version no pubspec.yaml** antes de fazer push para `develop`
-  - Branch `develop` aciona GitHub Actions que faz deploy automático
-  - Formato: `MAJOR.MINOR.PATCH+BUILD` (ex: `1.0.0+5`)
-  - Incrementar `+BUILD` (versionCode) a cada push
-  - Deploy falhará se a versão não for incrementada
-
 ### Debug Comum
 
 - **"Box not found":** Verificar se Hive.initFlutter() foi chamado
@@ -371,53 +363,40 @@ flutter:
 
 ## Build e Deploy
 
-### Ambientes de Deploy
+### Deploy Manual via GitHub Actions
 
-**Develop → Internal Testing (Automático)**
+**Internal Testing**
 
-- Branch `develop` dispara GitHub Actions automaticamente
-- Deploy para Play Store Internal Track
-- Prefixos que NÃO disparam deploy: `docs:`, `chore:`, `style:`
+- Workflow: [deploy-internal.yml](https://github.com/rodrigolanes/fiz_plantao/actions/workflows/deploy-internal.yml)
+- Trigger: Manual via "Run workflow"
+- Incremento de versão: Automático (escolher patch/minor/major)
+- Destino: Play Store Internal Track
 
-**Main → Production (Manual Promotion)**
+**Production**
 
-- Branch `main` + tag de versão para marcar a release (ex: `v1.3.1`)
-- Versão já está em Internal Testing, apenas promover para Production
-- **NÃO faz novo build**, promove o AAB já testado diretamente no Play Console
+- Promoção manual diretamente no Play Console
+- Versão já testada em Internal Testing
+- **NÃO faz novo build**, promove o AAB já testado
 
 ### Processo de Release para Produção
 
 **Passos obrigatórios:**
 
-1. **Garantir que develop está estável**
+1. **Garantir que versão está estável**
 
    - Testar versão Internal Testing na Play Store
    - Validar todas funcionalidades
-   - Confirmar versão no `pubspec.yaml` (ex: `1.2.5+13`)
+   - Anotar número da versão (ex: `1.2.5` build `13`)
 
-2. **Merge develop → main**
-
-   ```bash
-   git checkout main
-   git pull origin main
-   git merge develop
-   ```
-
-3. **Criar tag de versão**
+2. **Criar tag de versão**
 
    ```bash
    # Formato: v{MAJOR}.{MINOR}.{PATCH} (sem o +BUILD)
    git tag v1.2.5
-   ```
-
-4. **Push main e tag**
-
-   ```bash
-   git push origin main
    git push origin v1.2.5
    ```
 
-5. **Promover no Play Console (MANUAL)**
+3. **Promover no Play Console (MANUAL)**
    - Acesse: https://play.google.com/console
    - Selecione o app "Fiz Plantão"
    - Vá em **Testing → Internal testing** e confirme que a versão (ex: `1.3.1` code `15`) está disponível
@@ -441,14 +420,16 @@ Formato no `pubspec.yaml`: `version: MAJOR.MINOR.PATCH+BUILD`
 
 Exemplo: `1.2.5+13` onde:
 
-- `1.2.5` = versionName (user-facing, usado na tag)
-- `+13` = versionCode (internal, Android, auto-incrementa)
+- `1.2.5` = versionName (user-facing)
+- `+13` = versionCode (internal, Android)
 
-**Incrementar sempre antes de push para develop:**
+**Incremento automático via GitHub Actions:**
 
-- PATCH (+build): Bug fixes (ex: 1.2.5 → 1.2.6)
-- MINOR (+build): New features (ex: 1.2.5 → 1.3.0)
-- MAJOR (+build): Breaking changes (ex: 1.2.5 → 2.0.0)
+- PATCH: Bug fixes (ex: 1.2.5 → 1.2.6)
+- MINOR: New features (ex: 1.2.5 → 1.3.0)
+- MAJOR: Breaking changes (ex: 1.2.5 → 2.0.0)
+
+O workflow incrementa automaticamente tanto versionName quanto versionCode (+1).
 
 ## Melhorias Futuras Planejadas
 
