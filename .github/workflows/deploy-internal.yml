@@ -1,20 +1,69 @@
 name: Deploy Internal Testing
 on:
-  push:
-    branches: [main]
+  workflow_dispatch:
+    inputs:
+      version_bump:
+        description: 'Tipo de incremento de versão'
+        required: true
+        default: 'patch'
+        type: choice
+        options:
+          - patch
+          - minor
+          - major
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    # Pula deploy se commit não envolve mudanças de código
-    # Prefixos ignorados: docs, chore, style, refactor (sem mudança funcional)
-    if: |
-      !startsWith(github.event.head_commit.message, 'docs:') &&
-      !startsWith(github.event.head_commit.message, 'chore:') &&
-      !startsWith(github.event.head_commit.message, 'style:')
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Increment Version
+        id: version
+        run: |
+          # Ler versão atual
+          current_version=$(grep '^version:' pubspec.yaml | sed 's/version: //')
+          version_name=$(echo $current_version | cut -d'+' -f1)
+          build_number=$(echo $current_version | cut -d'+' -f2)
+          
+          # Incrementar build number
+          new_build=$((build_number + 1))
+          
+          # Incrementar version name baseado no input
+          IFS='.' read -r major minor patch <<< "$version_name"
+          case "${{ github.event.inputs.version_bump }}" in
+            major)
+              major=$((major + 1))
+              minor=0
+              patch=0
+              ;;
+            minor)
+              minor=$((minor + 1))
+              patch=0
+              ;;
+            patch)
+              patch=$((patch + 1))
+              ;;
+          esac
+          
+          new_version="${major}.${minor}.${patch}+${new_build}"
+          echo "new_version=$new_version" >> $GITHUB_OUTPUT
+          echo "Nova versão: $new_version"
+          
+          # Atualizar pubspec.yaml
+          sed -i "s/^version: .*/version: $new_version/" pubspec.yaml
+          
+          # Configurar git
+          git config user.name "GitHub Actions"
+          git config user.email "actions@github.com"
+          
+          # Commit e push
+          git add pubspec.yaml
+          git commit -m "chore: bump version to $new_version [skip ci]"
+          git push
 
       - name: Setup Java
         uses: actions/setup-java@v4
