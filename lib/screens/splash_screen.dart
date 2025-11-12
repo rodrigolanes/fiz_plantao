@@ -46,7 +46,7 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
     });
   }
 
-  void _checkAuthAndNavigate() {
+  void _checkAuthAndNavigate() async {
     final navigator = Navigator.of(context);
 
     // Verifica se usuário está logado
@@ -60,6 +60,14 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
         // Inicializa sincronização em background ao entrar no app
         SyncService.initialize();
 
+        // Faz o download inicial dos dados do Supabase
+        try {
+          await SyncService.syncAll();
+        } catch (e) {
+          // Continua mesmo se falhar (pode estar offline)
+        }
+
+        if (!mounted) return;
         navigator.pushReplacement(
           MaterialPageRoute(builder: (_) => const ListaPlantoesScreen()),
         );

@@ -126,9 +126,9 @@ class PdfService {
 
     String subtituloFiltro = apenasProximos ? 'Apenas pagamentos futuros' : 'Todos os períodos';
     if (filtroPagamento == 'pagos') {
-      subtituloFiltro += ' • Apenas pagos';
+      subtituloFiltro += ' / Apenas pagos';
     } else if (filtroPagamento == 'pendentes') {
-      subtituloFiltro += ' • Apenas pendentes';
+      subtituloFiltro += ' / Apenas pendentes';
     }
 
     return pw.Column(
@@ -435,33 +435,51 @@ class PdfService {
                     child: pw.Row(
                       mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
                       children: [
-                        pw.Row(
-                          children: [
-                            if (plantao.pago)
-                              pw.Container(
-                                width: 10,
-                                height: 10,
-                                margin: const pw.EdgeInsets.only(right: 4),
-                                decoration: const pw.BoxDecoration(
-                                  color: PdfColors.green600,
-                                  shape: pw.BoxShape.circle,
-                                ),
-                              ),
-                            pw.Text(
-                              dataHora,
-                              style: pw.TextStyle(
-                                fontSize: 9,
-                                color: plantao.pago ? PdfColors.grey500 : PdfColors.grey700,
+                        pw.Expanded(
+                          flex: 3,
+                          child: pw.Text(
+                            dataHora,
+                            style: const pw.TextStyle(
+                              fontSize: 9,
+                              color: PdfColors.grey700,
+                            ),
+                          ),
+                        ),
+                        pw.SizedBox(width: 8),
+                        pw.Expanded(
+                          flex: 2,
+                          child: pw.Container(
+                            padding: const pw.EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                            decoration: pw.BoxDecoration(
+                              color: plantao.pago ? PdfColors.green50 : PdfColors.orange50,
+                              borderRadius: pw.BorderRadius.circular(3),
+                              border: pw.Border.all(
+                                color: plantao.pago ? PdfColors.green300 : PdfColors.orange300,
+                                width: 0.5,
                               ),
                             ),
-                          ],
+                            child: pw.Text(
+                              plantao.pago ? 'Pago' : 'Pendente',
+                              textAlign: pw.TextAlign.center,
+                              style: pw.TextStyle(
+                                fontSize: 8,
+                                fontWeight: pw.FontWeight.bold,
+                                color: plantao.pago ? PdfColors.green800 : PdfColors.orange800,
+                              ),
+                            ),
+                          ),
                         ),
-                        pw.Text(
-                          _formatarValor(plantao.valor),
-                          style: pw.TextStyle(
-                            fontSize: 9,
-                            fontWeight: pw.FontWeight.bold,
-                            color: plantao.pago ? PdfColors.grey500 : PdfColors.grey800,
+                        pw.SizedBox(width: 8),
+                        pw.SizedBox(
+                          width: 60,
+                          child: pw.Text(
+                            _formatarValor(plantao.valor),
+                            textAlign: pw.TextAlign.right,
+                            style: pw.TextStyle(
+                              fontSize: 9,
+                              fontWeight: pw.FontWeight.bold,
+                              color: PdfColors.grey800,
+                            ),
                           ),
                         ),
                       ],

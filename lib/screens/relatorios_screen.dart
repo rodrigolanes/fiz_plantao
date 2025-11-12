@@ -159,36 +159,46 @@ class _RelatoriosScreenState extends State<RelatoriosScreen> {
             child: Column(
               children: [
                 Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    const Icon(Icons.info_outline, size: 20),
-                    const SizedBox(width: 8),
                     Expanded(
-                      child: Text(
-                        _apenasProximos ? 'Exibindo apenas pagamentos futuros' : 'Exibindo todos os plantões',
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: Colors.teal[800],
-                          fontWeight: FontWeight.w500,
-                        ),
+                      child: Row(
+                        children: [
+                          Icon(Icons.info_outline, size: 20, color: Colors.teal[700]),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              _apenasProximos ? 'Exibindo apenas pagamentos futuros' : 'Exibindo todos os plantões',
+                              style: TextStyle(
+                                fontSize: 14,
+                                color: Colors.teal[800],
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                     ),
-                    Switch(
-                      value: _apenasProximos,
-                      onChanged: (value) {
-                        setState(() {
-                          _apenasProximos = value;
-                        });
-                      },
-                      activeThumbColor: Colors.teal,
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 8),
-                Row(
-                  children: [
-                    const Text(
-                      'Apenas pagamentos futuros',
-                      style: TextStyle(fontSize: 13),
+                    Row(
+                      children: [
+                        Text(
+                          'Apenas futuros',
+                          style: TextStyle(
+                            fontSize: 13,
+                            color: Colors.grey[700],
+                          ),
+                        ),
+                        const SizedBox(width: 4),
+                        Switch(
+                          value: _apenasProximos,
+                          onChanged: (value) {
+                            setState(() {
+                              _apenasProximos = value;
+                            });
+                          },
+                          activeThumbColor: Colors.teal,
+                        ),
+                      ],
                     ),
                   ],
                 ),
@@ -603,35 +613,50 @@ class _RelatoriosScreenState extends State<RelatoriosScreen> {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Expanded(
-                      child: Row(
-                        children: [
-                          if (plantao.pago)
-                            Icon(
-                              Icons.check_circle,
-                              size: 14,
-                              color: Colors.green[600],
-                            ),
-                          if (plantao.pago) const SizedBox(width: 4),
-                          Expanded(
-                            child: Text(
-                              DateFormat('dd/MM/yyyy HH:mm', 'pt_BR').format(plantao.dataHora),
-                              style: TextStyle(
-                                fontSize: 13,
-                                color: Colors.grey[700],
-                                decoration: plantao.pago ? TextDecoration.lineThrough : null,
-                              ),
-                            ),
-                          ),
-                        ],
+                      flex: 3,
+                      child: Text(
+                        DateFormat('dd/MM/yyyy HH:mm', 'pt_BR').format(plantao.dataHora),
+                        style: TextStyle(
+                          fontSize: 13,
+                          color: Colors.grey[700],
+                        ),
                       ),
                     ),
-                    Text(
-                      _formatarValor(plantao.valor),
-                      style: TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w500,
-                        color: plantao.pago ? Colors.grey[500] : Colors.grey[800],
-                        decoration: plantao.pago ? TextDecoration.lineThrough : null,
+                    const SizedBox(width: 8),
+                    Expanded(
+                      flex: 2,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: plantao.pago ? Colors.green[50] : Colors.orange[50],
+                          borderRadius: BorderRadius.circular(4),
+                          border: Border.all(
+                            color: plantao.pago ? Colors.green[300]! : Colors.orange[300]!,
+                            width: 1,
+                          ),
+                        ),
+                        child: Text(
+                          plantao.pago ? 'Pago' : 'Pendente',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600,
+                            color: plantao.pago ? Colors.green[800] : Colors.orange[800],
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    SizedBox(
+                      width: 80,
+                      child: Text(
+                        _formatarValor(plantao.valor),
+                        textAlign: TextAlign.right,
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w500,
+                          color: Colors.grey[800],
+                        ),
                       ),
                     ),
                   ],
