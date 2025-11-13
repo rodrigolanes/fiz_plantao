@@ -140,10 +140,12 @@ class _ListaPlantoesScreenState extends State<ListaPlantoesScreen> {
       ),
     );
     if (!mounted) return;
+    // Sempre recarrega a lista quando retorna da tela de cadastro/edição
+    // Isso garante que exclusões e outras mudanças sejam refletidas
+    _carregarDados();
+    if (!mounted) return;
     if (resultado != null) {
       await DatabaseService.savePlantao(resultado);
-      if (!mounted) return;
-      _carregarDados();
       if (!mounted) return;
       messenger.showSnackBar(
         SnackBar(
