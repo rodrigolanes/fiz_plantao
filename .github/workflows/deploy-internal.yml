@@ -161,3 +161,22 @@ jobs:
           whatsNewDirectory: android/
           mappingFile: build/app/outputs/mapping/release/mapping.txt
           debugSymbols: native-debug-symbols.zip
+
+      - name: Create Git Tag
+        if: success()
+        run: |
+          # Extrair apenas o version name (sem o build number)
+          version_name=$(echo "${{ steps.version.outputs.new_version }}" | cut -d'+' -f1)
+          tag_name="v${version_name}"
+          
+          echo "Criando tag: $tag_name"
+          
+          # Configurar git
+          git config --global user.name 'github-actions[bot]'
+          git config --global user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          
+          # Criar e enviar a tag
+          git tag -a "$tag_name" -m "Release $tag_name"
+          git push origin "$tag_name"
+          
+          echo "Tag $tag_name criada e enviada com sucesso!"
