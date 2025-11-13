@@ -18,7 +18,7 @@ publish_to: "none" # Remove this line if you wish to publish to pub.dev
 # of the product and file versions while build-number is used as the build suffix.
 # NOTA: A versão abaixo é automaticamente incrementada pelo GitHub Actions durante o deploy.
 # Não modifique manualmente. O workflow deploy-internal.yml gerencia o versionamento.
-version: 1.6.0+30
+version: 1.6.1+31
 
 environment:
   sdk: ">=3.5.0 <4.0.0"
