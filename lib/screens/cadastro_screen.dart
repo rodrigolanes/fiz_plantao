@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import '../config/config_helper.dart';
 import '../services/auth_service.dart';
 import '../services/log_service.dart';
-import 'lista_plantoes_screen.dart';
+import 'splash_screen.dart';
 import 'verificacao_email_screen.dart';
 
 class CadastroScreen extends StatefulWidget {
@@ -88,9 +88,9 @@ class _CadastroScreenState extends State<CadastroScreen> {
 
       if (!mounted) return;
 
-      // Navegar para tela principal
+      // Navegar para splash screen para carregar dados do usuário
       Navigator.of(context).pushReplacement(
-        MaterialPageRoute(builder: (_) => const ListaPlantoesScreen()),
+        MaterialPageRoute(builder: (_) => const SplashScreen()),
       );
     } catch (e) {
       LogService.ui('Erro ao fazer cadastro com Google', e);

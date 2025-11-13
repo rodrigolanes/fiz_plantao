@@ -4,8 +4,8 @@ import 'package:flutter/material.dart';
 
 import '../services/auth_service.dart';
 import '../services/log_service.dart';
-import 'lista_plantoes_screen.dart';
 import 'login_screen.dart';
+import 'splash_screen.dart';
 
 class VerificacaoEmailScreen extends StatefulWidget {
   const VerificacaoEmailScreen({super.key});
@@ -53,7 +53,7 @@ class _VerificacaoEmailScreenState extends State<VerificacaoEmailScreen> {
 
         Navigator.of(context).pushReplacement(
           MaterialPageRoute(
-            builder: (_) => const ListaPlantoesScreen(),
+            builder: (_) => const SplashScreen(),
           ),
         );
       }

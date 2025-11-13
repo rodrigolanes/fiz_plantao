@@ -4,7 +4,7 @@ import '../config/config_helper.dart';
 import '../services/auth_service.dart';
 import '../services/log_service.dart';
 import 'cadastro_screen.dart';
-import 'lista_plantoes_screen.dart';
+import 'splash_screen.dart';
 import 'verificacao_email_screen.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -87,9 +87,9 @@ class _LoginScreenState extends State<LoginScreen> {
 
       if (!mounted) return;
 
-      // Navegar para tela principal
+      // Navegar para splash screen para carregar dados do usuário
       Navigator.of(context).pushReplacement(
-        MaterialPageRoute(builder: (_) => const ListaPlantoesScreen()),
+        MaterialPageRoute(builder: (_) => const SplashScreen()),
       );
     } catch (e) {
       LogService.ui('Erro ao fazer login com Google', e);
