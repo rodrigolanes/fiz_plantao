@@ -253,5 +253,42 @@ void main() {
       expect(plantoesOrdenados[0].id, 'plantao-ativo');
       expect(plantoesOrdenados[0].ativo, true);
     });
+
+    test('deletePlantao deve remover plantão da lista de ativos', () async {
+      final agora = DateTime.now();
+
+      // Cria e salva um plantão
+      final plantao = Plantao(
+        id: 'plantao-para-deletar',
+        local: localTeste,
+        dataHora: agora,
+        duracao: Duracao.dozeHoras,
+        valor: 1500.0,
+        previsaoPagamento: agora.add(const Duration(days: 30)),
+        criadoEm: agora,
+        atualizadoEm: agora,
+        ativo: true,
+        userId: userId,
+      );
+
+      await plantoesBox.put(plantao.id, plantao);
+
+      // Verifica que o plantão está na lista de ativos
+      var plantoesAtivos = DatabaseService.getPlantoesAtivos();
+      expect(plantoesAtivos.length, 1);
+      expect(plantoesAtivos[0].id, 'plantao-para-deletar');
+
+      // Deleta o plantão (soft delete)
+      await DatabaseService.deletePlantao(plantao.id);
+
+      // Verifica que o plantão não está mais na lista de ativos
+      plantoesAtivos = DatabaseService.getPlantoesAtivos();
+      expect(plantoesAtivos.length, 0);
+
+      // Verifica que o plantão ainda existe no box, mas com ativo = false
+      final plantaoDeletado = plantoesBox.get(plantao.id);
+      expect(plantaoDeletado, isNotNull);
+      expect(plantaoDeletado!.ativo, false);
+    });
   });
 }
