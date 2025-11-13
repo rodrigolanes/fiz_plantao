@@ -53,20 +53,8 @@ jobs:
           echo "new_version=$new_version" >> $GITHUB_OUTPUT
           echo "Nova versão: $new_version"
           
-          # Atualizar pubspec.yaml
+          # Atualizar pubspec.yaml (mas NÃO fazer commit ainda)
           sed -i "s/^version: .*/version: $new_version/" pubspec.yaml
-          
-          # Configurar git
-          git config --global user.name 'github-actions[bot]'
-          git config --global user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          
-          # Configurar remote com PAT
-          git remote set-url origin https://x-access-token:${{ secrets.GH_TOKEN }}@github.com/rodrigolanes/fiz_plantao.git
-          
-          # Commit e push
-          git add pubspec.yaml
-          git commit -m "chore: bump version to $new_version [skip ci]"
-          git push origin HEAD:main
 
       - name: Setup Java
         uses: actions/setup-java@v4
@@ -161,6 +149,23 @@ jobs:
           whatsNewDirectory: android/
           mappingFile: build/app/outputs/mapping/release/mapping.txt
           debugSymbols: native-debug-symbols.zip
+
+      - name: Commit Version Bump
+        if: success()
+        run: |
+          # Configurar git
+          git config --global user.name 'github-actions[bot]'
+          git config --global user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          
+          # Configurar remote com PAT
+          git remote set-url origin https://x-access-token:${{ secrets.GH_TOKEN }}@github.com/rodrigolanes/fiz_plantao.git
+          
+          # Commit e push da mudança de versão
+          git add pubspec.yaml
+          git commit -m "chore: bump version to ${{ steps.version.outputs.new_version }} [skip ci]"
+          git push origin HEAD:main
+          
+          echo "Versão ${{ steps.version.outputs.new_version }} commitada com sucesso!"
 
       - name: Create Git Tag
         if: success()
