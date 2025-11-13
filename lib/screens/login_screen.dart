@@ -50,9 +50,9 @@ class _LoginScreenState extends State<LoginScreen> {
         return;
       }
 
-      // Navegar para tela principal
+      // Navegar para splash screen para carregar dados do usuário
       Navigator.of(context).pushReplacement(
-        MaterialPageRoute(builder: (_) => const ListaPlantoesScreen()),
+        MaterialPageRoute(builder: (_) => const SplashScreen()),
       );
     } catch (e) {
       LogService.ui('Erro ao fazer login com email', e);
