@@ -133,9 +133,22 @@ jobs:
 
       - name: Create native debug symbols zip
         run: |
-          cd build/app/intermediates/merged_native_libs/release/out/lib
-          zip -r $GITHUB_WORKSPACE/native-debug-symbols.zip .
+          # Tentar encontrar os símbolos nativos em diferentes locais possíveis
+          if [ -d "build/app/intermediates/merged_native_libs/release/mergeReleaseNativeLibs/out/lib" ]; then
+            cd build/app/intermediates/merged_native_libs/release/mergeReleaseNativeLibs/out/lib
+            zip -r $GITHUB_WORKSPACE/native-debug-symbols.zip .
+          elif [ -d "build/app/intermediates/merged_native_libs/release/out/lib" ]; then
+            cd build/app/intermediates/merged_native_libs/release/out/lib
+            zip -r $GITHUB_WORKSPACE/native-debug-symbols.zip .
+          elif [ -d "build/app/intermediates/merged_native_libs/release/lib" ]; then
+            cd build/app/intermediates/merged_native_libs/release/lib
+            zip -r $GITHUB_WORKSPACE/native-debug-symbols.zip .
+          else
+            echo "Native libs directory not found, checking alternative locations..."
+            find build/app/intermediates -name "*.so" -type f | head -1 | xargs dirname | xargs -I {} sh -c 'cd {} && zip -r $GITHUB_WORKSPACE/native-debug-symbols.zip .'
+          fi
           cd $GITHUB_WORKSPACE
+          ls -lh native-debug-symbols.zip || echo "Warning: native-debug-symbols.zip not created"
 
       - name: Upload to Internal Track
         uses: r0adkll/upload-google-play@v1

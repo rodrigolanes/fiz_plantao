@@ -62,7 +62,8 @@ O **Fiz Plantão** é uma solução prática para médicos registrarem e acompan
   - [x] Valor e previsão de pagamento
 - [x] **Listagem de Plantões**
   - [x] Ordenação por data (mais recentes primeiro)
-  - [x] Cards com informações completas
+  - [x] Cards simplificados com informações essenciais
+  - [x] Navegação por toque para edição
   - [x] Status visual de pagamento
   - [x] Apenas plantões ativos são exibidos
   - [x] Filtro por local (dropdown)
@@ -73,6 +74,7 @@ O **Fiz Plantão** é uma solução prática para médicos registrarem e acompan
   - [x] Indicador visual de filtro ativo
 - [x] **Edição e Exclusão**
   - [x] Editar plantões existentes
+  - [x] Botão de exclusão na tela de edição
   - [x] Soft delete com confirmação
   - [x] Feedback visual
 
@@ -82,12 +84,16 @@ O **Fiz Plantão** é uma solução prática para médicos registrarem e acompan
   - [x] Total geral destacado com quantidade de plantões
   - [x] Toggle "Apenas pagamentos futuros" (ativado por padrão)
   - [x] Listagem de locais ordenada por valor
-  - [x] Percentual e barra de progresso por local
   - [x] Detalhes expansíveis:
-    - [x] Valor médio por plantão
-    - [x] Quantidade total
+    - [x] Quantidade total de plantões
     - [x] Plantões agrupados por data de pagamento
     - [x] Data/hora e valor de cada plantão
+    - [x] Badges de status coloridas (Pago/Pendente)
+- [x] **Exportação de Relatórios**
+  - [x] Geração de PDF com layout profissional
+  - [x] Filtros aplicados ao PDF (local e período)
+  - [x] Compartilhamento direto do PDF
+  - [x] Dados agrupados por local e data de pagamento
 
 ### 💾 Persistência e Sincronização
 
@@ -101,6 +107,8 @@ O **Fiz Plantão** é uma solução prática para médicos registrarem e acompan
 - [x] **Supabase Backend**
   - [x] PostgreSQL com Row Level Security
   - [x] Sincronização bidirecional (up e down)
+  - [x] Sincronização automática no login
+  - [x] Carregamento de dados através da Splash Screen
   - [x] Realtime Subscriptions
   - [x] Detecção automática de mudanças remotas
   - [x] Merge inteligente com Last-Write-Wins
@@ -148,7 +156,11 @@ O **Fiz Plantão** é uma solução prática para médicos registrarem e acompan
 
 - [ ] **Exportação de Dados**
 
-  - [ ] Exportar para PDF
+  - [x] Exportar para PDF
+  - [x] Relatório agrupado por local
+  - [x] Filtro de pagamentos futuros
+  - [x] Compartilhamento direto do PDF
+  - [ ] Exportar para Excel
   - [ ] Exportar para Excel/CSV
   - [ ] Compartilhar relatórios
 

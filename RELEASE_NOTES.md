@@ -1,5 +1,77 @@
 # Notas de Versão - Fiz Plantão
 
+## Versão 1.6.0 (Build 29) - 11 de novembro de 2025
+
+### 📄 Exportação de Relatórios em PDF
+
+**Nova funcionalidade de exportação**
+- Geração de relatórios profissionais em formato PDF
+- Botão de exportação na tela de relatórios
+- Dados agrupados por local e data de pagamento
+- Filtros aplicados automaticamente ao PDF (local e período)
+- Compartilhamento direto do arquivo gerado
+- Layout otimizado para impressão
+
+**Estrutura do relatório**
+- Tabela resumo com total por local
+- Listagem detalhada de plantões
+- Valores formatados em R$ (pt_BR)
+- Datas formatadas no padrão brasileiro
+- Status visual com badges coloridas
+
+### 🔄 Sincronização Aprimorada
+
+**Carregamento automático de dados**
+- Sincronização automática após login bem-sucedido
+- Dados carregados via Splash Screen antes de mostrar interface
+- Correção de bug: locais e plantões agora aparecem imediatamente após login
+- Garantia de dados atualizados em todos os dispositivos
+
+**Fluxo de autenticação melhorado**
+- Login com email redireciona para Splash Screen
+- Google Sign-In redireciona para Splash Screen
+- Verificação de email redireciona para Splash Screen
+- Carregamento de dados antes de exibir tela principal
+
+### 🎨 Melhorias de Interface
+
+**Interface simplificada**
+- Removidos botões de edição/exclusão dos cards de plantões
+- Card agora responde ao toque para editar (mais intuitivo)
+- Botão de exclusão movido para a tela de edição (AppBar)
+- Interface mais limpa e moderna
+
+**Relatórios redesenhados**
+- Removidas métricas desnecessárias (média e percentual)
+- Badges de status substituem ícones (mais claras)
+- Badge "Pago" com fundo verde e borda verde
+- Badge "Pendente" com fundo laranja e borda laranja
+- Layout de 3 colunas: Data/Hora | Status | Valor
+- Ícone de filtro colorido e visível
+
+### 🔧 Melhorias Técnicas
+
+**CI/CD Aprimorado**
+- Geração automática de símbolos de depuração nativos
+- Compatibilidade com múltiplas versões do Android Gradle Plugin
+- Fallback inteligente para localizar bibliotecas nativas
+- Resolve avisos do Google Play Console sobre símbolos faltantes
+- Deploy mais confiável para produção
+
+**Otimizações de código**
+- Métodos de exclusão otimizados
+- Melhor organização de métodos nos services
+- Código mais manutenível e testável
+
+### 🐛 Correções
+
+- **Sincronização**: Dados agora carregam corretamente após login
+- **Filtros**: Ícone de filtro agora é visível nos relatórios
+- **Navegação**: Fluxo de autenticação corrigido para carregar dados
+- **CI/CD**: Símbolos nativos agora são incluídos no build
+
+---
+
 ## Versão 1.4.2 (Build 20) - 10 de novembro de 2025
 
 ### 🔧 Melhorias Técnicas

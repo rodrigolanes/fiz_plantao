@@ -328,12 +328,12 @@ import '../services/database_service.dart';
 - [ ] Rodar `flutter analyze` para verificar problemas no código
 - [ ] Rodar `flutter pub run build_runner build` se alterou modelos Hive
 - [ ] Verificar que dados persistem após restart (se mudou persistência)
-- [ ] **Atualizar README.md** com novas funcionalidades ou mudanças relevantes
+- [ ] **IMPORTANTE**: Não alterar manualmente a versão no `pubspec.yaml` - isso é gerenciado pelo GitHub Actions
+- [ ] **Atualizar README.md** com novas funcionalidades ou mudanças relevantes (se aplicável)
   - Marcar features implementadas como [x]
   - Adicionar novas seções se necessário
-  - Atualizar versão atual no final do documento
-- [ ] **Atualizar RELEASE_NOTES.md** com as mudanças da versão
-  - Criar nova seção para a versão com data
+- [ ] **Atualizar RELEASE_NOTES.md** com as mudanças (se for release)
+  - Criar nova seção para a versão com data (GitHub Actions define a versão)
   - Descrever novidades, melhorias e correções
   - Usar linguagem clara para usuários finais
 
@@ -423,6 +423,13 @@ Exemplo: `1.2.5+13` onde:
 - `1.2.5` = versionName (user-facing)
 - `+13` = versionCode (internal, Android)
 
+**IMPORTANTE: Versionamento é gerenciado pelo GitHub Actions**
+
+- ⚠️ **NÃO modifique manualmente** a versão no `pubspec.yaml`
+- O workflow `deploy-internal.yml` incrementa automaticamente a versão
+- A versão no arquivo é apenas um placeholder/referência
+- Commits não devem alterar a linha `version:` do pubspec.yaml
+
 **Incremento automático via GitHub Actions:**
 
 - PATCH: Bug fixes (ex: 1.2.5 → 1.2.6)
@@ -483,6 +490,11 @@ R: Row Level Security no Supabase + filtro userId em todas as queries + email ve
 - Sincronização resiliente para campo boolean (versões antigas)
 - Geração de massa de teste com UUID e limpeza remota/local
 - Processo de promoção revertido para manual via Play Console (workflow removido)
+- Exportação de relatórios em PDF com filtros
+- Interface simplificada (cards limpos, badges de status)
+- Sincronização automática no login via Splash Screen
+- Símbolos nativos de depuração no CI/CD
+- Documentação: versionamento gerenciado pelo GitHub Actions
 
 ### Outubro 2025
 
@@ -494,4 +506,4 @@ R: Row Level Security no Supabase + filtro userId em todas as queries + email ve
 ---
 
 **Última atualização:** Novembro 2025
-**Versão do projeto:** 1.3.3+17
+**Versão atual:** Gerenciada automaticamente pelo GitHub Actions (veja RELEASE_NOTES.md)
