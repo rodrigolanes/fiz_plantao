@@ -109,10 +109,6 @@ class _ListaPlantoesScreenState extends State<ListaPlantoesScreen> {
     _carregarDados();
   }
 
-  String _formatarDataHora(DateTime dateTime) {
-    return DateFormat('dd/MM/yyyy HH:mm').format(dateTime);
-  }
-
   String _formatarData(DateTime date) {
     return DateFormat('dd/MM/yyyy').format(date);
   }
@@ -154,19 +150,6 @@ class _ListaPlantoesScreenState extends State<ListaPlantoesScreen> {
           ),
         ),
       );
-    }
-  }
-
-  Color _getStatusColor(DateTime previsaoPagamento) {
-    final hoje = DateTime.now();
-    final diferenca = previsaoPagamento.difference(hoje).inDays;
-
-    if (diferenca < 0) {
-      return Colors.red; // Atrasado
-    } else if (diferenca <= 7) {
-      return Colors.orange; // Próximo
-    } else {
-      return Colors.green; // No prazo
     }
   }
 
@@ -533,7 +516,6 @@ class _ListaPlantoesScreenState extends State<ListaPlantoesScreen> {
                     itemCount: plantoesFiltrados.length,
                     itemBuilder: (context, index) {
                       final plantao = plantoesFiltrados[index];
-                      final statusColor = _getStatusColor(plantao.previsaoPagamento);
 
                       return Card(
                         margin: const EdgeInsets.only(bottom: 12),
@@ -546,120 +528,153 @@ class _ListaPlantoesScreenState extends State<ListaPlantoesScreen> {
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Column(
+                                // Header: Local + Status Badge
+                                Row(
+                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    Text(
-                                      plantao.local.apelido,
-                                      style: const TextStyle(
-                                        fontSize: 18,
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
-                                    Text(
-                                      plantao.local.nome,
-                                      style: TextStyle(
-                                        fontSize: 14,
-                                        color: Colors.grey[600],
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                                const Divider(),
-                                Row(
-                                  children: [
-                                    const Icon(Icons.calendar_today, size: 16),
-                                    const SizedBox(width: 8),
-                                    Text(
-                                      _formatarDataHora(plantao.dataHora),
-                                      style: const TextStyle(fontSize: 14),
-                                    ),
-                                    const SizedBox(width: 16),
-                                    const Icon(Icons.access_time, size: 16),
-                                    const SizedBox(width: 8),
-                                    Text(
-                                      plantao.duracao.label,
-                                      style: const TextStyle(fontSize: 14),
-                                    ),
-                                  ],
-                                ),
-                                const SizedBox(height: 8),
-                                Row(
-                                  children: [
+                                    // Local info
                                     Expanded(
-                                      child: Row(
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
                                         children: [
                                           Text(
-                                            _formatarValor(plantao.valor),
+                                            plantao.local.apelido,
                                             style: const TextStyle(
-                                              fontSize: 16,
+                                              fontSize: 18,
                                               fontWeight: FontWeight.bold,
                                             ),
                                           ),
-                                          const SizedBox(width: 8),
-                                          Container(
-                                            padding: const EdgeInsets.symmetric(
-                                              horizontal: 8,
-                                              vertical: 2,
-                                            ),
-                                            decoration: BoxDecoration(
-                                              color: plantao.pago
-                                                  ? Colors.green.withValues(alpha: 0.15)
-                                                  : Colors.orange.withValues(alpha: 0.15),
-                                              borderRadius: BorderRadius.circular(8),
-                                            ),
-                                            child: Row(
-                                              mainAxisSize: MainAxisSize.min,
-                                              children: [
-                                                Icon(
-                                                  plantao.pago ? Icons.check_circle : Icons.attach_money,
-                                                  size: 14,
-                                                  color: plantao.pago ? Colors.green : Colors.orange,
-                                                ),
-                                                const SizedBox(width: 4),
-                                                Text(
-                                                  plantao.pago ? 'Pago' : 'Pendente',
-                                                  style: TextStyle(
-                                                    fontSize: 11,
-                                                    fontWeight: FontWeight.bold,
-                                                    color: plantao.pago ? Colors.green : Colors.orange,
-                                                  ),
-                                                ),
-                                              ],
+                                          Text(
+                                            plantao.local.nome,
+                                            style: TextStyle(
+                                              fontSize: 14,
+                                              color: Colors.grey[600],
                                             ),
                                           ),
                                         ],
                                       ),
                                     ),
+                                    // Status badge (discreto no topo)
                                     Container(
                                       padding: const EdgeInsets.symmetric(
-                                        horizontal: 12,
+                                        horizontal: 10,
                                         vertical: 4,
                                       ),
                                       decoration: BoxDecoration(
-                                        color: statusColor.withValues(alpha: 0.2),
+                                        color: plantao.pago
+                                            ? Colors.green.withValues(alpha: 0.15)
+                                            : Colors.orange.withValues(alpha: 0.15),
                                         borderRadius: BorderRadius.circular(12),
-                                        border: Border.all(color: statusColor),
+                                        border: Border.all(
+                                          color: plantao.pago ? Colors.green : Colors.orange,
+                                          width: 1,
+                                        ),
                                       ),
-                                      child: Row(
-                                        mainAxisSize: MainAxisSize.min,
-                                        children: [
-                                          Icon(
-                                            Icons.calendar_month,
-                                            size: 14,
-                                            color: statusColor,
-                                          ),
-                                          const SizedBox(width: 4),
-                                          Text(
-                                            _formatarData(plantao.previsaoPagamento),
-                                            style: TextStyle(
-                                              fontSize: 12,
-                                              color: statusColor,
-                                              fontWeight: FontWeight.bold,
-                                            ),
-                                          ),
-                                        ],
+                                      child: Text(
+                                        plantao.pago ? 'Pago' : 'Pendente',
+                                        style: TextStyle(
+                                          fontSize: 11,
+                                          fontWeight: FontWeight.w600,
+                                          color: plantao.pago ? Colors.green : Colors.orange,
+                                        ),
                                       ),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 16),
+                                // Data/Hora - DESTAQUE MÁXIMO
+                                Container(
+                                  padding: const EdgeInsets.all(12),
+                                  decoration: BoxDecoration(
+                                    color: Colors.teal[50],
+                                    borderRadius: BorderRadius.circular(8),
+                                    border: Border(
+                                      left: BorderSide(
+                                        color: Colors.teal,
+                                        width: 4,
+                                      ),
+                                    ),
+                                  ),
+                                  child: Row(
+                                    children: [
+                                      Icon(Icons.calendar_today, size: 20, color: Colors.teal[700]),
+                                      const SizedBox(width: 8),
+                                      Text(
+                                        _formatarData(plantao.dataHora),
+                                        style: TextStyle(
+                                          fontSize: 20,
+                                          fontWeight: FontWeight.bold,
+                                          color: Colors.teal[900],
+                                        ),
+                                      ),
+                                      const SizedBox(width: 16),
+                                      Icon(Icons.access_time, size: 20, color: Colors.teal[700]),
+                                      const SizedBox(width: 8),
+                                      Text(
+                                        DateFormat('HH:mm').format(plantao.dataHora),
+                                        style: TextStyle(
+                                          fontSize: 20,
+                                          fontWeight: FontWeight.bold,
+                                          color: Colors.teal[900],
+                                        ),
+                                      ),
+                                      const Spacer(),
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 10,
+                                          vertical: 4,
+                                        ),
+                                        decoration: BoxDecoration(
+                                          color: Colors.teal,
+                                          borderRadius: BorderRadius.circular(12),
+                                        ),
+                                        child: Text(
+                                          plantao.duracao.label,
+                                          style: const TextStyle(
+                                            fontSize: 12,
+                                            fontWeight: FontWeight.bold,
+                                            color: Colors.white,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                const SizedBox(height: 16),
+                                // Valor - Destaque secundário
+                                Row(
+                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    Text(
+                                      _formatarValor(plantao.valor),
+                                      style: TextStyle(
+                                        fontSize: 24,
+                                        fontWeight: FontWeight.bold,
+                                        color: Colors.teal[800],
+                                      ),
+                                    ),
+                                    // Data de pagamento - informação terciária
+                                    Column(
+                                      crossAxisAlignment: CrossAxisAlignment.end,
+                                      children: [
+                                        Text(
+                                          'Pagamento',
+                                          style: TextStyle(
+                                            fontSize: 11,
+                                            color: Colors.grey[600],
+                                          ),
+                                        ),
+                                        const SizedBox(height: 2),
+                                        Text(
+                                          _formatarData(plantao.previsaoPagamento),
+                                          style: TextStyle(
+                                            fontSize: 13,
+                                            fontWeight: FontWeight.w600,
+                                            color: Colors.grey[700],
+                                          ),
+                                        ),
+                                      ],
                                     ),
                                   ],
                                 ),
