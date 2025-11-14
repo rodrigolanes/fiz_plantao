@@ -1,5 +1,48 @@
 # Notas de Versão - Fiz Plantão
 
+## Versão 1.7.0 (Build 34) - 14 de novembro de 2025
+
+### 🔐 Correção Crítica de Autenticação Google
+
+**Google Sign-In Totalmente Funcional**
+- Corrigido problema de "Token Google ausente" em todas as plataformas
+- `serverClientId` agora configurado corretamente no `GoogleSignInService`
+- `google-services.json` atualizado com todos os SHA-1 fingerprints:
+  - SHA-1 Debug: `BA:BC:1A:37:A3:D6:10:81:01:B5:36:0D:88:16:3D:DD:DB:B3:B1:06`
+  - SHA-1 Release: `4A:41:3D:6E:3C:BE:84:20:A8:4B:DC:90:F9:2B:3F:12:18:48:32:3E`
+- idToken agora gerado corretamente para autenticação no Supabase
+- Login com Google funciona em debug, release e production
+
+**Configuração Firebase Completa**
+- Múltiplos OAuth clients configurados para diferentes keystores
+- Secret `GOOGLE_SERVICES_JSON` atualizado no GitHub Actions
+- CI/CD preparado para builds automáticos com Google Sign-In
+
+### 🛠️ DevOps e Documentação
+
+**GitHub Actions Workflow Otimizado**
+- Deploy agora é 100% manual via workflow_dispatch
+- Incremento automático de versão (patch/minor/major) ao disparar deploy
+- Workflow atualiza `pubspec.yaml` automaticamente e faz commit
+- Removidas triggers automáticas de push/PR
+- Documentação atualizada refletindo processo manual
+
+**Documentação Atualizada**
+- README.md: Seção de deploy manual com instruções do GitHub Actions
+- Copilot Instructions: Removidas orientações de versionamento manual
+- Instruções de upload manual via Play Console adicionadas
+- Guia completo de geração de Base64 para secrets
+
+### 🔄 Melhorias no Fluxo de Desenvolvimento
+
+**Processo Simplificado**
+- Desenvolvedores não precisam mais editar `pubspec.yaml` manualmente
+- Versão incrementada automaticamente no workflow
+- Commit de versão com `[skip ci]` para evitar loops
+- Tags de versão criadas manualmente após deploy em produção
+
+---
+
 ## Versão 1.6.0 (Build 29) - 11 de novembro de 2025
 
 ### 📄 Exportação de Relatórios em PDF

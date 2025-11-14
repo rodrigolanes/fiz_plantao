@@ -733,9 +733,9 @@ Este projeto está sob a licença MIT.
 
 - GitHub: [@rodrigolanes](https://github.com/rodrigolanes)
 
-**Status do Projeto:** ✅ MVP Funcional com Autenticação e Sincronização em Tempo Real
+**Status do Projeto:** ✅ Produção com Google Sign-In, Calendar Integration e Relatórios PDF
 
-**Versão Atual:** 1.3.3+17
+**Versão Atual:** 1.7.0 (gerenciada automaticamente via GitHub Actions)
 
 ## 🧩 Símbolos Nativos (Android)
 
