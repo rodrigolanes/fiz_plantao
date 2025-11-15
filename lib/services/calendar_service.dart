@@ -93,43 +93,43 @@ class CalendarService {
   /// Cria um novo calendário "Fiz Plantão"
   static Future<String> _createFizPlantaoCalendar() async {
     return await _executeWithRetry((client) async {
-      final calendarApi = CalendarApi(client);
+          final calendarApi = CalendarApi(client);
 
-    // Buscar se já existe um calendário com o nome "Fiz Plantão"
-    try {
-      final calendarios = await calendarApi.calendarList.list();
-      if (calendarios.items != null) {
-        for (final cal in calendarios.items!) {
-          if (cal.summary == _calendarName) {
-            LogService.calendar('Calendário "$_calendarName" já existe (ID: ${cal.id})');
-            // Salvar ID no cache
-            await _cacheCalendarId(cal.id!);
-            return cal.id!;
+          // Buscar se já existe um calendário com o nome "Fiz Plantão"
+          try {
+            final calendarios = await calendarApi.calendarList.list();
+            if (calendarios.items != null) {
+              for (final cal in calendarios.items!) {
+                if (cal.summary == _calendarName) {
+                  LogService.calendar('Calendário "$_calendarName" já existe (ID: ${cal.id})');
+                  // Salvar ID no cache
+                  await _cacheCalendarId(cal.id!);
+                  return cal.id!;
+                }
+              }
+            }
+          } catch (e) {
+            LogService.calendar('Erro ao buscar calendários existentes', e);
+            // Continuar e tentar criar
           }
-        }
-      }
-    } catch (e) {
-      LogService.calendar('Erro ao buscar calendários existentes', e);
-      // Continuar e tentar criar
-    }
 
-      // Criar novo calendário se não existe
-      LogService.calendar('Criando novo calendário "$_calendarName"');
-      final novoCalendario = Calendar(
-        summary: _calendarName,
-        description: 'Calendário de plantões e pagamentos do app Fiz Plantão',
-        timeZone: _timeZone,
-      );
+          // Criar novo calendário se não existe
+          LogService.calendar('Criando novo calendário "$_calendarName"');
+          final novoCalendario = Calendar(
+            summary: _calendarName,
+            description: 'Calendário de plantões e pagamentos do app Fiz Plantão',
+            timeZone: _timeZone,
+          );
 
-      final calendarioCriado = await calendarApi.calendars.insert(novoCalendario);
-      final calendarId = calendarioCriado.id!;
+          final calendarioCriado = await calendarApi.calendars.insert(novoCalendario);
+          final calendarId = calendarioCriado.id!;
 
-      // Salvar ID no cache
-      await _cacheCalendarId(calendarId);
+          // Salvar ID no cache
+          await _cacheCalendarId(calendarId);
 
-      LogService.calendar('Calendário criado com sucesso (ID: $calendarId)');
-      return calendarId;
-    }) ??
+          LogService.calendar('Calendário criado com sucesso (ID: $calendarId)');
+          return calendarId;
+        }) ??
         (throw 'Falha ao criar calendário Fiz Plantão');
   }
 
@@ -213,7 +213,6 @@ class CalendarService {
       final calendarApi = CalendarApi(client);
       final calendarId = await _ensureCalendarExists();
 
-
       final dataFim = plantao.duracao == Duracao.dozeHoras
           ? plantao.dataHora.add(const Duration(hours: 12))
           : plantao.dataHora.add(const Duration(hours: 24));
@@ -265,31 +264,26 @@ Criado via app Fiz Plantão
       // Se já tem calendarEventId, verificar se o evento ainda existe
       if (plantao.calendarEventId != null) {
         try {
-          // Primeiro, verifica se o evento realmente existe
-          LogService.calendar('Verificando se evento existe: ${plantao.calendarEventId}');
+          LogService.calendar('Verificando evento existente: ${plantao.calendarEventId}');
           final eventoExistente = await calendarApi.events.get(calendarId, plantao.calendarEventId!);
 
-          // Se chegou aqui, o evento existe - verificar se não está deletado
-          if (eventoExistente.status == 'cancelled') {
-            LogService.calendar('Evento foi deletado (status: cancelled), criando novo: ${plantao.local.apelido}');
-            // Continua para criar novo evento
-          } else {
-            // Evento existe e está ativo - pode atualizar
-            LogService.calendar('Evento existe e está ativo, atualizando: ${plantao.calendarEventId}');
+          // Se evento existe e não está cancelado, atualizar
+          if (eventoExistente.status != 'cancelled') {
+            LogService.calendar('Atualizando evento existente: ${plantao.calendarEventId}');
             final resultado = await calendarApi.events.patch(evento, calendarId, plantao.calendarEventId!);
             LogService.calendar(
                 'Evento de plantão atualizado com sucesso: ${plantao.local.apelido} (ID: ${resultado.id})');
             return plantao.calendarEventId;
+          } else {
+            LogService.calendar('Evento cancelado, criando novo: ${plantao.local.apelido}');
           }
         } catch (e) {
-          // Se falhar ao buscar (evento não existe), logar e continuar para criar novo
-          LogService.calendar(
-              'Evento não encontrado (ID: ${plantao.calendarEventId}), criando novo: ${plantao.local.apelido}', e);
-          // Continua para criar novo evento abaixo
+          // Evento não existe mais, criar novo
+          LogService.calendar('Evento não encontrado, criando novo: ${plantao.local.apelido}', e);
         }
       }
 
-      // Criar novo evento
+      // Criar novo evento (se não tinha ID ou evento não existe mais)
       try {
         LogService.calendar('Criando novo evento de plantão: ${plantao.local.apelido}');
         final eventoCriado = await calendarApi.events.insert(evento, calendarId);
@@ -316,7 +310,6 @@ Criado via app Fiz Plantão
     return _executeWithRetry<void>((client) async {
       final calendarApi = CalendarApi(client);
       final calendarId = await _ensureCalendarExists();
-
 
       // Buscar todos os plantões com mesma data de pagamento
       final plantoesBox = Hive.box<Plantao>('plantoes');
@@ -490,7 +483,6 @@ Criado via app Fiz Plantão
       final calendarApi = CalendarApi(client);
       final calendarId = await _ensureCalendarExists();
 
-
       // Buscar evento pelo plantaoId nas propriedades estendidas
       final eventos = await calendarApi.events.list(
         calendarId,
@@ -539,7 +531,6 @@ Criado via app Fiz Plantão
       final calendarApi = CalendarApi(client);
       final calendarId = await _ensureCalendarExists();
 
-
       LogService.calendar('Removendo evento do Calendar: $calendarEventId');
       await calendarApi.events.delete(calendarId, calendarEventId);
       LogService.calendar('Evento de plantão removido com sucesso: $calendarEventId');
@@ -553,7 +544,6 @@ Criado via app Fiz Plantão
     return _executeWithRetry<void>((client) async {
       final calendarApi = CalendarApi(client);
       final calendarId = await _ensureCalendarExists();
-
 
       // Buscar todos os eventos relacionados ao plantão
       final eventos = await calendarApi.events.list(

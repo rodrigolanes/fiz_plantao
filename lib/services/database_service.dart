@@ -92,24 +92,23 @@ class DatabaseService {
       criadoEm: plantao.criadoEm,
       atualizadoEm: agora,
     );
-    await plantoesBox.put(id, novo);
 
-    // Sincronizar com Google Calendar se habilitado e salvar ID do evento
+    // Criar evento do Calendar ANTES de salvar no Hive
     final calendarEventId = await CalendarService.criarEventoPlantao(novo);
-    if (calendarEventId != null) {
-      final comEventId = novo.copyWith(calendarEventId: calendarEventId);
-      await plantoesBox.put(id, comEventId);
-    }
+
+    // Salvar no Hive com calendarEventId já preenchido (evita race condition com sync)
+    final plantaoFinal = calendarEventId != null ? novo.copyWith(calendarEventId: calendarEventId) : novo;
+    await plantoesBox.put(id, plantaoFinal);
 
     await CalendarService.criarEventoPagamento(
-      dataPagamento: novo.previsaoPagamento,
-      valor: novo.valor,
-      localNome: novo.local.nome,
-      plantaoId: novo.id,
+      dataPagamento: plantaoFinal.previsaoPagamento,
+      valor: plantaoFinal.valor,
+      localNome: plantaoFinal.local.nome,
+      plantaoId: plantaoFinal.id,
     );
 
-    // Sincronização automática
-    SyncService.syncAll().catchError((e) => null);
+    // Sincronização automática - agora calendarEventId já está salvo
+    await SyncService.syncAll().catchError((e) => null);
   }
 
   static Future<void> updatePlantao(Plantao plantao) async {
@@ -118,20 +117,20 @@ class DatabaseService {
 
     // Sincronizar com Google Calendar se habilitado e atualizar ID do evento
     final calendarEventId = await CalendarService.criarEventoPlantao(atualizado);
-    final comEventId = calendarEventId != null ? atualizado.copyWith(calendarEventId: calendarEventId) : atualizado;
+    final plantaoFinal = calendarEventId != null ? atualizado.copyWith(calendarEventId: calendarEventId) : atualizado;
 
-    await plantoesBox.put(comEventId.id, comEventId);
+    await plantoesBox.put(plantaoFinal.id, plantaoFinal);
 
     // Atualizar evento de pagamento
     await CalendarService.criarEventoPagamento(
-      dataPagamento: comEventId.previsaoPagamento,
-      valor: comEventId.valor,
-      localNome: comEventId.local.nome,
-      plantaoId: comEventId.id,
+      dataPagamento: plantaoFinal.previsaoPagamento,
+      valor: plantaoFinal.valor,
+      localNome: plantaoFinal.local.nome,
+      plantaoId: plantaoFinal.id,
     );
 
-    // Sincronização automática
-    SyncService.syncAll().catchError((e) => null);
+    // Sincronização automática - aguarda completar para garantir consistência
+    await SyncService.syncAll().catchError((e) => null);
   }
 
   static Future<void> deletePlantao(String id) async {
