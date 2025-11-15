@@ -68,17 +68,21 @@ class CalendarService {
     // Verificar cache primeiro
     final cachedId = await _getCachedCalendarId();
     if (cachedId != null) {
-      // Validar que o calendário ainda existe
-      try {
-        final client = await _getAuthenticatedClient();
-        if (client == null) throw 'Não autenticado';
+      // Validar que o calendário ainda existe com retry
+      final exists = await _executeWithRetry((client) async {
+        try {
+          final calendarApi = CalendarApi(client);
+          await calendarApi.calendars.get(cachedId);
+          return true;
+        } catch (e) {
+          return false;
+        }
+      });
 
-        final calendarApi = CalendarApi(client);
-        await calendarApi.calendars.get(cachedId);
+      if (exists == true) {
         return cachedId; // Calendário existe
-      } catch (e) {
-        // Calendário foi deletado, criar novo
-        LogService.calendar('Calendário em cache não encontrado, criando novo', e);
+      } else {
+        LogService.calendar('Calendário em cache não encontrado, criando novo');
       }
     }
 
@@ -88,10 +92,8 @@ class CalendarService {
 
   /// Cria um novo calendário "Fiz Plantão"
   static Future<String> _createFizPlantaoCalendar() async {
-    final client = await _getAuthenticatedClient();
-    if (client == null) throw 'Não autenticado com Google';
-
-    final calendarApi = CalendarApi(client);
+    return await _executeWithRetry((client) async {
+      final calendarApi = CalendarApi(client);
 
     // Buscar se já existe um calendário com o nome "Fiz Plantão"
     try {
@@ -111,30 +113,95 @@ class CalendarService {
       // Continuar e tentar criar
     }
 
-    // Criar novo calendário se não existe
-    LogService.calendar('Criando novo calendário "$_calendarName"');
-    final novoCalendario = Calendar(
-      summary: _calendarName,
-      description: 'Calendário de plantões e pagamentos do app Fiz Plantão',
-      timeZone: _timeZone,
-    );
+      // Criar novo calendário se não existe
+      LogService.calendar('Criando novo calendário "$_calendarName"');
+      final novoCalendario = Calendar(
+        summary: _calendarName,
+        description: 'Calendário de plantões e pagamentos do app Fiz Plantão',
+        timeZone: _timeZone,
+      );
 
-    final calendarioCriado = await calendarApi.calendars.insert(novoCalendario);
-    final calendarId = calendarioCriado.id!;
+      final calendarioCriado = await calendarApi.calendars.insert(novoCalendario);
+      final calendarId = calendarioCriado.id!;
 
-    // Salvar ID no cache
-    await _cacheCalendarId(calendarId);
+      // Salvar ID no cache
+      await _cacheCalendarId(calendarId);
 
-    LogService.calendar('Calendário criado com sucesso (ID: $calendarId)');
-    return calendarId;
+      LogService.calendar('Calendário criado com sucesso (ID: $calendarId)');
+      return calendarId;
+    }) ??
+        (throw 'Falha ao criar calendário Fiz Plantão');
   }
 
-  /// Obtém o client autenticado do Google
-  static Future<dynamic> _getAuthenticatedClient() async {
-    final account = _googleSignIn.currentUser ?? await _googleSignIn.signInSilently();
-    if (account == null) return null;
+  /// Obtém cliente autenticado com retry e renovação automática de token
+  /// Retorna null se não conseguir autenticar
+  static Future<dynamic> _getAuthenticatedClient({bool forceRefresh = false}) async {
+    try {
+      var account = _googleSignIn.currentUser;
 
-    return await _googleSignIn.authenticatedClient();
+      // Se não tem usuário ou forçou refresh, tenta login silencioso
+      if (account == null || forceRefresh) {
+        account = await _googleSignIn.signInSilently();
+      }
+
+      if (account == null) {
+        LogService.calendar('Nenhuma conta Google disponível');
+        return null;
+      }
+
+      // Se forçou refresh, limpa cache de autenticação para obter novo token
+      if (forceRefresh) {
+        LogService.calendar('Forçando renovação de token...');
+        await account.clearAuthCache();
+      }
+
+      // Obtém cliente autenticado (renova token automaticamente se necessário)
+      final client = await _googleSignIn.authenticatedClient();
+
+      if (client == null) {
+        LogService.calendar('Falha ao obter cliente autenticado');
+      }
+
+      return client;
+    } catch (e) {
+      LogService.calendar('Erro ao obter cliente autenticado', e);
+      return null;
+    }
+  }
+
+  /// Executa uma operação da API Calendar com retry automático em caso de token expirado
+  /// Se falhar com invalid_token, renova o token e tenta novamente
+  static Future<T?> _executeWithRetry<T>(Future<T> Function(dynamic client) operation) async {
+    try {
+      // Primeira tentativa com token atual
+      final client = await _getAuthenticatedClient();
+      if (client == null) return null;
+
+      return await operation(client);
+    } catch (e) {
+      // Verifica se é erro de token inválido
+      final errorMessage = e.toString().toLowerCase();
+      if (errorMessage.contains('invalid_token') || errorMessage.contains('access was denied')) {
+        LogService.calendar('Token expirado, renovando e tentando novamente...');
+
+        try {
+          // Retry com token renovado
+          final client = await _getAuthenticatedClient(forceRefresh: true);
+          if (client == null) {
+            LogService.calendar('Falha ao renovar token');
+            return null;
+          }
+
+          return await operation(client);
+        } catch (retryError) {
+          LogService.calendar('Falha no retry após renovação de token', retryError);
+          rethrow;
+        }
+      }
+
+      // Se não for erro de token, propaga o erro original
+      rethrow;
+    }
   }
 
   /// Cria ou atualiza um evento de plantão no Google Calendar
@@ -142,12 +209,10 @@ class CalendarService {
   static Future<String?> criarEventoPlantao(Plantao plantao) async {
     if (!await isSyncEnabled) return null;
 
-    try {
-      final client = await _getAuthenticatedClient();
-      if (client == null) return null;
-
+    return _executeWithRetry<String?>((client) async {
       final calendarApi = CalendarApi(client);
       final calendarId = await _ensureCalendarExists();
+
 
       final dataFim = plantao.duracao == Duracao.dozeHoras
           ? plantao.dataHora.add(const Duration(hours: 12))
@@ -235,11 +300,7 @@ Criado via app Fiz Plantão
         LogService.calendar('Erro ao criar novo evento de plantão no Google Calendar', e);
         return null;
       }
-    } catch (e) {
-      // Falha silenciosa - não bloqueia o save do plantão
-      LogService.calendar('Erro ao criar evento de plantão no Google Calendar', e);
-      return null;
-    }
+    });
   }
 
   /// Cria um evento de pagamento previsto no Google Calendar
@@ -252,12 +313,10 @@ Criado via app Fiz Plantão
   }) async {
     if (!await isSyncEnabled) return;
 
-    try {
-      final client = await _getAuthenticatedClient();
-      if (client == null) return;
-
+    return _executeWithRetry<void>((client) async {
       final calendarApi = CalendarApi(client);
       final calendarId = await _ensureCalendarExists();
+
 
       // Buscar todos os plantões com mesma data de pagamento
       final plantoesBox = Hive.box<Plantao>('plantoes');
@@ -417,9 +476,7 @@ Criado via app Fiz Plantão
       await calendarApi.events.insert(evento, calendarId);
       LogService.calendar(
           'Evento de pagamento criado: ${plantoesMesmaData.length} ${plantoesMesmaData.length == 1 ? "plantão" : "plantões"}');
-    } catch (e) {
-      LogService.calendar('Erro ao criar evento de pagamento no Google Calendar', e);
-    }
+    });
   }
 
   /// Atualiza o status de pagamento de um evento existente
@@ -429,12 +486,10 @@ Criado via app Fiz Plantão
   }) async {
     if (!await isSyncEnabled) return;
 
-    try {
-      final client = await _getAuthenticatedClient();
-      if (client == null) return;
-
+    return _executeWithRetry<void>((client) async {
       final calendarApi = CalendarApi(client);
       final calendarId = await _ensureCalendarExists();
+
 
       // Buscar evento pelo plantaoId nas propriedades estendidas
       final eventos = await calendarApi.events.list(
@@ -465,9 +520,7 @@ Criado via app Fiz Plantão
         );
       }
       LogService.calendar('Status de pagamento atualizado para plantão $plantaoId');
-    } catch (e) {
-      LogService.calendar('Erro ao atualizar status de pagamento', e);
-    }
+    });
   }
 
   /// Remove eventos relacionados a um plantão usando o ID do evento
@@ -482,34 +535,25 @@ Criado via app Fiz Plantão
       return;
     }
 
-    try {
-      final client = await _getAuthenticatedClient();
-      if (client == null) {
-        LogService.calendar('Cliente não autenticado, não pode remover evento');
-        return;
-      }
-
+    return _executeWithRetry<void>((client) async {
       final calendarApi = CalendarApi(client);
       final calendarId = await _ensureCalendarExists();
+
 
       LogService.calendar('Removendo evento do Calendar: $calendarEventId');
       await calendarApi.events.delete(calendarId, calendarEventId);
       LogService.calendar('Evento de plantão removido com sucesso: $calendarEventId');
-    } catch (e) {
-      LogService.calendar('Erro ao remover evento do plantão (ID: $calendarEventId)', e);
-    }
+    });
   }
 
   /// Remove eventos relacionados a um plantão (fallback para plantões antigos sem calendarEventId)
   static Future<void> removerEventosPlantao(String plantaoId) async {
     if (!await isSyncEnabled) return;
 
-    try {
-      final client = await _getAuthenticatedClient();
-      if (client == null) return;
-
+    return _executeWithRetry<void>((client) async {
       final calendarApi = CalendarApi(client);
       final calendarId = await _ensureCalendarExists();
+
 
       // Buscar todos os eventos relacionados ao plantão
       final eventos = await calendarApi.events.list(
@@ -526,9 +570,7 @@ Criado via app Fiz Plantão
         }
       }
       LogService.calendar('Eventos do plantão $plantaoId removidos');
-    } catch (e) {
-      LogService.calendar('Erro ao remover eventos do Google Calendar', e);
-    }
+    });
   }
 
   /// Solicita permissão de acesso ao Google Calendar

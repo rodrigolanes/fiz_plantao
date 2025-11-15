@@ -1,6 +1,6 @@
 # Notas de Versão - Fiz Plantão
 
-## Versão 1.7.0 (Build 34) - 14 de novembro de 2025
+## Versão 1.7.0 (Build 34) - 15 de novembro de 2025
 
 ### 🔐 Correção Crítica de Autenticação Google
 
@@ -12,6 +12,15 @@
   - SHA-1 Release: `4A:41:3D:6E:3C:BE:84:20:A8:4B:DC:90:F9:2B:3F:12:18:48:32:3E`
 - idToken agora gerado corretamente para autenticação no Supabase
 - Login com Google funciona em debug, release e production
+
+**Renovação Automática de Tokens do Calendar API**
+- Implementado sistema robusto de retry com renovação automática de tokens
+- Tokens expirados (após ~1 hora) são renovados automaticamente sem intervenção do usuário
+- Método `clearAuthCache()` utilizado para forçar obtenção de novos tokens
+- Retry transparente em caso de erros `invalid_token`
+- Todos os métodos da Calendar API encapsulados com proteção contra expiração
+- Usuários não precisam mais fazer re-login após 1 hora de uso
+- Logs detalhados para debugging de renovação de tokens
 
 **Configuração Firebase Completa**
 - Múltiplos OAuth clients configurados para diferentes keystores
