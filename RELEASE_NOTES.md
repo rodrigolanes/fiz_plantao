@@ -22,10 +22,28 @@
 - Usuários não precisam mais fazer re-login após 1 hora de uso
 - Logs detalhados para debugging de renovação de tokens
 
+**Correção de Race Condition - calendarEventId**
+- Corrigido bug crítico de duplicação de eventos no Google Calendar
+- Evento criado ANTES de salvar plantão no banco local
+- Um único `put()` no Hive com `calendarEventId` já preenchido
+- Sincronização aguarda conclusão para garantir consistência
+- `calendarEventId` sempre sincronizado corretamente com Supabase
+- Verificação otimizada: usa GET direto por ID ao invés de LIST query
+
 **Configuração Firebase Completa**
 - Múltiplos OAuth clients configurados para diferentes keystores
 - Secret `GOOGLE_SERVICES_JSON` atualizado no GitHub Actions
 - CI/CD preparado para builds automáticos com Google Sign-In
+
+### 🧪 Testes e Qualidade
+
+**Infraestrutura de Testes Melhorada**
+- Criados mocks dedicados para isolar dependências externas
+- `MockSyncService` evita chamadas reais ao Supabase durante testes
+- `TestHelpers` com utilitários para setup/teardown padronizado
+- Classes de negócio limpas, sem lógica de teste embutida
+- Documentação completa em `test/README.md`
+- 40/40 testes passando com ambiente isolado
 
 ### 🛠️ DevOps e Documentação
 

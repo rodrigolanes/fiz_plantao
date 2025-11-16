@@ -2,11 +2,12 @@ import 'dart:io';
 
 import 'package:fizplantao/models/local.dart';
 import 'package:fizplantao/models/plantao.dart';
-import 'package:fizplantao/services/auth_service.dart';
 import 'package:fizplantao/services/database_service.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hive/hive.dart';
 import 'package:hive_flutter/hive_flutter.dart';
+
+import '../helpers/test_helpers.dart';
 
 void main() {
   group('DatabaseService - Plantão Sorting', () {
@@ -17,13 +18,12 @@ void main() {
     final userId = 'test-user-123';
 
     setUpAll(() async {
-      // Inicializa bindings de teste
+      // Inicializa ambiente de teste
       TestWidgetsFlutterBinding.ensureInitialized();
-      // Inicializa Hive em diretório temporário sem depender de plugins
       hiveTempDir = await Directory.systemTemp.createTemp('hive_test_');
       Hive.init(hiveTempDir.path);
 
-      // Registra os adapters se ainda não estiverem registrados
+      // Registra adapters
       if (!Hive.isAdapterRegistered(0)) {
         Hive.registerAdapter(LocalAdapter());
       }
@@ -44,6 +44,9 @@ void main() {
     });
 
     setUp(() async {
+      // Configura ambiente de teste usando helper
+      await TestHelpers.setupTestEnvironment(userId: userId);
+
       // Garante boxes padrão usados pelo DatabaseService
       if (!Hive.isBoxOpen('locais')) {
         locaisBox = await Hive.openBox<Local>('locais');
@@ -55,9 +58,6 @@ void main() {
       } else {
         plantoesBox = Hive.box<Plantao>('plantoes');
       }
-
-      // Mock do AuthService.userId
-      AuthService.userId = userId;
 
       // Cria um local de teste
       final agora = DateTime.now();

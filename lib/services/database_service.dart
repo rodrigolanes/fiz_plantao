@@ -38,7 +38,7 @@ class DatabaseService {
     await locaisBox.put(id, novo);
 
     // Sincronização automática
-    SyncService.syncAll().catchError((e) => null);
+    await SyncService.syncAll().catchError((e) => null);
   }
 
   static bool _isUuid(String value) {
@@ -52,7 +52,7 @@ class DatabaseService {
     await locaisBox.put(atualizado.id, atualizado);
 
     // Sincronização automática
-    SyncService.syncAll().catchError((e) => null);
+    await SyncService.syncAll().catchError((e) => null);
   }
 
   static Future<void> deleteLocal(String id) async {
@@ -65,7 +65,7 @@ class DatabaseService {
       await locaisBox.put(id, updated);
 
       // Sincronização automática
-      SyncService.syncAll().catchError((e) => null);
+      await SyncService.syncAll().catchError((e) => null);
     }
   }
 
@@ -159,7 +159,7 @@ class DatabaseService {
       );
 
       // Sincronização automática
-      SyncService.syncAll().catchError((e) => null);
+      await SyncService.syncAll().catchError((e) => null);
     }
   }
 
