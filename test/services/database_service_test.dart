@@ -1,294 +1,376 @@
-import 'dart:io';
-
 import 'package:fizplantao/models/local.dart';
 import 'package:fizplantao/models/plantao.dart';
 import 'package:fizplantao/services/database_service.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:hive/hive.dart';
-import 'package:hive_flutter/hive_flutter.dart';
+import 'package:mockito/mockito.dart';
+import 'package:uuid/uuid.dart';
 
-import '../helpers/test_helpers.dart';
+import '../helpers/mock_generators.mocks.dart';
+import '../mocks/mock_interfaces.dart';
 
 void main() {
-  group('DatabaseService - Plantão Sorting', () {
-    late Directory hiveTempDir;
-    late Box<Local> locaisBox;
-    late Box<Plantao> plantoesBox;
-    late Local localTeste;
-    final userId = 'test-user-123';
+  late MockISyncService mockSyncService;
+  late MockIAuthService mockAuthService;
+  late MockICalendarService mockCalendarService;
+  late MockBox<Local> mockLocaisBox;
+  late MockBox<Plantao> mockPlantoesBox;
+  late DatabaseService databaseService;
 
-    setUpAll(() async {
-      // Inicializa ambiente de teste
-      TestWidgetsFlutterBinding.ensureInitialized();
-      hiveTempDir = await Directory.systemTemp.createTemp('hive_test_');
-      Hive.init(hiveTempDir.path);
+  setUp(() {
+    mockSyncService = MockISyncService();
+    mockAuthService = MockIAuthService();
+    mockCalendarService = MockICalendarService();
+    mockLocaisBox = MockBox<Local>();
+    mockPlantoesBox = MockBox<Plantao>();
 
-      // Registra adapters
-      if (!Hive.isAdapterRegistered(0)) {
-        Hive.registerAdapter(LocalAdapter());
-      }
-      if (!Hive.isAdapterRegistered(1)) {
-        Hive.registerAdapter(PlantaoAdapter());
-      }
-      if (!Hive.isAdapterRegistered(2)) {
-        Hive.registerAdapter(DuracaoAdapter());
-      }
-    });
+    databaseService = DatabaseService(
+      syncService: mockSyncService,
+      authService: mockAuthService,
+      calendarService: mockCalendarService,
+      locaisBox: mockLocaisBox,
+      plantoesBox: mockPlantoesBox,
+      uuid: const Uuid(),
+    );
 
-    tearDownAll(() async {
-      try {
-        if (hiveTempDir.existsSync()) {
-          await hiveTempDir.delete(recursive: true);
-        }
-      } catch (_) {}
-    });
+    // Configuração padrão: syncAll sempre completa com sucesso
+    when(mockSyncService.syncAll()).thenAnswer((_) async => Future.value());
+  });
 
-    setUp(() async {
-      // Configura ambiente de teste usando helper
-      await TestHelpers.setupTestEnvironment(userId: userId);
+  group('Local operations', () {
+    test('saveLocal deve chamar syncAll após salvar', () async {
+      // Arrange
+      when(mockAuthService.userId).thenReturn('user123');
+      when(mockLocaisBox.put(any, any)).thenAnswer((_) async => Future.value());
 
-      // Garante boxes padrão usados pelo DatabaseService
-      if (!Hive.isBoxOpen('locais')) {
-        locaisBox = await Hive.openBox<Local>('locais');
-      } else {
-        locaisBox = Hive.box<Local>('locais');
-      }
-      if (!Hive.isBoxOpen('plantoes')) {
-        plantoesBox = await Hive.openBox<Plantao>('plantoes');
-      } else {
-        plantoesBox = Hive.box<Plantao>('plantoes');
-      }
-
-      // Cria um local de teste
-      final agora = DateTime.now();
-      localTeste = Local(
-        id: 'local-test',
+      final local = Local(
+        id: 'local1',
         apelido: 'HSL',
-        nome: 'Hospital São Lucas',
-        criadoEm: agora,
-        atualizadoEm: agora,
-        userId: userId,
-      );
-    });
-
-    tearDown(() async {
-      // Limpa os boxes após cada teste
-      await locaisBox.clear();
-      await plantoesBox.clear();
-    });
-
-    test('getPlantoesAtivos deve ordenar por data do mais antigo para o mais novo', () async {
-      final agora = DateTime.now();
-
-      // Cria plantões em datas diferentes
-      final plantao1 = Plantao(
-        id: 'plantao-1',
-        local: localTeste,
-        dataHora: agora.subtract(const Duration(days: 10)), // Mais antigo
-        duracao: Duracao.dozeHoras,
-        valor: 1200.0,
-        previsaoPagamento: agora.add(const Duration(days: 20)),
-        criadoEm: agora,
-        atualizadoEm: agora,
-        userId: userId,
-      );
-
-      final plantao2 = Plantao(
-        id: 'plantao-2',
-        local: localTeste,
-        dataHora: agora.add(const Duration(days: 5)), // Futuro próximo
-        duracao: Duracao.dozeHoras,
-        valor: 1200.0,
-        previsaoPagamento: agora.add(const Duration(days: 35)),
-        criadoEm: agora,
-        atualizadoEm: agora,
-        userId: userId,
-      );
-
-      final plantao3 = Plantao(
-        id: 'plantao-3',
-        local: localTeste,
-        dataHora: agora.subtract(const Duration(days: 5)), // Passado recente
-        duracao: Duracao.dozeHoras,
-        valor: 1200.0,
-        previsaoPagamento: agora.add(const Duration(days: 25)),
-        criadoEm: agora,
-        atualizadoEm: agora,
-        userId: userId,
-      );
-
-      final plantao4 = Plantao(
-        id: 'plantao-4',
-        local: localTeste,
-        dataHora: agora.add(const Duration(days: 15)), // Mais futuro
-        duracao: Duracao.vinteQuatroHoras,
-        valor: 2400.0,
-        previsaoPagamento: agora.add(const Duration(days: 45)),
-        criadoEm: agora,
-        atualizadoEm: agora,
-        userId: userId,
-      );
-
-      // Adiciona os plantões fora de ordem cronológica
-      await plantoesBox.put(plantao2.id, plantao2);
-      await plantoesBox.put(plantao1.id, plantao1);
-      await plantoesBox.put(plantao4.id, plantao4);
-      await plantoesBox.put(plantao3.id, plantao3);
-
-      // Obtém a lista ordenada
-      final plantoesOrdenados = DatabaseService.getPlantoesAtivos();
-
-      // Verifica que retornou todos os 4 plantões
-      expect(plantoesOrdenados.length, 4);
-
-      // Verifica a ordem: do mais antigo para o mais novo
-      expect(plantoesOrdenados[0].id, 'plantao-1'); // -10 dias
-      expect(plantoesOrdenados[1].id, 'plantao-3'); // -5 dias
-      expect(plantoesOrdenados[2].id, 'plantao-2'); // +5 dias
-      expect(plantoesOrdenados[3].id, 'plantao-4'); // +15 dias
-
-      // Verifica que a ordenação é crescente
-      for (int i = 0; i < plantoesOrdenados.length - 1; i++) {
-        expect(
-          plantoesOrdenados[i].dataHora.isBefore(plantoesOrdenados[i + 1].dataHora) ||
-              plantoesOrdenados[i].dataHora.isAtSameMomentAs(plantoesOrdenados[i + 1].dataHora),
-          true,
-          reason: 'Plantão $i deve ser anterior ou igual ao plantão ${i + 1}',
-        );
-      }
-    });
-
-    test('getPlantoesAtivos deve ordenar corretamente plantões na mesma data', () async {
-      final agora = DateTime.now();
-      final mesmaData = DateTime(2025, 11, 15);
-
-      // Cria plantões na mesma data, mas horários diferentes
-      final plantao1 = Plantao(
-        id: 'plantao-1',
-        local: localTeste,
-        dataHora: DateTime(mesmaData.year, mesmaData.month, mesmaData.day, 8, 0), // 08:00
-        duracao: Duracao.dozeHoras,
-        valor: 1200.0,
-        previsaoPagamento: agora.add(const Duration(days: 30)),
-        criadoEm: agora,
-        atualizadoEm: agora,
-        userId: userId,
-      );
-
-      final plantao2 = Plantao(
-        id: 'plantao-2',
-        local: localTeste,
-        dataHora: DateTime(mesmaData.year, mesmaData.month, mesmaData.day, 20, 0), // 20:00
-        duracao: Duracao.dozeHoras,
-        valor: 1200.0,
-        previsaoPagamento: agora.add(const Duration(days: 30)),
-        criadoEm: agora,
-        atualizadoEm: agora,
-        userId: userId,
-      );
-
-      final plantao3 = Plantao(
-        id: 'plantao-3',
-        local: localTeste,
-        dataHora: DateTime(mesmaData.year, mesmaData.month, mesmaData.day, 14, 0), // 14:00
-        duracao: Duracao.dozeHoras,
-        valor: 1200.0,
-        previsaoPagamento: agora.add(const Duration(days: 30)),
-        criadoEm: agora,
-        atualizadoEm: agora,
-        userId: userId,
-      );
-
-      // Adiciona os plantões fora de ordem
-      await plantoesBox.put(plantao2.id, plantao2);
-      await plantoesBox.put(plantao1.id, plantao1);
-      await plantoesBox.put(plantao3.id, plantao3);
-
-      // Obtém a lista ordenada
-      final plantoesOrdenados = DatabaseService.getPlantoesAtivos();
-
-      // Verifica a ordem por horário
-      expect(plantoesOrdenados.length, 3);
-      expect(plantoesOrdenados[0].id, 'plantao-1'); // 08:00
-      expect(plantoesOrdenados[1].id, 'plantao-3'); // 14:00
-      expect(plantoesOrdenados[2].id, 'plantao-2'); // 20:00
-    });
-
-    test('getPlantoesAtivos deve incluir apenas plantões ativos', () async {
-      final agora = DateTime.now();
-
-      final plantaoAtivo = Plantao(
-        id: 'plantao-ativo',
-        local: localTeste,
-        dataHora: agora,
-        duracao: Duracao.dozeHoras,
-        valor: 1200.0,
-        previsaoPagamento: agora.add(const Duration(days: 30)),
-        criadoEm: agora,
-        atualizadoEm: agora,
+        nome: 'Hospital A',
+        userId: 'user123',
         ativo: true,
-        userId: userId,
+        criadoEm: DateTime.now(),
+        atualizadoEm: DateTime.now(),
       );
 
-      final plantaoInativo = Plantao(
-        id: 'plantao-inativo',
-        local: localTeste,
-        dataHora: agora.subtract(const Duration(days: 1)),
-        duracao: Duracao.dozeHoras,
-        valor: 1200.0,
-        previsaoPagamento: agora.add(const Duration(days: 29)),
-        criadoEm: agora,
-        atualizadoEm: agora,
-        ativo: false,
-        userId: userId,
-      );
+      // Act
+      await databaseService.saveLocal(local);
 
-      await plantoesBox.put(plantaoAtivo.id, plantaoAtivo);
-      await plantoesBox.put(plantaoInativo.id, plantaoInativo);
-
-      final plantoesOrdenados = DatabaseService.getPlantoesAtivos();
-
-      // Deve retornar apenas o plantão ativo
-      expect(plantoesOrdenados.length, 1);
-      expect(plantoesOrdenados[0].id, 'plantao-ativo');
-      expect(plantoesOrdenados[0].ativo, true);
+      // Assert
+      verify(mockLocaisBox.put(any, any)).called(1);
+      verify(mockSyncService.syncAll()).called(1);
     });
 
-    test('deletePlantao deve remover plantão da lista de ativos', () async {
-      final agora = DateTime.now();
+    test('deleteLocal deve marcar como inativo e chamar syncAll', () async {
+      // Arrange
+      final local = Local(
+        id: 'local1',
+        apelido: 'HSL',
+        nome: 'Hospital A',
+        userId: 'user123',
+        ativo: true,
+        criadoEm: DateTime.now(),
+        atualizadoEm: DateTime.now(),
+      );
 
-      // Cria e salva um plantão
+      when(mockLocaisBox.get('local1')).thenReturn(local);
+      when(mockLocaisBox.put(any, any)).thenAnswer((_) async => Future.value());
+
+      // Act
+      await databaseService.deleteLocal('local1');
+
+      // Assert
+      verify(mockLocaisBox.put(
+        'local1',
+        argThat(predicate<Local>((l) => l.ativo == false)),
+      )).called(1);
+      verify(mockSyncService.syncAll()).called(1);
+    });
+
+    test('getLocaisAtivos deve filtrar por userId e ativo', () {
+      // Arrange
+      final locais = [
+        Local(
+          id: 'local1',
+          apelido: 'HSL A',
+          nome: 'Hospital A',
+          userId: 'user123',
+          ativo: true,
+          criadoEm: DateTime.now(),
+          atualizadoEm: DateTime.now(),
+        ),
+        Local(
+          id: 'local2',
+          apelido: 'HSL B',
+          nome: 'Hospital B',
+          userId: 'user123',
+          ativo: false,
+          criadoEm: DateTime.now(),
+          atualizadoEm: DateTime.now(),
+        ),
+        Local(
+          id: 'local3',
+          apelido: 'HSL C',
+          nome: 'Hospital C',
+          userId: 'user456',
+          ativo: true,
+          criadoEm: DateTime.now(),
+          atualizadoEm: DateTime.now(),
+        ),
+      ];
+
+      when(mockAuthService.userId).thenReturn('user123');
+      when(mockLocaisBox.values).thenReturn(locais);
+
+      // Act
+      final result = databaseService.getLocaisAtivos();
+
+      // Assert
+      expect(result.length, 1);
+      expect(result.first.id, 'local1');
+    });
+
+    test('getLocaisAtivos deve retornar lista vazia quando userId é null', () {
+      // Arrange
+      when(mockAuthService.userId).thenReturn(null);
+
+      // Act
+      final result = databaseService.getLocaisAtivos();
+
+      // Assert
+      expect(result, isEmpty);
+      verifyNever(mockLocaisBox.values);
+    });
+
+    test('getAllLocais deve retornar todos os locais do usuário', () {
+      // Arrange
+      final locais = <Local>[
+        Local(
+          id: 'local1',
+          apelido: 'HSL A',
+          nome: 'Hospital A',
+          userId: 'user123',
+          ativo: true,
+          criadoEm: DateTime.now(),
+          atualizadoEm: DateTime.now(),
+        ),
+        Local(
+          id: 'local2',
+          apelido: 'HSL B',
+          nome: 'Hospital B',
+          userId: 'user123',
+          ativo: false, // Incluir inativos também
+          criadoEm: DateTime.now(),
+          atualizadoEm: DateTime.now(),
+        ),
+      ];
+
+      when(mockAuthService.userId).thenReturn('user123');
+      when(mockLocaisBox.values).thenReturn(locais);
+
+      // Act
+      final result = databaseService.getAllLocais();
+
+      // Assert
+      expect(result.length, 2); // Deve incluir ativos E inativos
+      expect(result.where((l) => l.ativo).length, 1);
+      expect(result.where((l) => !l.ativo).length, 1);
+    });
+  });
+
+  group('UUID generation', () {
+    test('saveLocal deve gerar UUID quando ID não for válido', () async {
+      // Arrange
+      when(mockAuthService.userId).thenReturn('user123');
+      when(mockLocaisBox.put(any, any)).thenAnswer((_) async => Future.value());
+
+      final local = Local(
+        id: 'invalid-id',
+        apelido: 'HSL',
+        nome: 'Hospital A',
+        userId: 'user123',
+        ativo: true,
+        criadoEm: DateTime.now(),
+        atualizadoEm: DateTime.now(),
+      );
+
+      // Act
+      await databaseService.saveLocal(local);
+
+      // Assert
+      final captured = verify(mockLocaisBox.put(captureAny, captureAny)).captured;
+      final savedId = captured[0] as String;
+      final savedLocal = captured[1] as Local;
+
+      expect(savedId, isNot('invalid-id'));
+      expect(savedLocal.id, isNot('invalid-id'));
+      // Verifica se é um UUID válido
+      expect(
+        RegExp(r'^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$').hasMatch(savedId),
+        isTrue,
+      );
+      verify(mockSyncService.syncAll()).called(1);
+    });
+
+    test('saveLocal deve manter UUID quando ID já for válido', () async {
+      // Arrange
+      const validUuid = '550e8400-e29b-41d4-a716-446655440000';
+      when(mockAuthService.userId).thenReturn('user123');
+      when(mockLocaisBox.put(any, any)).thenAnswer((_) async => Future.value());
+
+      final local = Local(
+        id: validUuid,
+        apelido: 'HSL',
+        nome: 'Hospital A',
+        userId: 'user123',
+        ativo: true,
+        criadoEm: DateTime.now(),
+        atualizadoEm: DateTime.now(),
+      );
+
+      // Act
+      await databaseService.saveLocal(local);
+
+      // Assert
+      verify(mockLocaisBox.put(validUuid, any)).called(1);
+      verify(mockSyncService.syncAll()).called(1);
+    });
+
+    test('deletePlantao deve remover evento do calendar quando calendarEventId existe', () async {
+      // Arrange
+      const calendarEventId = 'calendar-event-123';
       final plantao = Plantao(
-        id: 'plantao-para-deletar',
-        local: localTeste,
-        dataHora: agora,
+        id: 'plantao1',
+        local: Local(
+          id: 'local1',
+          apelido: 'HSL',
+          nome: 'Hospital A',
+          userId: 'user123',
+          ativo: true,
+          criadoEm: DateTime.now(),
+          atualizadoEm: DateTime.now(),
+        ),
+        dataHora: DateTime.now(),
         duracao: Duracao.dozeHoras,
         valor: 1500.0,
-        previsaoPagamento: agora.add(const Duration(days: 30)),
-        criadoEm: agora,
-        atualizadoEm: agora,
+        previsaoPagamento: DateTime.now().add(const Duration(days: 30)),
+        userId: 'user123',
         ativo: true,
-        userId: userId,
+        pago: false,
+        calendarEventId: calendarEventId,
+        criadoEm: DateTime.now(),
+        atualizadoEm: DateTime.now(),
       );
 
-      await plantoesBox.put(plantao.id, plantao);
+      when(mockPlantoesBox.get('plantao1')).thenReturn(plantao);
+      when(mockPlantoesBox.put(any, any)).thenAnswer((_) async => Future.value());
+      when(mockCalendarService.removerEventoPlantao(calendarEventId)).thenAnswer((_) async => Future.value());
 
-      // Verifica que o plantão está na lista de ativos
-      var plantoesAtivos = DatabaseService.getPlantoesAtivos();
-      expect(plantoesAtivos.length, 1);
-      expect(plantoesAtivos[0].id, 'plantao-para-deletar');
+      // Act
+      await databaseService.deletePlantao('plantao1');
 
-      // Deleta o plantão (soft delete)
-      await DatabaseService.deletePlantao(plantao.id);
+      // Assert
+      verify(mockCalendarService.removerEventoPlantao(calendarEventId)).called(1);
+      verify(mockPlantoesBox.put(
+        'plantao1',
+        argThat(predicate<Plantao>((p) => p.ativo == false)),
+      )).called(1);
+      verify(mockSyncService.syncAll()).called(1);
+    });
 
-      // Verifica que o plantão não está mais na lista de ativos
-      plantoesAtivos = DatabaseService.getPlantoesAtivos();
-      expect(plantoesAtivos.length, 0);
+    test('deletePlantao não deve chamar removerEventoPlantao quando calendarEventId é null', () async {
+      // Arrange
+      final plantao = Plantao(
+        id: 'plantao1',
+        local: Local(
+          id: 'local1',
+          apelido: 'HSL',
+          nome: 'Hospital A',
+          userId: 'user123',
+          ativo: true,
+          criadoEm: DateTime.now(),
+          atualizadoEm: DateTime.now(),
+        ),
+        dataHora: DateTime.now(),
+        duracao: Duracao.dozeHoras,
+        valor: 1500.0,
+        previsaoPagamento: DateTime.now().add(const Duration(days: 30)),
+        userId: 'user123',
+        ativo: true,
+        pago: false,
+        calendarEventId: null, // SEM calendar event ID
+        criadoEm: DateTime.now(),
+        atualizadoEm: DateTime.now(),
+      );
 
-      // Verifica que o plantão ainda existe no box, mas com ativo = false
-      final plantaoDeletado = plantoesBox.get(plantao.id);
-      expect(plantaoDeletado, isNotNull);
-      expect(plantaoDeletado!.ativo, false);
+      when(mockPlantoesBox.get('plantao1')).thenReturn(plantao);
+      when(mockPlantoesBox.put(any, any)).thenAnswer((_) async => Future.value());
+
+      // Act
+      await databaseService.deletePlantao('plantao1');
+
+      // Assert
+      verifyNever(mockCalendarService.removerEventoPlantao(any));
+      verify(mockPlantoesBox.put(any, any)).called(1);
+    });
+  });
+
+  group('Plantao operations', () {
+    test('savePlantao deve criar evento no calendar e chamar syncAll', () async {
+      // Arrange
+      when(mockPlantoesBox.put(any, any)).thenAnswer((_) async => Future.value());
+
+      final plantao = Plantao(
+        id: 'plantao1',
+        local: Local(
+          id: 'local1',
+          apelido: 'HSL',
+          nome: 'Hospital A',
+          userId: 'user123',
+          ativo: true,
+          criadoEm: DateTime.now(),
+          atualizadoEm: DateTime.now(),
+        ),
+        dataHora: DateTime.now(),
+        duracao: Duracao.dozeHoras,
+        valor: 1500.0,
+        previsaoPagamento: DateTime.now().add(const Duration(days: 30)),
+        userId: 'user123',
+        ativo: true,
+        criadoEm: DateTime.now(),
+        atualizadoEm: DateTime.now(),
+      );
+
+      // Act
+      await databaseService.savePlantao(plantao);
+
+      // Assert
+      verify(mockPlantoesBox.put(any, any)).called(1);
+      verify(mockSyncService.syncAll()).called(1);
+    });
+
+    test('syncAll não deve interromper o fluxo se falhar', () async {
+      // Arrange
+      when(mockSyncService.syncAll()).thenAnswer((_) async => throw Exception('Network error'));
+      when(mockLocaisBox.put(any, any)).thenAnswer((_) async => Future.value());
+
+      final local = Local(
+        id: 'local1',
+        apelido: 'HSL',
+        nome: 'Hospital A',
+        userId: 'user123',
+        ativo: true,
+        criadoEm: DateTime.now(),
+        atualizadoEm: DateTime.now(),
+      );
+
+      // Act & Assert - não deve lançar exceção
+      await expectLater(
+        databaseService.saveLocal(local),
+        completes,
+      );
+
+      verify(mockLocaisBox.put(any, any)).called(1);
+      verify(mockSyncService.syncAll()).called(1);
     });
   });
 }

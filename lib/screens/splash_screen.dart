@@ -50,19 +50,19 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
     final navigator = Navigator.of(context);
 
     // Verifica se usuário está logado
-    if (AuthService.isLoggedIn) {
+    if (AuthService.instance.isLoggedIn) {
       // Verifica se o email foi verificado
-      if (!AuthService.emailVerificado) {
+      if (!AuthService.instance.emailVerificado) {
         navigator.pushReplacement(
           MaterialPageRoute(builder: (_) => const VerificacaoEmailScreen()),
         );
       } else {
         // Inicializa sincronização em background ao entrar no app
-        SyncService.initialize();
+        SyncService.instance.initialize();
 
         // Faz o download inicial dos dados do Supabase
         try {
-          await SyncService.syncAll();
+          await SyncService.instance.syncAll();
         } catch (e) {
           // Continua mesmo se falhar (pode estar offline)
         }

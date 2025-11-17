@@ -1,6 +1,7 @@
 import 'dart:io';
 
-import 'package:fizplantao/services/auth_service.dart';
+import 'package:fizplantao/models/local.dart';
+import 'package:fizplantao/models/plantao.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hive/hive.dart';
 
@@ -23,33 +24,28 @@ class TestHelpers {
     // Importações dinâmicas para evitar erros se adapters já registrados
     try {
       if (!Hive.isAdapterRegistered(0)) {
-        // Local adapter
-        final localAdapter = _getAdapter('LocalAdapter');
-        if (localAdapter != null) Hive.registerAdapter(localAdapter);
+        // Adapter já gerado: LocalAdapter
+        Hive.registerAdapter(LocalAdapter());
       }
       if (!Hive.isAdapterRegistered(1)) {
-        // Plantao adapter
-        final plantaoAdapter = _getAdapter('PlantaoAdapter');
-        if (plantaoAdapter != null) Hive.registerAdapter(plantaoAdapter);
+        // Adapter já gerado: PlantaoAdapter
+        Hive.registerAdapter(PlantaoAdapter());
       }
       if (!Hive.isAdapterRegistered(2)) {
-        // Duracao adapter
-        final duracaoAdapter = _getAdapter('DuracaoAdapter');
-        if (duracaoAdapter != null) Hive.registerAdapter(duracaoAdapter);
+        // Adapter já gerado: DuracaoAdapter
+        Hive.registerAdapter(DuracaoAdapter());
       }
     } catch (_) {
       // Adapters já registrados, ignora
     }
   }
 
-  static dynamic _getAdapter(String adapterName) {
-    // Placeholder - adapters devem ser registrados manualmente nos testes
-    return null;
-  }
-
   /// Configura mock do AuthService
+  /// Note: userId is now managed internally by AuthService.instance
+  /// Tests should mock AuthService.instance.currentUserId via mockito
   static void setupAuthMock(String userId) {
-    AuthService.userId = userId;
+    // AuthService now uses instance pattern - cannot set userId directly
+    // Tests should use: when(mockAuthService.currentUserId).thenReturn(userId);
   }
 
   /// Configura ambiente de teste completo

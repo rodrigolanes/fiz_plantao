@@ -45,9 +45,9 @@ class _VerificacaoEmailScreenState extends State<VerificacaoEmailScreen> {
     setState(() => _verificando = true);
 
     try {
-      await AuthService.recarregarUsuario();
+      await AuthService.instance.recarregarUsuario();
 
-      if (AuthService.emailVerificado) {
+      if (AuthService.instance.emailVerificado) {
         _timer?.cancel();
         if (!mounted) return;
 
@@ -73,7 +73,7 @@ class _VerificacaoEmailScreenState extends State<VerificacaoEmailScreen> {
     setState(() => _reenviando = true);
 
     try {
-      await AuthService.enviarEmailVerificacao();
+      await AuthService.instance.enviarEmailVerificacao();
 
       if (!mounted) return;
 
@@ -144,7 +144,7 @@ class _VerificacaoEmailScreenState extends State<VerificacaoEmailScreen> {
 
     if (confirmar == true && mounted) {
       // Fazer logout e voltar para login
-      await AuthService.logout();
+      await AuthService.instance.logout();
       if (!mounted) return;
 
       Navigator.of(context).pushReplacement(
@@ -157,7 +157,7 @@ class _VerificacaoEmailScreenState extends State<VerificacaoEmailScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final email = AuthService.currentUser?.email ?? '';
+    final email = AuthService.instance.currentUser?.email ?? '';
 
     return Scaffold(
       backgroundColor: Colors.teal[50],

@@ -34,7 +34,7 @@ class _LoginScreenState extends State<LoginScreen> {
     setState(() => _isLoading = true);
 
     try {
-      await AuthService.login(
+      await AuthService.instance.login(
         _emailController.text.trim(),
         _senhaController.text,
       );
@@ -42,7 +42,7 @@ class _LoginScreenState extends State<LoginScreen> {
       if (!mounted) return;
 
       // Verificar se o email foi verificado
-      if (!AuthService.emailVerificado) {
+      if (!AuthService.instance.emailVerificado) {
         // Redirecionar para tela de verificação
         Navigator.of(context).pushReplacement(
           MaterialPageRoute(builder: (_) => const VerificacaoEmailScreen()),
@@ -75,7 +75,7 @@ class _LoginScreenState extends State<LoginScreen> {
     setState(() => _isLoading = true);
 
     try {
-      final response = await AuthService.loginComGoogle();
+      final response = await AuthService.instance.loginComGoogle();
 
       // Se o usuário cancelou ou houve erro, não navegar
       if (response == null) {
@@ -122,7 +122,7 @@ class _LoginScreenState extends State<LoginScreen> {
     }
 
     try {
-      await AuthService.redefinirSenha(email);
+      await AuthService.instance.redefinirSenha(email);
 
       if (!mounted) return;
 

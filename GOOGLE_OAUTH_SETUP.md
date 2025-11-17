@@ -1,4 +1,4 @@
-# Configuração Google OAuth - Fiz Plantão
+            # Configuração Google OAuth - Fiz Plantão
 
 ## SHA-1 Fingerprints
 

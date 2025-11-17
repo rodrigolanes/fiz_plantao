@@ -1,37 +1,110 @@
 import 'dart:async';
 
 import 'package:connectivity_plus/connectivity_plus.dart';
+import 'package:hive/hive.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../models/local.dart';
 import '../models/plantao.dart';
-import 'database_service.dart';
 import 'log_service.dart';
+
+// Interface abstrata para SupabaseClient
+abstract class ISupabaseClient {
+  GoTrueClient get auth;
+  SupabaseQueryBuilder from(String table);
+}
+
+// Interface abstrata para Connectivity
+abstract class IConnectivity {
+  Stream<List<ConnectivityResult>> get onConnectivityChanged;
+  Future<List<ConnectivityResult>> checkConnectivity();
+}
+
+// Interface abstrata para acesso aos Hive boxes
+abstract class IHiveRepository {
+  Box<Local> get locaisBox;
+  Box<Plantao> get plantoesBox;
+}
+
+// Implementações concretas que delegam para os clients originais
+class SupabaseClientImpl implements ISupabaseClient {
+  final SupabaseClient _client;
+
+  SupabaseClientImpl([SupabaseClient? client]) : _client = client ?? Supabase.instance.client;
+
+  @override
+  GoTrueClient get auth => _client.auth;
+
+  @override
+  SupabaseQueryBuilder from(String table) => _client.from(table);
+}
+
+class ConnectivityImpl implements IConnectivity {
+  final Connectivity _connectivity;
+
+  ConnectivityImpl([Connectivity? connectivity]) : _connectivity = connectivity ?? Connectivity();
+
+  @override
+  Stream<List<ConnectivityResult>> get onConnectivityChanged => _connectivity.onConnectivityChanged;
+
+  @override
+  Future<List<ConnectivityResult>> checkConnectivity() => _connectivity.checkConnectivity();
+}
+
+class HiveRepositoryImpl implements IHiveRepository {
+  @override
+  Box<Local> get locaisBox => Hive.box<Local>('locais');
+
+  @override
+  Box<Plantao> get plantoesBox => Hive.box<Plantao>('plantoes');
+}
 
 /// Serviço de sincronização entre Hive (local) e Supabase (remoto)
 /// Estratégia: Last-write-wins baseado em timestamps
 class SyncService {
-  static final SupabaseClient _supabase = Supabase.instance.client;
-  static final Connectivity _connectivity = Connectivity();
+  final ISupabaseClient _supabase;
+  final IConnectivity _connectivity;
+  final IHiveRepository _hiveRepo;
 
   // Status de sincronização
-  static final StreamController<SyncStatus> _statusController = StreamController<SyncStatus>.broadcast();
-  static Stream<SyncStatus> get statusStream => _statusController.stream;
-  static SyncStatus _currentStatus = SyncStatus.idle;
+  final StreamController<SyncStatus> _statusController = StreamController<SyncStatus>.broadcast();
+  Stream<SyncStatus> get statusStream => _statusController.stream;
+  SyncStatus _currentStatus = SyncStatus.idle;
 
   // Última sincronização bem-sucedida
-  static DateTime? _lastSyncTime;
-  static DateTime? get lastSyncTime => _lastSyncTime;
+  DateTime? _lastSyncTime;
+  DateTime? get lastSyncTime => _lastSyncTime;
 
   // Queue de operações pendentes
-  static final List<PendingOperation> _pendingOperations = [];
+  final List<PendingOperation> _pendingOperations = [];
 
   // Flag para saber se já foi inicializado
-  static bool _initialized = false;
+  bool _initialized = false;
+
+  // Construtor com dependências injetáveis
+  SyncService({
+    ISupabaseClient? supabase,
+    IConnectivity? connectivity,
+    IHiveRepository? hiveRepo,
+  })  : _supabase = supabase ?? SupabaseClientImpl(),
+        _connectivity = connectivity ?? ConnectivityImpl(),
+        _hiveRepo = hiveRepo ?? HiveRepositoryImpl();
+
+  // Instância singleton para uso em produção
+  static SyncService? _instance;
+  static SyncService get instance => _instance ??= SyncService();
+
+  // Método para substituir a instância (útil em testes)
+  static void setInstance(SyncService service) {
+    _instance = service;
+  }
+
+  // NOTA: Getters estáticos removidos para evitar conflito de nomes
+  // Use SyncService.instance.statusStream e SyncService.instance.lastSyncTime
 
   /// Inicializa listeners de sincronização automática
   /// Deve ser chamado após o usuário fazer login
-  static void initialize() {
+  void initialize() {
     if (_initialized) return; // Já inicializado
 
     final user = _supabase.auth.currentUser;
@@ -57,15 +130,18 @@ class SyncService {
     _supabase.from('plantoes').stream(primaryKey: ['id']).eq('user_id', user.id).listen(_handleRemotePlantoesChange);
   }
 
+  // NOTA: Método estático removido para evitar conflito de nomes
+  // Use SyncService.instance.initialize()
+
   /// Retorna o ID do usuário autenticado
-  static String _getCurrentUserId() {
+  String _getCurrentUserId() {
     final user = _supabase.auth.currentUser;
     if (user == null) throw Exception('Usuário não autenticado');
     return user.id;
   }
 
   /// Sincronização bidirecional completa
-  static Future<void> syncAll() async {
+  Future<void> syncAll() async {
     if (_currentStatus == SyncStatus.syncing) {
       return; // Já está sincronizando
     }
@@ -98,8 +174,11 @@ class SyncService {
     }
   }
 
+  // NOTA: Método estático removido para evitar conflito de nomes
+  // Use SyncService.instance.syncAll()
+
   /// Faz upload apenas dos dados locais para o servidor
-  static Future<void> uploadLocalData() async {
+  Future<void> uploadLocalData() async {
     try {
       _updateStatus(SyncStatus.syncing);
       final userId = _getCurrentUserId();
@@ -114,7 +193,7 @@ class SyncService {
   }
 
   /// Faz download apenas dos dados remotos para local
-  static Future<void> downloadRemoteData() async {
+  Future<void> downloadRemoteData() async {
     try {
       _updateStatus(SyncStatus.syncing);
       final userId = _getCurrentUserId();
@@ -129,9 +208,9 @@ class SyncService {
   }
 
   /// Upload de mudanças locais para o servidor
-  static Future<void> _uploadLocalChanges(String userId) async {
+  Future<void> _uploadLocalChanges(String userId) async {
     // Upload Locais (inclui inativos para propagar soft delete)
-    final locaisLocais = DatabaseService.getAllLocais().where((l) => l.userId == userId).toList();
+    final locaisLocais = _hiveRepo.locaisBox.values.where((l) => l.userId == userId).toList();
 
     for (final local in locaisLocais) {
       // Verifica se já existe remotamente
@@ -164,7 +243,7 @@ class SyncService {
     }
 
     // Upload Plantões (inclui inativos para propagar soft delete)
-    final plantoesLocais = DatabaseService.getAllPlantoes().where((p) => p.userId == userId).toList();
+    final plantoesLocais = _hiveRepo.plantoesBox.values.where((p) => p.userId == userId).toList();
 
     for (final plantao in plantoesLocais) {
       final remotePlantao = await _supabase.from('plantoes').select().eq('id', plantao.id).maybeSingle();
@@ -209,13 +288,13 @@ class SyncService {
   }
 
   /// Download de mudanças remotas para local
-  static Future<void> _downloadRemoteChanges(String userId) async {
+  Future<void> _downloadRemoteChanges(String userId) async {
     // Download Locais (inclui inativos para manter histórico fiel)
     final remoteLocais = await _supabase.from('locais').select().eq('user_id', userId);
 
     for (final remoteLocal in remoteLocais) {
       final localId = remoteLocal['id'] as String;
-      final localLocal = DatabaseService.locaisBox.get(localId);
+      final localLocal = _hiveRepo.locaisBox.get(localId);
       final remoteUpdatedAt = DateTime.parse(remoteLocal['atualizado_em']);
 
       if (localLocal == null) {
@@ -229,7 +308,7 @@ class SyncService {
           atualizadoEm: remoteUpdatedAt,
           ativo: remoteLocal['ativo'] ?? true,
         );
-        await DatabaseService.locaisBox.put(localId, novoLocal);
+        await _hiveRepo.locaisBox.put(localId, novoLocal);
       } else if (remoteUpdatedAt.isAfter(localLocal.atualizadoEm)) {
         // Existe mas remoto é mais recente - atualizar
         final localAtualizado = localLocal.copyWith(
@@ -238,7 +317,7 @@ class SyncService {
           atualizadoEm: remoteUpdatedAt,
           ativo: remoteLocal['ativo'] ?? true,
         );
-        await DatabaseService.locaisBox.put(localId, localAtualizado);
+        await _hiveRepo.locaisBox.put(localId, localAtualizado);
       }
     }
 
@@ -247,11 +326,11 @@ class SyncService {
 
     for (final remotePlantao in remotePlantoes) {
       final plantaoId = remotePlantao['id'] as String;
-      final localPlantao = DatabaseService.plantoesBox.get(plantaoId);
+      final localPlantao = _hiveRepo.plantoesBox.get(plantaoId);
       final remoteUpdatedAt = DateTime.parse(remotePlantao['atualizado_em']);
 
       // Local associado
-      final localDoPlantao = DatabaseService.locaisBox.get(remotePlantao['local_id']);
+      final localDoPlantao = _hiveRepo.locaisBox.get(remotePlantao['local_id']);
       if (localDoPlantao == null) {
         // Se o local não está presente ainda, pulamos este plantão por ora
         continue;
@@ -274,7 +353,7 @@ class SyncService {
           atualizadoEm: remoteUpdatedAt,
           ativo: remotePlantao['ativo'] ?? true,
         );
-        await DatabaseService.plantoesBox.put(plantaoId, novoPlantao);
+        await _hiveRepo.plantoesBox.put(plantaoId, novoPlantao);
       } else if (remoteUpdatedAt.isAfter(localPlantao.atualizadoEm)) {
         // Existe mas remoto é mais recente - atualizar
         final plantaoAtualizado = localPlantao.copyWith(
@@ -289,13 +368,13 @@ class SyncService {
           atualizadoEm: remoteUpdatedAt,
           ativo: remotePlantao['ativo'] ?? true,
         );
-        await DatabaseService.plantoesBox.put(plantaoId, plantaoAtualizado);
+        await _hiveRepo.plantoesBox.put(plantaoId, plantaoAtualizado);
       }
     }
   }
 
   /// Processa operações pendentes quando voltar a conectividade
-  static Future<void> _processPendingOperations() async {
+  Future<void> _processPendingOperations() async {
     if (_pendingOperations.isEmpty) return;
 
     try {
@@ -309,9 +388,9 @@ class SyncService {
   }
 
   /// Handler de mudanças remotas em Locais
-  static void _handleRemoteLocaisChange(List<Map<String, dynamic>> changes) {
+  void _handleRemoteLocaisChange(List<Map<String, dynamic>> changes) {
     try {
-      final box = DatabaseService.locaisBox;
+      final box = _hiveRepo.locaisBox;
 
       for (final data in changes) {
         final id = data['id'] as String;
@@ -344,10 +423,10 @@ class SyncService {
   }
 
   /// Handler de mudanças remotas em Plantões
-  static void _handleRemotePlantoesChange(List<Map<String, dynamic>> changes) {
+  void _handleRemotePlantoesChange(List<Map<String, dynamic>> changes) {
     try {
-      final plantoesBox = DatabaseService.plantoesBox;
-      final locaisBox = DatabaseService.locaisBox;
+      final plantoesBox = _hiveRepo.plantoesBox;
+      final locaisBox = _hiveRepo.locaisBox;
 
       for (final data in changes) {
         final id = data['id'] as String;
@@ -399,7 +478,7 @@ class SyncService {
   }
 
   /// Atualiza status de sincronização
-  static void _updateStatus(SyncStatus status, [String? errorMessage]) {
+  void _updateStatus(SyncStatus status, [String? errorMessage]) {
     _currentStatus = status;
     if (!_statusController.isClosed) {
       _statusController.add(status);
@@ -407,12 +486,12 @@ class SyncService {
   }
 
   /// Adiciona operação à fila de pendentes
-  static void addPendingOperation(PendingOperation operation) {
+  void addPendingOperation(PendingOperation operation) {
     _pendingOperations.add(operation);
   }
 
   /// Limpa recursos
-  static void dispose() {
+  void dispose() {
     _statusController.close();
   }
 

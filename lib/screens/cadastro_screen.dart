@@ -36,7 +36,7 @@ class _CadastroScreenState extends State<CadastroScreen> {
     setState(() => _isLoading = true);
 
     try {
-      await AuthService.cadastrar(
+      await AuthService.instance.cadastrar(
         _emailController.text.trim(),
         _senhaController.text,
       );
@@ -76,7 +76,7 @@ class _CadastroScreenState extends State<CadastroScreen> {
     setState(() => _isLoading = true);
 
     try {
-      final response = await AuthService.loginComGoogle();
+      final response = await AuthService.instance.loginComGoogle();
 
       // Se o usuário cancelou ou houve erro, não navegar
       if (response == null) {

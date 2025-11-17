@@ -10,14 +10,83 @@ import '../models/plantao.dart';
 import 'google_sign_in_service.dart';
 import 'log_service.dart';
 
+// Interface abstrata para GoogleSignIn (com Calendar API support)
+abstract class IGoogleCalendarAuth {
+  GoogleSignInAccount? get currentUser;
+  Future<GoogleSignInAccount?> signInSilently();
+  Future<Map<String, String>> get authHeaders;
+}
+
+// Interface abstrata para Hive calendar config
+abstract class IHiveCalendarCache {
+  Future<String?> getCalendarId();
+  Future<void> putCalendarId(String id);
+  Future<bool> isSyncEnabled();
+  Future<void> setSyncEnabled(bool enabled);
+}
+
+// Implementações concretas
+class GoogleCalendarAuthImpl implements IGoogleCalendarAuth {
+  final GoogleSignIn _googleSignIn;
+
+  GoogleCalendarAuthImpl([GoogleSignIn? googleSignIn]) : _googleSignIn = googleSignIn ?? GoogleSignInService.instance;
+
+  @override
+  GoogleSignInAccount? get currentUser => _googleSignIn.currentUser;
+
+  @override
+  Future<GoogleSignInAccount?> signInSilently() => _googleSignIn.signInSilently();
+
+  @override
+  Future<Map<String, String>> get authHeaders async {
+    final account = currentUser ?? await signInSilently();
+    if (account == null) throw Exception('No Google account available');
+    return await account.authHeaders;
+  }
+}
+
+class HiveCalendarCacheImpl implements IHiveCalendarCache {
+  static const String _calendarIdKey = 'google_calendar_id';
+  static const String _syncEnabledKey = 'calendar_sync_enabled';
+
+  Box? _box;
+
+  Future<Box> _getBox() async {
+    _box ??= await Hive.openBox('config');
+    return _box!;
+  }
+
+  @override
+  Future<String?> getCalendarId() async {
+    final box = await _getBox();
+    return box.get(_calendarIdKey);
+  }
+
+  @override
+  Future<void> putCalendarId(String id) async {
+    final box = await _getBox();
+    await box.put(_calendarIdKey, id);
+  }
+
+  @override
+  Future<bool> isSyncEnabled() async {
+    final box = await _getBox();
+    return box.get(_syncEnabledKey, defaultValue: false);
+  }
+
+  @override
+  Future<void> setSyncEnabled(bool enabled) async {
+    final box = await _getBox();
+    await box.put(_syncEnabledKey, enabled);
+  }
+}
+
 /// Serviço para integração com Google Calendar
 ///
 /// Cria e gerencia um calendário dedicado "Fiz Plantão" com eventos de:
 /// - Plantões (com data, hora, duração, local e valor)
 /// - Pagamentos previstos
 class CalendarService {
-  static const String _calendarIdKey = 'google_calendar_id';
-  static const String _syncEnabledKey = 'calendar_sync_enabled';
   static const String _calendarName = 'Fiz Plantão';
   static const String _timeZone = 'America/Sao_Paulo';
 
@@ -25,24 +94,53 @@ class CalendarService {
   static const String _corPlantao = '9'; // Azul
   static const String _corPagamento = '10'; // Verde
 
-  static final GoogleSignIn _googleSignIn = GoogleSignInService.instance;
+  final IGoogleCalendarAuth _googleAuth;
+  final IHiveCalendarCache _cache;
+  late final GoogleSignIn _googleSignIn;
+
+  // Construtor com dependências injetáveis
+  CalendarService({
+    IGoogleCalendarAuth? googleAuth,
+    IHiveCalendarCache? cache,
+  })  : _googleAuth = googleAuth ?? GoogleCalendarAuthImpl(),
+        _cache = cache ?? HiveCalendarCacheImpl() {
+    // Para backward compatibility com código que usa _googleSignIn
+    if (_googleAuth is GoogleCalendarAuthImpl) {
+      _googleSignIn = (_googleAuth)._googleSignIn;
+    } else {
+      _googleSignIn = GoogleSignInService.instance;
+    }
+  }
+
+  // Instância singleton para uso em produção
+  static CalendarService? _instance;
+  static CalendarService get instance => _instance ??= CalendarService();
+
+  // Método para substituir a instância (útil em testes)
+  static void setInstance(CalendarService service) {
+    _instance = service;
+  }
 
   /// Verificar se integração com Google está habilitada
-  static bool get isGoogleIntegrationEnabled {
+  bool get isGoogleIntegrationEnabled {
     return ConfigHelper.isGoogleIntegrationEnabled;
   }
 
+  // NOTA: Getter estático removido para evitar conflito de nomes
+  // Use CalendarService.instance.isGoogleIntegrationEnabled
+
   /// Verifica se a sincronização com Google Calendar está habilitada
-  static Future<bool> get isSyncEnabled async {
+  Future<bool> get isSyncEnabled async {
     if (!isGoogleIntegrationEnabled) return false;
-    final box = await Hive.openBox('config');
-    return box.get(_syncEnabledKey, defaultValue: false);
+    return await _cache.isSyncEnabled();
   }
 
+  // NOTA: Getter estático removido para evitar conflito de nomes
+  // Use CalendarService.instance.isSyncEnabled
+
   /// Habilita ou desabilita a sincronização com Google Calendar
-  static Future<void> setSyncEnabled(bool enabled) async {
-    final box = await Hive.openBox('config');
-    await box.put(_syncEnabledKey, enabled);
+  Future<void> setSyncEnabled(bool enabled) async {
+    await _cache.setSyncEnabled(enabled);
 
     if (enabled) {
       // Garantir que o calendário dedicado existe
@@ -50,21 +148,22 @@ class CalendarService {
     }
   }
 
+  // NOTA: Método estático removido para evitar conflito de nomes
+  // Use CalendarService.instance.setSyncEnabled(enabled)
+
   /// Obtém o ID do calendário "Fiz Plantão" do cache
-  static Future<String?> _getCachedCalendarId() async {
-    final box = await Hive.openBox('config');
-    return box.get(_calendarIdKey);
+  Future<String?> _getCachedCalendarId() async {
+    return await _cache.getCalendarId();
   }
 
   /// Salva o ID do calendário no cache
-  static Future<void> _cacheCalendarId(String calendarId) async {
-    final box = await Hive.openBox('config');
-    await box.put(_calendarIdKey, calendarId);
+  Future<void> _cacheCalendarId(String calendarId) async {
+    await _cache.putCalendarId(calendarId);
   }
 
   /// Garante que o calendário dedicado "Fiz Plantão" existe
   /// Cria se necessário e retorna o ID
-  static Future<String> _ensureCalendarExists() async {
+  Future<String> _ensureCalendarExists() async {
     // Verificar cache primeiro
     final cachedId = await _getCachedCalendarId();
     if (cachedId != null) {
@@ -91,7 +190,7 @@ class CalendarService {
   }
 
   /// Cria um novo calendário "Fiz Plantão"
-  static Future<String> _createFizPlantaoCalendar() async {
+  Future<String> _createFizPlantaoCalendar() async {
     return await _executeWithRetry((client) async {
           final calendarApi = CalendarApi(client);
 
@@ -135,13 +234,13 @@ class CalendarService {
 
   /// Obtém cliente autenticado com retry e renovação automática de token
   /// Retorna null se não conseguir autenticar
-  static Future<dynamic> _getAuthenticatedClient({bool forceRefresh = false}) async {
+  Future<dynamic> _getAuthenticatedClient({bool forceRefresh = false}) async {
     try {
-      var account = _googleSignIn.currentUser;
+      var account = _googleAuth.currentUser;
 
       // Se não tem usuário ou forçou refresh, tenta login silencioso
       if (account == null || forceRefresh) {
-        account = await _googleSignIn.signInSilently();
+        account = await _googleAuth.signInSilently();
       }
 
       if (account == null) {
@@ -171,7 +270,7 @@ class CalendarService {
 
   /// Executa uma operação da API Calendar com retry automático em caso de token expirado
   /// Se falhar com invalid_token, renova o token e tenta novamente
-  static Future<T?> _executeWithRetry<T>(Future<T> Function(dynamic client) operation) async {
+  Future<T?> _executeWithRetry<T>(Future<T> Function(dynamic client) operation) async {
     try {
       // Primeira tentativa com token atual
       final client = await _getAuthenticatedClient();
@@ -206,7 +305,7 @@ class CalendarService {
 
   /// Cria ou atualiza um evento de plantão no Google Calendar
   /// Retorna o ID do evento criado/atualizado
-  static Future<String?> criarEventoPlantao(Plantao plantao) async {
+  Future<String?> criarEventoPlantao(Plantao plantao) async {
     if (!await isSyncEnabled) return null;
 
     return _executeWithRetry<String?>((client) async {
@@ -299,7 +398,7 @@ Criado via app Fiz Plantão
 
   /// Cria um evento de pagamento previsto no Google Calendar
   /// Agrupa todos os plantões com a mesma data de pagamento
-  static Future<void> criarEventoPagamento({
+  Future<void> criarEventoPagamento({
     required DateTime dataPagamento,
     required double valor,
     required String localNome,
@@ -473,7 +572,7 @@ Criado via app Fiz Plantão
   }
 
   /// Atualiza o status de pagamento de um evento existente
-  static Future<void> atualizarStatusPagamento({
+  Future<void> atualizarStatusPagamento({
     required String plantaoId,
     required bool pago,
   }) async {
@@ -516,7 +615,7 @@ Criado via app Fiz Plantão
   }
 
   /// Remove eventos relacionados a um plantão usando o ID do evento
-  static Future<void> removerEventoPlantao(String? calendarEventId) async {
+  Future<void> removerEventoPlantao(String? calendarEventId) async {
     if (!await isSyncEnabled) {
       LogService.calendar('Sync não habilitado, evento não será removido');
       return;
@@ -538,7 +637,7 @@ Criado via app Fiz Plantão
   }
 
   /// Remove eventos relacionados a um plantão (fallback para plantões antigos sem calendarEventId)
-  static Future<void> removerEventosPlantao(String plantaoId) async {
+  Future<void> removerEventosPlantao(String plantaoId) async {
     if (!await isSyncEnabled) return;
 
     return _executeWithRetry<void>((client) async {
@@ -565,7 +664,7 @@ Criado via app Fiz Plantão
 
   /// Solicita permissão de acesso ao Google Calendar
   /// Retorna true se o usuário autorizou
-  static Future<bool> requestCalendarPermission() async {
+  Future<bool> requestCalendarPermission() async {
     try {
       final account = await _googleSignIn.signIn();
       LogService.calendar('Permissão do Google Calendar concedida');
@@ -584,7 +683,7 @@ Criado via app Fiz Plantão
   }
 
   /// Desconecta do Google Calendar
-  static Future<void> disconnect() async {
+  Future<void> disconnect() async {
     await setSyncEnabled(false);
     // Não fazer signOut do GoogleSignIn para não afetar a autenticação do app
   }

@@ -118,7 +118,7 @@ class _ListaPlantoesScreenState extends State<ListaPlantoesScreen> {
   }
 
   Future<void> _navegarParaCadastro([Plantao? plantao]) async {
-    final ativos = DatabaseService.getLocaisAtivos();
+    final ativos = DatabaseService.instance.getLocaisAtivos();
     if (ativos.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Cadastre um local ativo antes de criar um plantão.')),
@@ -141,7 +141,7 @@ class _ListaPlantoesScreenState extends State<ListaPlantoesScreen> {
     _carregarDados();
     if (!mounted) return;
     if (resultado != null) {
-      await DatabaseService.savePlantao(resultado);
+      await DatabaseService.instance.savePlantao(resultado);
       if (!mounted) return;
       messenger.showSnackBar(
         SnackBar(
@@ -154,7 +154,7 @@ class _ListaPlantoesScreenState extends State<ListaPlantoesScreen> {
   }
 
   Future<void> _configurarGoogleCalendar() async {
-    final syncAtual = await CalendarService.isSyncEnabled;
+    final syncAtual = await CalendarService.instance.isSyncEnabled;
 
     if (!mounted) return;
     final messenger = ScaffoldMessenger.of(context);
@@ -217,7 +217,7 @@ class _ListaPlantoesScreenState extends State<ListaPlantoesScreen> {
 
     if (resultado) {
       // Ativar sincronização
-      final permissao = await CalendarService.requestCalendarPermission();
+      final permissao = await CalendarService.instance.requestCalendarPermission();
       if (!permissao) {
         if (!mounted) return;
         messenger.showSnackBar(
@@ -233,7 +233,7 @@ class _ListaPlantoesScreenState extends State<ListaPlantoesScreen> {
         return;
       }
 
-      await CalendarService.setSyncEnabled(true);
+      await CalendarService.instance.setSyncEnabled(true);
       if (!mounted) return;
       messenger.showSnackBar(
         const SnackBar(
@@ -243,7 +243,7 @@ class _ListaPlantoesScreenState extends State<ListaPlantoesScreen> {
       );
     } else {
       // Desativar sincronização
-      await CalendarService.disconnect();
+      await CalendarService.instance.disconnect();
       if (!mounted) return;
       messenger.showSnackBar(
         const SnackBar(
@@ -255,8 +255,8 @@ class _ListaPlantoesScreenState extends State<ListaPlantoesScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final locaisAtivos = DatabaseService.getLocaisAtivos();
-    final plantoesAtivos = DatabaseService.getPlantoesAtivos();
+    final locaisAtivos = DatabaseService.instance.getLocaisAtivos();
+    final plantoesAtivos = DatabaseService.instance.getPlantoesAtivos();
     final plantoesFiltrados = _aplicarFiltros(plantoesAtivos);
     final temFiltrosAtivos = _localFiltroId != null || !_filtrarDataAtual || _dataFim != null;
 
@@ -308,7 +308,7 @@ class _ListaPlantoesScreenState extends State<ListaPlantoesScreen> {
                 );
 
                 if (confirm == true) {
-                  await AuthService.logout();
+                  await AuthService.instance.logout();
                   if (!mounted) return;
 
                   navigator.pushReplacement(

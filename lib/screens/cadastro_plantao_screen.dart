@@ -78,7 +78,7 @@ class _CadastroPlantaoScreenState extends State<CadastroPlantaoScreen> {
     if (mounted) {
       setState(() {
         // Recarrega locais do Hive e remove duplicatas
-        final locaisHive = DatabaseService.getLocaisAtivos();
+        final locaisHive = DatabaseService.instance.getLocaisAtivos();
         final idsVistos = <String>{};
         _locaisDisponiveis = locaisHive.where((local) {
           if (idsVistos.contains(local.id)) {
@@ -167,7 +167,7 @@ class _CadastroPlantaoScreenState extends State<CadastroPlantaoScreen> {
           ),
           FilledButton(
             onPressed: () async {
-              await DatabaseService.deletePlantao(widget.plantao!.id);
+              await DatabaseService.instance.deletePlantao(widget.plantao!.id);
               if (!mounted) return;
               navigator.pop(); // Fecha o dialog
               navigator.pop(null); // Volta para lista
@@ -219,7 +219,7 @@ class _CadastroPlantaoScreenState extends State<CadastroPlantaoScreen> {
       // Converte texto com vírgula para double (pt-BR)
       final valorTexto = _valorController.text.trim().replaceAll('.', '').replaceAll(',', '.');
       final valorDouble = double.parse(valorTexto);
-      final userId = AuthService.userId;
+      final userId = AuthService.instance.currentUserId;
 
       if (userId == null) {
         final messenger = ScaffoldMessenger.of(context);

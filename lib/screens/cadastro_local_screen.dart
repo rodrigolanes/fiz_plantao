@@ -37,7 +37,7 @@ class _CadastroLocalScreenState extends State<CadastroLocalScreen> {
   void _salvar() {
     if (_formKey.currentState!.validate()) {
       final agora = DateTime.now();
-      final userId = AuthService.userId;
+      final userId = AuthService.instance.currentUserId;
 
       if (userId == null) {
         ScaffoldMessenger.of(context).showSnackBar(

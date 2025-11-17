@@ -71,6 +71,48 @@ lib/
 └── widgets/                    # Reusable custom widgets
 ```
 
+### Princípios SOLID
+
+**TODAS as classes devem seguir os princípios SOLID:**
+
+1. **Single Responsibility Principle (SRP)**
+
+   - Cada classe deve ter uma única responsabilidade bem definida
+   - Services devem ser específicos: `AuthService`, `DatabaseService`, `SyncService`, `CalendarService`
+   - Models devem representar apenas entidades de domínio
+   - Screens devem focar apenas em UI, delegando lógica para services
+
+2. **Open/Closed Principle (OCP)**
+
+   - Classes abertas para extensão, fechadas para modificação
+   - Usar interfaces e abstrações quando apropriado
+   - Exemplo: `IAuthService`, `ICalendarService`, `ISyncService`
+   - Facilita testes e permite substituir implementações
+
+3. **Liskov Substitution Principle (LSP)**
+
+   - Subclasses devem poder substituir suas classes base
+   - Mocks de teste devem implementar as mesmas interfaces
+   - Garantir contratos consistentes em toda hierarquia
+
+4. **Interface Segregation Principle (ISP)**
+
+   - Interfaces específicas ao invés de genéricas
+   - Não forçar classes a implementar métodos desnecessários
+   - Exemplo: separar `IHiveCalendarCache` de `IGoogleCalendarAuth`
+
+5. **Dependency Inversion Principle (DIP)**
+   - Depender de abstrações, não de implementações concretas
+   - Services devem usar interfaces para dependências externas
+   - Injeção de dependências via constructor quando possível
+   - Usar padrão Singleton com `.instance` quando necessário
+
+**Exemplos de aplicação:**
+
+- `DatabaseService` agrega interfaces: `ISyncService`, `IAuthService`, `ICalendarService`
+- Services são testáveis via mocks que implementam as mesmas interfaces
+- Cada service tem responsabilidade única e bem definida
+
 ### Padrões Obrigatórios
 
 1. **User Isolation Pattern**

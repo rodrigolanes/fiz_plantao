@@ -9,49 +9,182 @@ import '../models/plantao.dart';
 import 'google_sign_in_service.dart';
 import 'log_service.dart';
 
+// Interface abstrata para Supabase Auth
+abstract class ISupabaseAuth {
+  User? get currentUser;
+  Stream<AuthState> get onAuthStateChange;
+  Future<AuthResponse> signInWithPassword({required String email, required String password});
+  Future<AuthResponse> signUp({required String email, required String password, String? emailRedirectTo});
+  Future<void> signOut();
+  Future<bool> signInWithOAuth(OAuthProvider provider, {String? redirectTo, Map<String, String>? queryParams});
+  Future<AuthResponse> signInWithIdToken(
+      {required OAuthProvider provider, required String idToken, String? accessToken});
+  Future<void> refreshSession();
+  Future<void> resend({required OtpType type, required String email, String? emailRedirectTo});
+  Future<void> resetPasswordForEmail(String email, {String? redirectTo});
+}
+
+// Interface abstrata para GoogleSignIn
+abstract class IGoogleSignIn {
+  Future<GoogleSignInAccount?> signIn();
+  Future<void> signOut();
+}
+
+// Interface abstrata para Hive config box
+abstract class IHiveConfig {
+  Future<void> put(String key, dynamic value);
+  dynamic get(String key);
+  Future<void> clear();
+}
+
+// Implementações concretas que delegam para os clients originais
+class SupabaseAuthImpl implements ISupabaseAuth {
+  final SupabaseClient _client;
+
+  SupabaseAuthImpl([SupabaseClient? client]) : _client = client ?? Supabase.instance.client;
+
+  @override
+  User? get currentUser => _client.auth.currentUser;
+
+  @override
+  Stream<AuthState> get onAuthStateChange => _client.auth.onAuthStateChange;
+
+  @override
+  Future<AuthResponse> signInWithPassword({required String email, required String password}) =>
+      _client.auth.signInWithPassword(email: email, password: password);
+
+  @override
+  Future<AuthResponse> signUp({required String email, required String password, String? emailRedirectTo}) =>
+      _client.auth.signUp(email: email, password: password, emailRedirectTo: emailRedirectTo);
+
+  @override
+  Future<void> signOut() => _client.auth.signOut();
+
+  @override
+  Future<bool> signInWithOAuth(OAuthProvider provider, {String? redirectTo, Map<String, String>? queryParams}) =>
+      _client.auth.signInWithOAuth(provider, redirectTo: redirectTo, queryParams: queryParams);
+
+  @override
+  Future<AuthResponse> signInWithIdToken(
+          {required OAuthProvider provider, required String idToken, String? accessToken}) =>
+      _client.auth.signInWithIdToken(provider: provider, idToken: idToken, accessToken: accessToken);
+
+  @override
+  Future<void> refreshSession() => _client.auth.refreshSession();
+
+  @override
+  Future<void> resend({required OtpType type, required String email, String? emailRedirectTo}) =>
+      _client.auth.resend(type: type, email: email, emailRedirectTo: emailRedirectTo);
+
+  @override
+  Future<void> resetPasswordForEmail(String email, {String? redirectTo}) =>
+      _client.auth.resetPasswordForEmail(email, redirectTo: redirectTo);
+}
+
+class GoogleSignInImpl implements IGoogleSignIn {
+  final GoogleSignIn _googleSignIn;
+
+  GoogleSignInImpl([GoogleSignIn? googleSignIn]) : _googleSignIn = googleSignIn ?? GoogleSignInService.instance;
+
+  @override
+  Future<GoogleSignInAccount?> signIn() => _googleSignIn.signIn();
+
+  @override
+  Future<void> signOut() => _googleSignIn.signOut();
+}
+
+class HiveConfigImpl implements IHiveConfig {
+  Box? _box;
+
+  Future<Box> _getBox() async {
+    _box ??= await Hive.openBox('config');
+    return _box!;
+  }
+
+  @override
+  Future<void> put(String key, dynamic value) async {
+    final box = await _getBox();
+    await box.put(key, value);
+  }
+
+  @override
+  dynamic get(String key) {
+    if (_box == null || !_box!.isOpen) {
+      return null;
+    }
+    return _box!.get(key);
+  }
+
+  @override
+  Future<void> clear() async {
+    final box = await _getBox();
+    await box.clear();
+  }
+}
+
 class AuthService {
-  static final SupabaseClient _supabase = Supabase.instance.client;
-  static final GoogleSignIn _googleSignIn = GoogleSignInService.instance;
+  final ISupabaseAuth _supabase;
+  final IGoogleSignIn _googleSignIn;
+  final IHiveConfig _hiveConfig;
+
+  // Construtor com dependências injetáveis
+  AuthService({
+    ISupabaseAuth? supabase,
+    IGoogleSignIn? googleSignIn,
+    IHiveConfig? hiveConfig,
+  })  : _supabase = supabase ?? SupabaseAuthImpl(),
+        _googleSignIn = googleSignIn ?? GoogleSignInImpl(),
+        _hiveConfig = hiveConfig ?? HiveConfigImpl();
+
+  // Instância singleton para uso em produção
+  static AuthService? _instance;
+  static AuthService get instance => _instance ??= AuthService();
+
+  // Método para substituir a instância (útil em testes)
+  static void setInstance(AuthService service) {
+    _instance = service;
+  }
 
   // Stream do estado de autenticação
-  static Stream<AuthState> get authStateChanges => _supabase.auth.onAuthStateChange;
+  Stream<AuthState> get authStateChanges => _supabase.onAuthStateChange;
+
+  // Getters estáticos para compatibilidade retroativa - REMOVIDOS (conflito de nomes)
 
   // Usuário atual
-  static User? get currentUser => _supabase.auth.currentUser;
+  User? get currentUser => _supabase.currentUser;
 
   // Verificar se está logado
-  static bool get isLoggedIn => currentUser != null;
+  bool get isLoggedIn => currentUser != null;
 
   // Override de userId para testes (quando definido, tem precedência)
-  static String? _overrideUserId;
+  String? _overrideUserId;
 
   // Obter userId (UUID do Supabase) com suporte a override em testes
-  static String? get userId => _overrideUserId ?? currentUser?.id;
+  String? get currentUserId => _overrideUserId ?? currentUser?.id;
 
   // Setter exposto para testes: permite definir um userId fake durante o teste
   // Em produção, não utilizar este setter.
-  static set userId(String? value) {
+  set testUserId(String? value) {
     _overrideUserId = value;
   }
 
   // Limpar override (útil em suites de teste)
-  static void clearTestOverride() {
+  void clearTestOverride() {
     _overrideUserId = null;
   }
 
   // Login com email e senha
-  static Future<AuthResponse?> login(String email, String senha) async {
+  Future<AuthResponse?> login(String email, String senha) async {
     try {
-      final response = await _supabase.auth.signInWithPassword(
+      final response = await _supabase.signInWithPassword(
         email: email,
         password: senha,
       );
 
       // Salvar userId no Hive para cache
       if (response.user != null) {
-        final box = await Hive.openBox('config');
-        await box.put('userId', response.user!.id);
-        await box.put('userEmail', response.user!.email);
+        await _hiveConfig.put('userId', response.user!.id);
+        await _hiveConfig.put('userEmail', response.user!.email);
         LogService.auth('Login realizado: ${response.user!.email}');
       }
 
@@ -66,9 +199,9 @@ class AuthService {
   }
 
   // Cadastro com email e senha
-  static Future<AuthResponse?> cadastrar(String email, String senha) async {
+  Future<AuthResponse?> cadastrar(String email, String senha) async {
     try {
-      final response = await _supabase.auth.signUp(
+      final response = await _supabase.signUp(
         email: email,
         password: senha,
         emailRedirectTo: kIsWeb ? 'http://localhost:3000' : 'br.com.rodrigolanes.fizplantao://login-callback/',
@@ -76,9 +209,8 @@ class AuthService {
 
       // Salvar userId no Hive para cache
       if (response.user != null) {
-        final box = await Hive.openBox('config');
-        await box.put('userId', response.user!.id);
-        await box.put('userEmail', response.user!.email);
+        await _hiveConfig.put('userId', response.user!.id);
+        await _hiveConfig.put('userEmail', response.user!.email);
         LogService.auth('Cadastro realizado: ${response.user!.email}');
       }
 
@@ -96,9 +228,9 @@ class AuthService {
   }
 
   // Logout
-  static Future<void> logout() async {
+  Future<void> logout() async {
     try {
-      await _supabase.auth.signOut();
+      await _supabase.signOut();
       await _googleSignIn.signOut();
 
       // Limpar TODOS os dados locais do Hive
@@ -112,11 +244,10 @@ class AuthService {
   }
 
   // Limpar todos os dados locais do usuário
-  static Future<void> _limparDadosLocais() async {
+  Future<void> _limparDadosLocais() async {
     try {
       // Limpar box de configurações
-      final configBox = await Hive.openBox('config');
-      await configBox.clear();
+      await _hiveConfig.clear();
 
       // Limpar box de plantões
       final plantoesBox = await Hive.openBox<Plantao>('plantoes');
@@ -134,7 +265,7 @@ class AuthService {
   }
 
   // Login com Google
-  static Future<AuthResponse?> loginComGoogle() async {
+  Future<AuthResponse?> loginComGoogle() async {
     // Verificar se integração com Google está habilitada
     if (!_isGoogleIntegrationEnabled()) {
       throw 'Login com Google está desabilitado. Configure enableGoogleIntegrations = true no SupabaseConfig.';
@@ -143,7 +274,7 @@ class AuthService {
     try {
       if (kIsWeb) {
         // Web retorna bool (redirect/popup). Sessão chega via onAuthStateChange.
-        await _supabase.auth.signInWithOAuth(
+        await _supabase.signInWithOAuth(
           OAuthProvider.google,
           redirectTo: kIsWeb ? 'http://localhost:3000' : null,
           queryParams: {
@@ -173,16 +304,15 @@ class AuthService {
           throw 'Token Google ausente';
         }
 
-        final response = await _supabase.auth.signInWithIdToken(
+        final response = await _supabase.signInWithIdToken(
           provider: OAuthProvider.google,
           idToken: googleAuth.idToken!,
           accessToken: googleAuth.accessToken,
         );
 
         if (response.user != null) {
-          final box = await Hive.openBox('config');
-          await box.put('userId', response.user!.id);
-          await box.put('userEmail', response.user!.email);
+          await _hiveConfig.put('userId', response.user!.id);
+          await _hiveConfig.put('userEmail', response.user!.email);
           LogService.auth('Login com Google realizado: ${response.user!.email}');
         }
         return response;
@@ -202,7 +332,7 @@ class AuthService {
   }
 
   // Vincular conta Google à conta atual
-  static Future<void> linkGoogleAccount() async {
+  Future<void> linkGoogleAccount() async {
     try {
       final user = currentUser;
       if (user == null) throw 'Nenhum usuário logado';
@@ -237,7 +367,7 @@ class AuthService {
   }
 
   // Obter lista de identidades vinculadas
-  static List<String> getLinkedProviders() {
+  List<String> getLinkedProviders() {
     final user = currentUser;
     if (user == null) return [];
 
@@ -251,9 +381,9 @@ class AuthService {
   }
 
   // Redefinir senha
-  static Future<void> redefinirSenha(String email) async {
+  Future<void> redefinirSenha(String email) async {
     try {
-      await _supabase.auth.resetPasswordForEmail(
+      await _supabase.resetPasswordForEmail(
         email,
         redirectTo: kIsWeb ? 'http://localhost:3000' : 'br.com.rodrigolanes.fizplantao://login-callback/',
       );
@@ -268,7 +398,7 @@ class AuthService {
   }
 
   // Verificar se o email foi verificado
-  static bool get emailVerificado {
+  bool get emailVerificado {
     final user = currentUser;
     if (user == null) return false;
 
@@ -277,18 +407,18 @@ class AuthService {
   }
 
   // Recarregar dados do usuário (para atualizar status de verificação)
-  static Future<void> recarregarUsuario() async {
+  Future<void> recarregarUsuario() async {
     try {
       // Supabase atualiza automaticamente o usuário
       // Mas podemos forçar uma atualização fazendo refresh
-      await _supabase.auth.refreshSession();
+      await _supabase.refreshSession();
     } catch (e) {
       // Ignorar erros de refresh silenciosamente
     }
   }
 
   // Enviar email de verificação
-  static Future<void> enviarEmailVerificacao() async {
+  Future<void> enviarEmailVerificacao() async {
     try {
       final user = currentUser;
       if (user == null) {
@@ -299,7 +429,7 @@ class AuthService {
       }
 
       // Reenviar email de confirmação
-      await _supabase.auth.resend(
+      await _supabase.resend(
         type: OtpType.signup,
         email: user.email!,
         emailRedirectTo: kIsWeb ? 'http://localhost:3000' : 'br.com.rodrigolanes.fizplantao://login-callback/',
@@ -312,7 +442,7 @@ class AuthService {
   }
 
   // Tratar exceções do Supabase Auth
-  static String _handleAuthException(AuthException e) {
+  String _handleAuthException(AuthException e) {
     // Supabase usa mensagens de erro em inglês por padrão
     final message = e.message.toLowerCase();
 
@@ -336,19 +466,18 @@ class AuthService {
   }
 
   /// Verificar se integração com Google está habilitada
-  static bool _isGoogleIntegrationEnabled() {
+  bool _isGoogleIntegrationEnabled() {
     return ConfigHelper.isGoogleIntegrationEnabled;
   }
 
   // Obter userId do cache (para uso offline)
-  static Future<String?> getCachedUserId() async {
-    final box = await Hive.openBox('config');
-    return box.get('userId');
+  Future<String?> getCachedUserId() async {
+    return _hiveConfig.get('userId');
   }
 
   // Obter email do cache
-  static Future<String?> getCachedEmail() async {
-    final box = await Hive.openBox('config');
-    return box.get('userEmail');
+  Future<String?> getCachedEmail() async {
+    return _hiveConfig.get('userEmail');
   }
+
 }

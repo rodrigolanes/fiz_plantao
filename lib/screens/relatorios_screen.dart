@@ -70,7 +70,7 @@ class _RelatoriosScreenState extends State<RelatoriosScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final todosPlantoes = DatabaseService.getPlantoesAtivos();
+    final todosPlantoes = DatabaseService.instance.getPlantoesAtivos();
     final plantoesFiltrados = _filtrarPlantoes(todosPlantoes);
     final plantoesPorLocal = _agruparPorLocal(plantoesFiltrados);
 
@@ -818,7 +818,7 @@ class _RelatoriosScreenState extends State<RelatoriosScreen> {
             pago: marcarComoPago,
             atualizadoEm: DateTime.now(),
           );
-          await DatabaseService.savePlantao(plantaoAtualizado);
+          await DatabaseService.instance.savePlantao(plantaoAtualizado);
         }
       }
 

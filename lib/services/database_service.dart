@@ -7,85 +7,211 @@ import 'auth_service.dart';
 import 'calendar_service.dart';
 import 'sync_service.dart';
 
-class DatabaseService {
-  static const _uuid = Uuid();
+// Interface abstrata para permitir mocking
+abstract class ISyncService {
+  Future<void> syncAll();
+}
 
-  static Box<Local> get locaisBox => Hive.box<Local>('locais');
-  static Box<Plantao> get plantoesBox => Hive.box<Plantao>('plantoes');
+// Interface abstrata para AuthService
+abstract class IAuthService {
+  String? get userId;
+}
+
+// Interface abstrata para CalendarService
+abstract class ICalendarService {
+  bool get isGoogleIntegrationEnabled;
+  Future<bool> get isSyncEnabled;
+  Future<void> setSyncEnabled(bool enabled);
+  Future<String?> criarEventoPlantao(Plantao plantao);
+  Future<void> criarEventoPagamento({
+    required DateTime dataPagamento,
+    required double valor,
+    required String localNome,
+    required String plantaoId,
+  });
+  Future<void> atualizarStatusPagamento({
+    required String plantaoId,
+    required bool pago,
+  });
+  Future<void> removerEventoPlantao(String? calendarEventId);
+  Future<bool> requestCalendarPermission();
+  Future<void> disconnect();
+}
+
+// Implementações concretas que delegam para os services originais
+class SyncServiceImpl implements ISyncService {
+  final SyncService _service;
+
+  SyncServiceImpl([SyncService? service]) : _service = service ?? SyncService.instance;
+
+  @override
+  Future<void> syncAll() => _service.syncAll();
+}
+
+class AuthServiceImpl implements IAuthService {
+  final AuthService _service;
+
+  AuthServiceImpl([AuthService? service]) : _service = service ?? AuthService.instance;
+
+  @override
+  String? get userId => _service.currentUserId;
+}
+
+class CalendarServiceImpl implements ICalendarService {
+  final CalendarService _service;
+
+  CalendarServiceImpl([CalendarService? service]) : _service = service ?? CalendarService.instance;
+
+  @override
+  bool get isGoogleIntegrationEnabled => _service.isGoogleIntegrationEnabled;
+
+  @override
+  Future<bool> get isSyncEnabled => _service.isSyncEnabled;
+
+  @override
+  Future<void> setSyncEnabled(bool enabled) => _service.setSyncEnabled(enabled);
+
+  @override
+  Future<String?> criarEventoPlantao(Plantao plantao) => _service.criarEventoPlantao(plantao);
+
+  @override
+  Future<void> criarEventoPagamento({
+    required DateTime dataPagamento,
+    required double valor,
+    required String localNome,
+    required String plantaoId,
+  }) =>
+      _service.criarEventoPagamento(
+        dataPagamento: dataPagamento,
+        valor: valor,
+        localNome: localNome,
+        plantaoId: plantaoId,
+      );
+
+  @override
+  Future<void> atualizarStatusPagamento({
+    required String plantaoId,
+    required bool pago,
+  }) =>
+      _service.atualizarStatusPagamento(
+        plantaoId: plantaoId,
+        pago: pago,
+      );
+
+  @override
+  Future<void> removerEventoPlantao(String? calendarEventId) => _service.removerEventoPlantao(calendarEventId);
+
+  @override
+  Future<bool> requestCalendarPermission() => _service.requestCalendarPermission();
+
+  @override
+  Future<void> disconnect() => _service.disconnect();
+}
+
+class DatabaseService {
+  final ISyncService _syncService;
+  final IAuthService _authService;
+  final ICalendarService _calendarService;
+  final Uuid _uuid;
+  final Box<Local> _locaisBox;
+  final Box<Plantao> _plantoesBox;
+
+  // Getters públicos para os boxes (necessários para SyncService)
+  Box<Local> get locaisBox => _locaisBox;
+  Box<Plantao> get plantoesBox => _plantoesBox;
+
+  // Construtor com dependências injetáveis
+  DatabaseService({
+    ISyncService? syncService,
+    IAuthService? authService,
+    ICalendarService? calendarService,
+    Uuid? uuid,
+    Box<Local>? locaisBox,
+    Box<Plantao>? plantoesBox,
+  })  : _syncService = syncService ?? SyncServiceImpl(),
+        _authService = authService ?? AuthServiceImpl(),
+        _calendarService = calendarService ?? CalendarServiceImpl(),
+        _uuid = uuid ?? const Uuid(),
+        _locaisBox = locaisBox ?? Hive.box<Local>('locais'),
+        _plantoesBox = plantoesBox ?? Hive.box<Plantao>('plantoes');
+
+  // Instância singleton para uso em produção
+  static DatabaseService? _instance;
+  static DatabaseService get instance => _instance ??= DatabaseService();
+
+  // Método para substituir a instância (útil em testes)
+  static void setInstance(DatabaseService service) {
+    _instance = service;
+  }
 
   // Local operations
-  static List<Local> getAllLocais() {
-    final userId = AuthService.userId;
+  List<Local> getAllLocais() {
+    final userId = _authService.userId;
     if (userId == null) return [];
-    return locaisBox.values.where((l) => l.userId == userId).toList();
+    return _locaisBox.values.where((l) => l.userId == userId).toList();
   }
 
-  static List<Local> getLocaisAtivos() {
-    final userId = AuthService.userId;
+  List<Local> getLocaisAtivos() {
+    final userId = _authService.userId;
     if (userId == null) return [];
-    return locaisBox.values.where((l) => l.ativo && l.userId == userId).toList();
+    return _locaisBox.values.where((l) => l.ativo && l.userId == userId).toList();
   }
 
-  static Future<void> saveLocal(Local local) async {
+  Future<void> saveLocal(Local local) async {
     final agora = DateTime.now();
-    // Gera UUID se o ID atual não for um UUID válido
     final id = _isUuid(local.id) ? local.id : _uuid.v4();
     final novo = local.copyWith(
       id: id,
       criadoEm: local.criadoEm,
       atualizadoEm: agora,
     );
-    await locaisBox.put(id, novo);
+    await _locaisBox.put(id, novo);
 
-    // Sincronização automática
-    await SyncService.syncAll().catchError((e) => null);
+    await _syncService.syncAll().catchError((e) => null);
   }
 
-  static bool _isUuid(String value) {
+  bool _isUuid(String value) {
     final uuidRegex = RegExp(r'^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$');
     return uuidRegex.hasMatch(value);
   }
 
-  static Future<void> updateLocal(Local local) async {
+  Future<void> updateLocal(Local local) async {
     final agora = DateTime.now();
     final atualizado = local.copyWith(atualizadoEm: agora);
-    await locaisBox.put(atualizado.id, atualizado);
+    await _locaisBox.put(atualizado.id, atualizado);
 
-    // Sincronização automática
-    await SyncService.syncAll().catchError((e) => null);
+    await _syncService.syncAll().catchError((e) => null);
   }
 
-  static Future<void> deleteLocal(String id) async {
-    final local = locaisBox.get(id);
+  Future<void> deleteLocal(String id) async {
+    final local = _locaisBox.get(id);
     if (local != null) {
       final updated = local.copyWith(
         ativo: false,
         atualizadoEm: DateTime.now(),
       );
-      await locaisBox.put(id, updated);
+      await _locaisBox.put(id, updated);
 
-      // Sincronização automática
-      await SyncService.syncAll().catchError((e) => null);
+      await _syncService.syncAll().catchError((e) => null);
     }
   }
 
   // Plantao operations
-  static List<Plantao> getAllPlantoes() {
-    final userId = AuthService.userId;
+  List<Plantao> getAllPlantoes() {
+    final userId = _authService.userId;
     if (userId == null) return [];
-    return plantoesBox.values.where((p) => p.userId == userId).toList();
+    return _plantoesBox.values.where((p) => p.userId == userId).toList();
   }
 
-  static List<Plantao> getPlantoesAtivos() {
-    final userId = AuthService.userId;
+  List<Plantao> getPlantoesAtivos() {
+    final userId = _authService.userId;
     if (userId == null) return [];
-    return plantoesBox.values.where((p) => p.ativo && p.userId == userId).toList()
+    return _plantoesBox.values.where((p) => p.ativo && p.userId == userId).toList()
       ..sort((a, b) => a.dataHora.compareTo(b.dataHora));
   }
 
-  static Future<void> savePlantao(Plantao plantao) async {
+  Future<void> savePlantao(Plantao plantao) async {
     final agora = DateTime.now();
-    // Gera UUID se o ID atual não for um UUID válido
     final id = _isUuid(plantao.id) ? plantao.id : _uuid.v4();
     final novo = plantao.copyWith(
       id: id,
@@ -93,80 +219,67 @@ class DatabaseService {
       atualizadoEm: agora,
     );
 
-    // Criar evento do Calendar ANTES de salvar no Hive
-    final calendarEventId = await CalendarService.criarEventoPlantao(novo);
+    final calendarEventId = await _calendarService.criarEventoPlantao(novo);
 
-    // Salvar no Hive com calendarEventId já preenchido (evita race condition com sync)
     final plantaoFinal = calendarEventId != null ? novo.copyWith(calendarEventId: calendarEventId) : novo;
-    await plantoesBox.put(id, plantaoFinal);
+    await _plantoesBox.put(id, plantaoFinal);
 
-    await CalendarService.criarEventoPagamento(
+    await _calendarService.criarEventoPagamento(
       dataPagamento: plantaoFinal.previsaoPagamento,
       valor: plantaoFinal.valor,
       localNome: plantaoFinal.local.nome,
       plantaoId: plantaoFinal.id,
     );
 
-    // Sincronização automática - agora calendarEventId já está salvo
-    await SyncService.syncAll().catchError((e) => null);
+    await _syncService.syncAll().catchError((e) => null);
   }
 
-  static Future<void> updatePlantao(Plantao plantao) async {
+  Future<void> updatePlantao(Plantao plantao) async {
     final agora = DateTime.now();
     final atualizado = plantao.copyWith(atualizadoEm: agora);
 
-    // Sincronizar com Google Calendar se habilitado e atualizar ID do evento
-    final calendarEventId = await CalendarService.criarEventoPlantao(atualizado);
+    final calendarEventId = await _calendarService.criarEventoPlantao(atualizado);
     final plantaoFinal = calendarEventId != null ? atualizado.copyWith(calendarEventId: calendarEventId) : atualizado;
 
-    await plantoesBox.put(plantaoFinal.id, plantaoFinal);
+    await _plantoesBox.put(plantaoFinal.id, plantaoFinal);
 
-    // Atualizar evento de pagamento
-    await CalendarService.criarEventoPagamento(
+    await _calendarService.criarEventoPagamento(
       dataPagamento: plantaoFinal.previsaoPagamento,
       valor: plantaoFinal.valor,
       localNome: plantaoFinal.local.nome,
       plantaoId: plantaoFinal.id,
     );
 
-    // Sincronização automática - aguarda completar para garantir consistência
-    await SyncService.syncAll().catchError((e) => null);
+    await _syncService.syncAll().catchError((e) => null);
   }
 
-  static Future<void> deletePlantao(String id) async {
-    final plantao = plantoesBox.get(id);
+  Future<void> deletePlantao(String id) async {
+    final plantao = _plantoesBox.get(id);
     if (plantao != null) {
-      // Guardar ID do evento antes de marcar como inativo
       final calendarEventId = plantao.calendarEventId;
 
       final updated = plantao.copyWith(
         ativo: false,
         atualizadoEm: DateTime.now(),
       );
-      await plantoesBox.put(id, updated);
+      await _plantoesBox.put(id, updated);
 
-      // Remover evento do plantão do Google Calendar
       if (calendarEventId != null) {
-        await CalendarService.removerEventoPlantao(calendarEventId);
+        await _calendarService.removerEventoPlantao(calendarEventId);
       }
 
-      // Atualizar evento de pagamento (remove este plantão da lista)
-      await CalendarService.criarEventoPagamento(
+      await _calendarService.criarEventoPagamento(
         dataPagamento: plantao.previsaoPagamento,
-        valor: 0, // Será recalculado na função
+        valor: 0,
         localNome: plantao.local.nome,
         plantaoId: plantao.id,
       );
 
-      // Sincronização automática
-      await SyncService.syncAll().catchError((e) => null);
+      await _syncService.syncAll().catchError((e) => null);
     }
   }
 
-  // Retorna todos os locais (ativos e inativos) para exibição em plantões existentes
-  static List<Local> getLocaisParaDropdown() {
-    // Retorna locais ativos para novos cadastros, mas mantém todos disponíveis
-    // para que plantões antigos possam exibir locais desativados
+  List<Local> getLocaisParaDropdown() {
     return getLocaisAtivos();
   }
 }

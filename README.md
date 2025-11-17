@@ -611,7 +611,65 @@ flutter build apk --split-per-abi
 
 Os APKs estarão em `build/app/outputs/flutter-apk/`
 
-## 📝 Modelo de Dados
+## � Segurança
+
+### Row Level Security (RLS)
+
+Todos os dados no Supabase são protegidos por **Row Level Security**:
+
+```sql
+-- Política de SELECT: usuários só veem seus próprios dados
+CREATE POLICY "Users can view own data"
+  ON public.plantoes FOR SELECT
+  USING (auth.uid() = user_id);
+
+-- Política de INSERT: usuários só inserem com seu próprio user_id
+CREATE POLICY "Users can insert own data"
+  ON public.plantoes FOR INSERT
+  WITH CHECK (auth.uid() = user_id);
+
+-- Políticas similares para UPDATE e DELETE
+```
+
+### Isolamento de Dados
+
+- **Filtro userId obrigatório:** Todas as queries (local e remoto) filtram por `userId`
+- **Validação dupla:** Frontend E backend verificam propriedade dos dados
+- **Email Verification:** Obrigatório antes de acessar o app
+- **Sessões seguras:** Tokens JWT gerenciados pelo Supabase Auth
+
+### Gestão de Secrets
+
+**Arquivos de configuração gitignored:**
+
+```dart
+// lib/config/supabase_config.dart (NÃO commitado)
+class SupabaseConfig {
+  static const String supabaseUrl = 'https://seu-projeto.supabase.co';
+  static const String supabaseAnonKey = 'sua-anon-key-aqui';
+  static const String googleWebClientId = 'seu-client-id.apps.googleusercontent.com';
+}
+```
+
+**Build via GitHub Actions:**
+- Secrets armazenados no GitHub Secrets
+- Injetados em tempo de build via `--dart-define`
+- NUNCA expostos no código-fonte
+
+**Keystore Android:**
+- `android/key.properties` gitignored
+- `android/upload-keystore.jks` gitignored
+- Apenas CI/CD tem acesso via base64 encoding
+
+### Validação de Entrada
+
+- **TextFormField validators** em todos os formulários
+- **Sanitização de strings** antes de salvar
+- **Validação de ranges:** Datas não podem ser futuras demais, valores devem ser positivos
+- **Try-catch** em todas operações de rede/banco
+- **Mensagens de erro amigáveis** sem expor detalhes técnicos
+
+## �📝 Modelo de Dados
 
 ### Local
 
@@ -678,6 +736,9 @@ O aplicativo segue **Material Design 3**, proporcionando uma interface moderna e
 lib/
 ├── main.dart                      # Entry point + Firebase init
 ├── firebase_options.dart          # Configuração Firebase (gerado)
+├── config/                        # Configurações
+│   ├── supabase_config.dart       # Credenciais Supabase (gitignored)
+│   └── supabase_config.example.dart # Template de configuração
 ├── models/                        # Modelos de dados
 │   ├── local.dart                 # @HiveType(typeId: 0) + userId
 │   ├── local.g.dart               # TypeAdapter gerado
@@ -691,11 +752,17 @@ lib/
 │   ├── lista_plantoes_screen.dart # Tela principal
 │   ├── cadastro_plantao_screen.dart
 │   ├── lista_locais_screen.dart
-│   └── cadastro_local_screen.dart
-├── services/                      # Camada de serviços
-│   ├── auth_service.dart          # Autenticação Firebase
-│   └── database_service.dart      # CRUD com filtro userId
+│   ├── cadastro_local_screen.dart
+│   └── relatorios_screen.dart     # Relatórios e exportação PDF
+├── services/                      # Camada de serviços (SOLID)
+│   ├── auth_service.dart          # Autenticação Supabase
+│   ├── database_service.dart      # CRUD com filtro userId
+│   ├── sync_service.dart          # Sincronização Supabase Realtime
+│   ├── calendar_service.dart      # Integração Google Calendar
+│   ├── pdf_service.dart           # Geração de relatórios PDF
+│   └── log_service.dart           # Logging estruturado
 └── widgets/                       # Widgets reutilizáveis
+    └── primary_action_buttons.dart # Botões de ação padronizados
 
 assets/
 └── images/
@@ -706,22 +773,82 @@ android/
     ├── src/main/
     │   ├── AndroidManifest.xml    # Label: "Fiz Plantão"
     │   └── res/mipmap-*/          # Ícones gerados
-    └── build.gradle.kts           # Config Android
+    ├── build.gradle.kts           # Config Android
+    ├── key.properties.example     # Template de assinatura
+    └── google-services.json       # Firebase config (gitignored)
+
+test/
+├── models/                        # Testes de modelos
+├── services/                      # Testes de services
+├── helpers/                       # Test helpers e utilities
+└── mocks/                         # Mocks para testes
 ```
+
+### Princípios SOLID
+
+O projeto segue rigorosamente os **princípios SOLID** para garantir código manutenível, testável e escalável:
+
+#### 1. Single Responsibility Principle (SRP)
+- Cada service tem uma única responsabilidade:
+  - `AuthService`: Apenas autenticação e gestão de sessão
+  - `DatabaseService`: Apenas operações CRUD locais (Hive)
+  - `SyncService`: Apenas sincronização com Supabase
+  - `CalendarService`: Apenas integração com Google Calendar
+  - `PdfService`: Apenas geração de relatórios PDF
+
+#### 2. Open/Closed Principle (OCP)
+- Classes abertas para extensão, fechadas para modificação
+- Uso de interfaces abstratas: `IAuthService`, `ISyncService`, `ICalendarService`
+- Facilita substituição de implementações (ex: trocar Supabase por outro backend)
+
+#### 3. Liskov Substitution Principle (LSP)
+- Mocks de teste implementam as mesmas interfaces dos services reais
+- Subclasses podem substituir suas classes base sem quebrar o sistema
+- Contratos consistentes em toda hierarquia de classes
+
+#### 4. Interface Segregation Principle (ISP)
+- Interfaces específicas ao invés de genéricas
+- `IHiveRepository` separado de `ISupabaseSync`
+- Nenhuma classe é forçada a implementar métodos que não usa
+
+#### 5. Dependency Inversion Principle (DIP)
+- Services dependem de abstrações, não de implementações concretas
+- Injeção de dependências via constructor quando possível
+- Padrão Singleton com `.instance` para services globais
+- Facilita testes unitários com mocks
 
 ### Padrões Adotados
 
-- **Soft Delete:** Exclusão lógica via flag `ativo`
+#### Padrões de Dados
+- **User Isolation Pattern:** Todos os modelos têm campo `userId`, queries sempre filtram por usuário logado
+- **Soft Delete Pattern:** Exclusão lógica via flag `ativo = true/false` (NUNCA delete físico)
+- **UUID para IDs:** Uso de package `uuid` para gerar identificadores únicos
+- **Timestamps Automáticos:** `criadoEm` e `atualizadoEm` gerenciados pelo `DatabaseService`
 - **Locais Inativos:** Não aparecem para novos cadastros, mas plantões existentes os mantêm visíveis
+
+#### Padrões de Persistência
+- **Offline-First:** Hive como cache local, Supabase como fonte de verdade
+- **Sync Bidirecional:** Upload (local → remoto) e Download (remoto → local)
+- **Last-Write-Wins:** Merge baseado em timestamps `atualizadoEm`
+- **Realtime Subscriptions:** Detecção automática de mudanças remotas
+- **Hive TypeAdapters:** Code generation para serialização type-safe
+
+#### Padrões de UI/UX
 - **Filtros em Memória:** Aplicados diretamente na lista sem queries adicionais
 - **Filtro Padrão:** "Próximos" mostra plantões de hoje em diante
-- **Type-safe Enums:** `Duracao` para duração de plantões
-- **DateTime Formatting:** Intl para formatação brasileira
-- **Currency Formatting:** `NumberFormat.currency(locale: 'pt_BR')`
-- **Timestamp IDs:** `DateTime.now().millisecondsSinceEpoch.toString()`
-- **Hive Boxes:** `locais` e `plantoes` como boxes separados
-- **StatefulWidgets:** Para telas com interação
-- **Material 3:** Design system consistente
+- **Material Design 3:** `WidgetStateProperty`, `FilledButton`, `OutlinedButton`
+- **Async Context Safety:** Captura de Navigator/Messenger antes de awaits
+- **Feedback Visual:** SnackBar para confirmações, AlertDialog para confirmações críticas
+
+#### Padrões de Código
+- **Type-safe Enums:** `Duracao.dozeHoras`, `Duracao.vinteQuatroHoras`
+- **Formatação Internacionalizada:**
+  - Datas: `DateFormat('dd/MM/yyyy', 'pt_BR')`
+  - Moeda: `NumberFormat.currency(locale: 'pt_BR', symbol: 'R\$')`
+- **Nomenclatura Consistente:**
+  - Arquivos: `snake_case` (ex: `lista_plantoes_screen.dart`)
+  - Classes: `PascalCase` (ex: `ListaPlantoesScreen`)
+  - Variáveis: `camelCase` em português (ex: `dataHora`, `previsaoPagamento`)
 
 ## 📄 Licença
 
@@ -737,7 +864,87 @@ Este projeto está sob a licença MIT.
 
 **Versão Atual:** 1.7.0 (gerenciada automaticamente via GitHub Actions)
 
-## 🧩 Símbolos Nativos (Android)
+## � Testes
+
+### Cobertura de Testes
+
+O projeto possui **100% de cobertura de testes** (64/64 testes passando):
+
+| Categoria | Arquivo | Testes | Status |
+|-----------|---------|--------|--------|
+| **Models** | `local_test.dart` | 11 | ✅ |
+| **Models** | `plantao_test.dart` | 25 | ✅ |
+| **Services** | `auth_service_test.dart` | 11 | ✅ |
+| **Services** | `database_service_test.dart` | 11 | ✅ |
+| **Services** | `sync_service_test.dart` | 6 | ✅ |
+| **TOTAL** | | **64** | **✅ 100%** |
+
+### Estratégia de Testes
+
+**Models:**
+- Validação de campos obrigatórios
+- Serialização JSON (`toMap`/`fromMap`)
+- Método `copyWith` para imutabilidade
+- Soft delete com flag `ativo`
+
+**Services:**
+- Auth: Login, cadastro, logout, cache de userId
+- Database: CRUD, filtros por userId, soft delete
+- Sync: Conectividade, concorrência, timestamps, Hive repository
+
+### Mocks e Fakes
+
+Todos os mocks seguem os princípios SOLID:
+
+```dart
+// Interfaces abstratas permitem substituir implementações
+abstract class IAuthService {
+  Future<void> login(String email, String password);
+  Future<void> logout();
+  String? get userId;
+}
+
+// Mocks implementam as mesmas interfaces
+class MockIAuthService extends Mock implements IAuthService {}
+
+// Fakes para tipos complexos
+class FakeUser extends Fake implements User {
+  final String? userId;
+  final String? email;
+  FakeUser({this.userId, this.email});
+}
+```
+
+**Padrões de Mock:**
+- `MockI*`: Mocks do Mockito para interfaces
+- `Fake*`: Fake implementations para tipos complexos (Supabase, Google)
+- **Storage-backed mocks:** `MockIHiveConfig` com `Map<String, dynamic>` interno
+- **Injeção de dependências:** Facilita substituir mocks em testes
+
+### Executar Testes
+
+```bash
+# Todos os testes
+flutter test
+
+# Testes específicos
+flutter test test/services/auth_service_test.dart
+
+# Com coverage
+flutter test --coverage
+genhtml coverage/lcov.info -o coverage/html
+```
+
+### CI/CD com Testes
+
+GitHub Actions executa testes automaticamente:
+- ✅ Em cada push para `main`
+- ✅ Antes de build para Internal Testing
+- ✅ Falha de teste bloqueia deploy
+
+**Relatório detalhado:** Ver `test/TEST_COVERAGE_REPORT.md`
+
+## �🧩 Símbolos Nativos (Android)
 
 Para melhorar os relatórios de falhas/ANRs no Google Play Console, o app agora embute símbolos nativos no App Bundle.
 
