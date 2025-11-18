@@ -72,11 +72,13 @@ O **Fiz Plantão** é uma solução prática para médicos registrarem e acompan
   - [x] Contador de resultados filtrados
   - [x] IconButton de filtro compacto
   - [x] Indicador visual de filtro ativo
+  - [x] Atualização automática após edição/cadastro
 - [x] **Edição e Exclusão**
   - [x] Editar plantões existentes
   - [x] Botão de exclusão na tela de edição
   - [x] Soft delete com confirmação
   - [x] Feedback visual
+  - [x] Lista atualizada imediatamente após salvar
 
 ### 📊 Relatórios e Estatísticas
 
@@ -862,7 +864,7 @@ Este projeto está sob a licença MIT.
 
 **Status do Projeto:** ✅ Produção com Google Sign-In, Calendar Integration e Relatórios PDF
 
-**Versão Atual:** 1.7.0 (gerenciada automaticamente via GitHub Actions)
+**Versão Atual:** 1.8.0 (gerenciada automaticamente via GitHub Actions)
 
 ## � Testes
 

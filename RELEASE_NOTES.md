@@ -1,5 +1,27 @@
 # Notas de Versão - Fiz Plantão
 
+## Versão 1.8.0 (Build TBD) - 18 de novembro de 2025
+
+### 🐛 Correções de Interface
+
+**Atualização de Lista Após Edição**
+- Corrigido problema crítico de não-atualização da lista de plantões após salvar/editar
+- Fluxo corrigido: agora salva primeiro, depois atualiza a interface
+- Lista sempre reflete mudanças imediatamente após edição
+- Eliminada necessidade de sair e voltar à tela para ver alterações
+
+**Experiência do Usuário**
+- Feedback visual instantâneo ao editar plantões
+- Interface sempre sincronizada com estado atual dos dados
+- Melhor responsividade e fluidez na navegação
+
+**Detalhes Técnicos**
+- `_carregarDados()` agora chamado após `savePlantao()` ao invés de antes
+- Ordem de operações corrigida em `_navegarParaCadastro()`
+- setState() executado no momento correto para refletir mudanças
+
+---
+
 ## Versão 1.7.0 (Build 34) - 15 de novembro de 2025
 
 ### 🔐 Correção Crítica de Autenticação Google
