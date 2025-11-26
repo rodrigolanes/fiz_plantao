@@ -36,22 +36,7 @@ jobs:
         # Remover 'v' do início e extrair versão
         VERSION_NAME=${TAG#v}
         echo "version_name=$VERSION_NAME" >> $GITHUB_OUTPUT
-        
-        # Ler build number atual do pubspec.yaml
-        current_version=$(grep '^version:' pubspec.yaml | sed 's/version: //')
-        current_build=$(echo $current_version | cut -d'+' -f2)
-        
-        # Incrementar build number
-        new_build=$((current_build + 1))
-        echo "build_number=$new_build" >> $GITHUB_OUTPUT
-        
-        # Versão completa
-        full_version="${VERSION_NAME}+${new_build}"
-        echo "full_version=$full_version" >> $GITHUB_OUTPUT
-        echo "Nova versão: $full_version"
-        
-        # Atualizar pubspec.yaml
-        sed -i "s/^version: .*/version: $full_version/" pubspec.yaml
+        echo "Versão: $VERSION_NAME"
         
     - name: Extract Release Notes
       id: release_notes
@@ -205,21 +190,4 @@ jobs:
         whatsNewDirectory: android/
         mappingFile: build/app/outputs/mapping/release/mapping.txt
         debugSymbols: native-debug-symbols.zip
-        
-    - name: Commit Version Update
-      if: success()
-      run: |
-        # Configurar git
-        git config --global user.name 'github-actions[bot]'
-        git config --global user.email '41898282+github-actions[bot]@users.noreply.github.com'
-        
-        # Adicionar mudanças
-        git add pubspec.yaml android/release-notes-pt-BR.txt
-        
-        # Commit apenas se houver mudanças
-        git diff --staged --quiet || git commit -m "chore: release version ${{ steps.version.outputs.full_version }} [skip ci]"
-        
-        # Push (usar GH_TOKEN para autenticar)
-        git remote set-url origin https://x-access-token:${{ secrets.GH_TOKEN }}@github.com/rodrigolanes/fiz_plantao.git
-        git push origin HEAD:main || echo "Nada para commitar"
         
