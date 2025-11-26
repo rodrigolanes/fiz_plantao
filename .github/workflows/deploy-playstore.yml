@@ -135,9 +135,9 @@ jobs:
       
     - name: Decode Keystore
       run: |
-        echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode > android/app/upload-keystore.jks
-        
-    - name: Criar key.properties
+        echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode > android/upload-keystore.jks
+
+    - name: Create key.properties
       run: |
         cat > android/key.properties << EOF
         storePassword=${{ secrets.KEYSTORE_PASSWORD }}
@@ -223,17 +223,3 @@ jobs:
         git remote set-url origin https://x-access-token:${{ secrets.GH_TOKEN }}@github.com/rodrigolanes/fiz_plantao.git
         git push origin HEAD:main || echo "Nada para commitar"
         
-    - name: Criar GitHub Release
-      uses: softprops/action-gh-release@v1
-      if: startsWith(github.ref, 'refs/tags/') || github.event_name == 'workflow_dispatch'
-      with:
-        tag_name: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.tag || github.ref_name }}
-        name: Release ${{ steps.version.outputs.version_name }}
-        body_path: android/release-notes-pt-BR.txt
-        files: |
-          build/app/outputs/bundle/release/app-release.aab
-          native-debug-symbols.zip
-        draft: false
-        prerelease: false
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
