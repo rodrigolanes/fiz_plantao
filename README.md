@@ -468,17 +468,56 @@ Este projeto foi configurado para funcionar em dois cenários:
 - GitHub Actions faz todo o build e deploy automaticamente
 - Se houver problemas com SSL corporativo, apenas trabalhe no código - o CI/CD resolve
 
-### Deploy Manual
+### Deploy Automatizado via GitHub Actions
 
-O deploy é feito manualmente via GitHub Actions:
-1. Acesse: [GitHub Actions](https://github.com/rodrigolanes/fiz_plantao/actions/workflows/deploy-internal.yml)
-2. Clique em **"Run workflow"**
-3. Escolha o tipo de incremento de versão (patch/minor/major)
-4. O workflow automaticamente:
-   - ✅ Incrementa a versão no `pubspec.yaml`
-   - ✅ Executa os testes
-   - ✅ Build do AAB
-   - ✅ Deploy para Internal Testing na Play Store
+**Internal Testing** (Testes Internos)
+
+- Workflow: [deploy-internal.yml](https://github.com/rodrigolanes/fiz_plantao/actions/workflows/deploy-internal.yml)
+- Trigger: Manual via "Run workflow"
+- Incremento de versão: Escolher patch/minor/major
+- Destino: Play Store Internal Track
+- Uso: Testar versão antes de produção
+
+**Production** (Produção)
+
+- Workflow: [deploy-playstore.yml](https://github.com/rodrigolanes/fiz_plantao/actions/workflows/deploy-playstore.yml)
+- Trigger: **Tag Git** (`v*.*.*`) ou Manual
+- Versionamento: Automático baseado na tag
+- Destino: Play Store Production Track
+- Uso: Release final para usuários
+- Documentação completa: [DEPLOY_PRODUCTION.md](DEPLOY_PRODUCTION.md)
+
+### Processo de Release para Produção
+
+**Passos para deploy:**
+
+1. **Desenvolver e Testar**
+   - Implementar features/correções
+   - Executar testes locais (`flutter test`)
+   - Testar em Internal Testing
+
+2. **Atualizar Documentação**
+   ```bash
+   # Editar RELEASE_NOTES.md com a nova versão
+   git add RELEASE_NOTES.md README.md
+   git commit -m "docs: preparar versão 1.8.0"
+   git push origin main
+   ```
+
+3. **Criar Tag e Deploy Automático**
+   ```bash
+   # Tag dispara deploy automático para produção
+   git tag -a v1.8.0 -m "Release 1.8.0"
+   git push origin v1.8.0
+   
+   # O workflow fará automaticamente:
+   # ✅ Versionamento baseado na tag
+   # ✅ Extração de notas do RELEASE_NOTES.md
+   # ✅ Testes, build e deploy
+   # ✅ Criação de GitHub Release
+   ```
+
+**Detalhes:** Ver [DEPLOY_PRODUCTION.md](DEPLOY_PRODUCTION.md)
 
 ### Pacotes Principais
 

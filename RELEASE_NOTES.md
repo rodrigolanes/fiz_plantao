@@ -1,6 +1,6 @@
 # Notas de Versão - Fiz Plantão
 
-## Versão 1.8.0 (Build TBD) - 18 de novembro de 2025
+## Versão 1.8.0 (Build TBD) - 25 de novembro de 2025
 
 ### 🐛 Correções de Interface
 
@@ -15,10 +15,40 @@
 - Interface sempre sincronizada com estado atual dos dados
 - Melhor responsividade e fluidez na navegação
 
-**Detalhes Técnicos**
+### 🚀 Melhorias de CI/CD
+
+**Novo Fluxo de Deploy para Produção**
+- Deploy para produção agora utiliza tags Git para versionamento
+- Versionamento automático baseado na tag (ex: `v1.8.0`)
+- Build number incrementado automaticamente
+- Extração automática de notas de versão do `RELEASE_NOTES.md`
+- Geração automática de release notes para Play Store (pt-BR)
+
+**Pipeline Otimizado**
+- Dois workflows separados: Internal Testing (manual) e Production (por tag)
+- Testes obrigatórios antes de cada deploy
+- Upload automático de símbolos de debug nativos
+- Criação automática de GitHub Release com AAB anexado
+- Commit automático da versão atualizada
+
+**Documentação Completa**
+- Novo arquivo `DEPLOY_PRODUCTION.md` com guia passo a passo
+- Instruções claras para deploy manual e automático
+- Troubleshooting e melhores práticas
+- Versionamento semântico documentado
+
+### 🔧 Detalhes Técnicos
+
+**Interface**
 - `_carregarDados()` agora chamado após `savePlantao()` ao invés de antes
 - Ordem de operações corrigida em `_navegarParaCadastro()`
 - setState() executado no momento correto para refletir mudanças
+
+**CI/CD**
+- Workflow `deploy-playstore.yml` completamente reescrito
+- Extração inteligente de notas via AWK do markdown
+- Truncamento automático para limite de 500 caracteres da Play Store
+- Configuração de Supabase e Google Services injetada em tempo de build
 
 ---
 
