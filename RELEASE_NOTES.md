@@ -1,5 +1,24 @@
 # Notas de Versão - Fiz Plantão
 
+## Versão 1.8.3 (Build TBD) - 1º de dezembro de 2025
+
+### 🔄 Atualizações de Dependências
+
+**Google Mobile Ads**
+- Atualizado `google_mobile_ads` de 5.1.0 para 6.0.0
+- Eliminados warnings de API deprecada no build Android
+- Compatibilidade com APIs mais recentes do Android
+- Build mais limpo e sem avisos de compilação
+
+### 🛠️ Melhorias Técnicas
+
+**Compatibilidade**
+- Plugin atualizado para usar APIs modernas do Android
+- Melhor performance e estabilidade dos anúncios
+- Redução de warnings durante compilação
+
+---
+
 ## Versão 1.8.0 (Build TBD) - 25 de novembro de 2025
 
 ### 🐛 Correções de Interface
