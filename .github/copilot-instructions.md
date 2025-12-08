@@ -407,46 +407,39 @@ flutter:
 
 ## Build e Deploy
 
-### Deploy Manual via GitHub Actions
+### Deploy para Produção via GitHub Actions
 
-**Internal Testing**
+**Processo:**
 
-- Workflow: [deploy-internal.yml](https://github.com/rodrigolanes/fiz_plantao/actions/workflows/deploy-internal.yml)
-- Trigger: Manual via "Run workflow"
-- Incremento de versão: Automático (escolher patch/minor/major)
-- Destino: Play Store Internal Track
+1. **Atualizar versão no `pubspec.yaml`**
+   - Editar manualmente a versão (ex: `1.9.0+39`)
+   - Incrementar versionName e versionCode conforme o tipo de mudança
 
-**Production**
+2. **Atualizar `RELEASE_NOTES.md`**
+   - Adicionar seção para a nova versão
+   - Descrever novidades, melhorias e correções
 
-- Promoção manual diretamente no Play Console
-- Versão já testada em Internal Testing
-- **NÃO faz novo build**, promove o AAB já testado
-
-### Processo de Release para Produção
-
-**Passos obrigatórios:**
-
-1. **Garantir que versão está estável**
-
-   - Testar versão Internal Testing na Play Store
-   - Validar todas funcionalidades
-   - Anotar número da versão (ex: `1.2.5` build `13`)
-
-2. **Criar tag de versão**
-
+3. **Commit e Push**
    ```bash
-   # Formato: v{MAJOR}.{MINOR}.{PATCH} (sem o +BUILD)
-   git tag v1.2.5
-   git push origin v1.2.5
+   git add pubspec.yaml RELEASE_NOTES.md
+   git commit -m "chore: bump version to 1.9.0"
+   git push origin main
    ```
 
-3. **Promover no Play Console (MANUAL)**
-   - Acesse: https://play.google.com/console
-   - Selecione o app "Fiz Plantão"
-   - Vá em **Testing → Internal testing** e confirme que a versão (ex: `1.3.1` code `15`) está disponível
-   - Clique em **Promote release** → **Production**
-   - Revise países de distribuição, notas e confirme a promoção
-   - Caso Managed publishing esteja ativo, finalize em **Publishing overview** com **Publish changes**
+4. **Criar tag de versão**
+
+   ```bash
+   # Formato: v{MAJOR}.{MINOR}.{PATCH} (deve corresponder ao pubspec.yaml)
+   git tag v1.9.0
+   git push origin v1.9.0
+   ```
+
+5. **Workflow automático**
+   - Tag dispara `deploy-playstore.yml` automaticamente
+   - Executa testes
+   - Build do AAB usando versão do `pubspec.yaml`
+   - Upload direto para Production Track
+   - Release notes extraídas do `RELEASE_NOTES.md`
 
 ### Gerar APK Local
 
@@ -462,25 +455,32 @@ flutter build apk --split-per-abi
 
 Formato no `pubspec.yaml`: `version: MAJOR.MINOR.PATCH+BUILD`
 
-Exemplo: `1.2.5+13` onde:
+Exemplo: `1.9.0+39` onde:
 
-- `1.2.5` = versionName (user-facing)
-- `+13` = versionCode (internal, Android)
+- `1.9.0` = versionName (user-facing)
+- `+39` = versionCode (internal, Android)
 
-**IMPORTANTE: Versionamento é gerenciado pelo GitHub Actions**
+**IMPORTANTE: Processo de Versionamento**
 
-- ⚠️ **NÃO modifique manualmente** a versão no `pubspec.yaml`
-- O workflow `deploy-internal.yml` incrementa automaticamente a versão
-- A versão no arquivo é apenas um placeholder/referência
-- Commits não devem alterar a linha `version:` do pubspec.yaml
+1. **Atualizar manualmente o `pubspec.yaml`** antes de cada release
+   - Incrementar versionName conforme o tipo de mudança:
+     - PATCH: Bug fixes (ex: 1.9.0 → 1.9.1)
+     - MINOR: New features (ex: 1.9.0 → 1.10.0)
+     - MAJOR: Breaking changes (ex: 1.9.0 → 2.0.0)
+   - Incrementar versionCode (+1): `1.9.0+39` → `1.9.1+40`
 
-**Incremento automático via GitHub Actions:**
+2. **Criar tag Git correspondente**
+   ```bash
+   git tag v1.9.0  # Deve corresponder ao versionName no pubspec.yaml
+   git push origin v1.9.0
+   ```
 
-- PATCH: Bug fixes (ex: 1.2.5 → 1.2.6)
-- MINOR: New features (ex: 1.2.5 → 1.3.0)
-- MAJOR: Breaking changes (ex: 1.2.5 → 2.0.0)
+3. **Workflow automático**
+   - Tag dispara `deploy-playstore.yml` automaticamente
+   - Build usa a versão do `pubspec.yaml`
+   - Release notes extraídas do `RELEASE_NOTES.md` usando a versão da tag
 
-O workflow incrementa automaticamente tanto versionName quanto versionCode (+1).
+**⚠️ A versão no pubspec.yaml DEVE corresponder à tag Git!**
 
 ## Melhorias Futuras Planejadas
 
@@ -549,5 +549,5 @@ R: Row Level Security no Supabase + filtro userId em todas as queries + email ve
 
 ---
 
-**Última atualização:** Novembro 2025
-**Versão atual:** Gerenciada automaticamente pelo GitHub Actions (veja RELEASE_NOTES.md)
+**Última atualização:** Dezembro 2025
+**Versão atual:** 1.9.0 (veja RELEASE_NOTES.md e pubspec.yaml)

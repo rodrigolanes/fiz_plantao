@@ -16,9 +16,9 @@ publish_to: "none" # Remove this line if you wish to publish to pub.dev
 # https://developer.apple.com/library/archive/documentation/General/Reference/InfoPlistKeyReference/Articles/CoreFoundationKeys.html
 # In Windows, build-name is used as the major, minor, and patch parts
 # of the product and file versions while build-number is used as the build suffix.
-# NOTA: A versão abaixo é automaticamente incrementada pelo GitHub Actions durante o deploy.
-# Não modifique manualmente. O workflow deploy-internal.yml gerencia o versionamento.
-version: 1.8.3+38
+# NOTA: Atualizar manualmente antes de criar tag e fazer deploy.
+# A versão deve corresponder à tag Git (ex: tag v1.9.0 = version: 1.9.0+39)
+version: 1.9.0+39
 
 environment:
   sdk: ">=3.5.0 <4.0.0"
