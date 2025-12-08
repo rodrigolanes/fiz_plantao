@@ -1,5 +1,35 @@
 # Notas de Versão - Fiz Plantão
 
+## Versão 1.11.0 (Build 41) - 8 de dezembro de 2025
+
+### 🔄 Sincronização Multi-Dispositivo Aprimorada
+
+**Nova Infraestrutura de Sync**
+- Campo `deletadoEm` adicionado para rastreamento preciso de exclusões
+- Resolução inteligente de conflitos entre dispositivos
+- Last-Write-Wins com prioridade para operações de delete
+- Timestamp de exclusão sincronizado entre todos os dispositivos
+
+**Lógica de Conflito**
+- Edições locais anteriores ao delete remoto → delete prevalece
+- Edições locais posteriores ao delete → delete prevalece (mais seguro)
+- Sincronização bidirecional: local ↔ remoto
+- Histórico completo preservado com timestamps
+
+**Melhorias Técnicas**
+- Hive TypeAdapters regenerados com novos campos
+- Migration SQL para Supabase (colunas `deletado_em`)
+- Índices otimizados para queries de registros deletados
+- Real-time handlers atualizados com merge inteligente
+
+**Benefícios para Usuários Multi-Dispositivo**
+- Dados deletados em um dispositivo são refletidos em todos
+- Impossível ressuscitar registros deletados acidentalmente
+- Sincronização confiável mesmo com edições offline concorrentes
+- Integridade total dos dados entre Android, Web e futuros dispositivos
+
+---
+
 ## Versão 1.10.0 (Build 40) - 8 de dezembro de 2025
 
 ### 🔄 Sincronização Forçada
