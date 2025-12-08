@@ -1,3 +1,8 @@
+import 'dart:async';
+
+import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_crashlytics/firebase_crashlytics.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
@@ -11,6 +16,18 @@ import 'screens/splash_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // Inicializa o Firebase
+  await Firebase.initializeApp();
+
+  // Configurar Crashlytics para capturar erros Flutter
+  FlutterError.onError = FirebaseCrashlytics.instance.recordFlutterFatalError;
+
+  // Capturar erros assíncronos não tratados
+  PlatformDispatcher.instance.onError = (error, stack) {
+    FirebaseCrashlytics.instance.recordError(error, stack, fatal: true);
+    return true;
+  };
 
   // Inicializa o Google Mobile Ads
   await MobileAds.instance.initialize();
@@ -36,7 +53,13 @@ void main() async {
   // Nota: SyncService.initialize() será chamado após login
   // Ver ListaPlantoesScreen.initState()
 
-  runApp(const MyApp());
+  // Executar app dentro de zona protegida para Crashlytics
+  runZonedGuarded(
+    () => runApp(const MyApp()),
+    (error, stack) {
+      FirebaseCrashlytics.instance.recordError(error, stack, fatal: true);
+    },
+  );
 }
 
 class MyApp extends StatelessWidget {

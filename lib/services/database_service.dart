@@ -1,3 +1,4 @@
+import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:hive/hive.dart';
 import 'package:uuid/uuid.dart';
 
@@ -211,71 +212,111 @@ class DatabaseService {
   }
 
   Future<void> savePlantao(Plantao plantao) async {
-    final agora = DateTime.now();
-    final id = _isUuid(plantao.id) ? plantao.id : _uuid.v4();
-    final novo = plantao.copyWith(
-      id: id,
-      criadoEm: plantao.criadoEm,
-      atualizadoEm: agora,
-    );
-
-    final calendarEventId = await _calendarService.criarEventoPlantao(novo);
-
-    final plantaoFinal = calendarEventId != null ? novo.copyWith(calendarEventId: calendarEventId) : novo;
-    await _plantoesBox.put(id, plantaoFinal);
-
-    await _calendarService.criarEventoPagamento(
-      dataPagamento: plantaoFinal.previsaoPagamento,
-      valor: plantaoFinal.valor,
-      localNome: plantaoFinal.local.nome,
-      plantaoId: plantaoFinal.id,
-    );
-
-    await _syncService.syncAll().catchError((e) => null);
-  }
-
-  Future<void> updatePlantao(Plantao plantao) async {
-    final agora = DateTime.now();
-    final atualizado = plantao.copyWith(atualizadoEm: agora);
-
-    final calendarEventId = await _calendarService.criarEventoPlantao(atualizado);
-    final plantaoFinal = calendarEventId != null ? atualizado.copyWith(calendarEventId: calendarEventId) : atualizado;
-
-    await _plantoesBox.put(plantaoFinal.id, plantaoFinal);
-
-    await _calendarService.criarEventoPagamento(
-      dataPagamento: plantaoFinal.previsaoPagamento,
-      valor: plantaoFinal.valor,
-      localNome: plantaoFinal.local.nome,
-      plantaoId: plantaoFinal.id,
-    );
-
-    await _syncService.syncAll().catchError((e) => null);
-  }
-
-  Future<void> deletePlantao(String id) async {
-    final plantao = _plantoesBox.get(id);
-    if (plantao != null) {
-      final calendarEventId = plantao.calendarEventId;
-
-      final updated = plantao.copyWith(
-        ativo: false,
-        atualizadoEm: DateTime.now(),
+    try {
+      final agora = DateTime.now();
+      final id = _isUuid(plantao.id) ? plantao.id : _uuid.v4();
+      final novo = plantao.copyWith(
+        id: id,
+        criadoEm: plantao.criadoEm,
+        atualizadoEm: agora,
       );
-      await _plantoesBox.put(id, updated);
 
-      if (calendarEventId != null) {
-        await _calendarService.removerEventoPlantao(calendarEventId);
-      }
+      final calendarEventId = await _calendarService.criarEventoPlantao(novo);
+
+      final plantaoFinal = calendarEventId != null ? novo.copyWith(calendarEventId: calendarEventId) : novo;
+      await _plantoesBox.put(id, plantaoFinal);
 
       await _calendarService.criarEventoPagamento(
-        dataPagamento: plantao.previsaoPagamento,
-        valor: 0,
-        localNome: plantao.local.nome,
-        plantaoId: plantao.id,
+        dataPagamento: plantaoFinal.previsaoPagamento,
+        valor: plantaoFinal.valor,
+        localNome: plantaoFinal.local.nome,
+        plantaoId: plantaoFinal.id,
       );
 
       await _syncService.syncAll().catchError((e) => null);
+    } catch (e, stack) {
+      FirebaseCrashlytics.instance.recordError(
+        e,
+        stack,
+        reason: 'Erro ao salvar plantão',
+        information: [
+          'userId: ${_authService.userId}',
+          'localNome: ${plantao.local.nome}',
+        ],
+      );
+      rethrow;
+    }
+  }
+
+  Future<void> updatePlantao(Plantao plantao) async {
+    try {
+      final agora = DateTime.now();
+      final atualizado = plantao.copyWith(atualizadoEm: agora);
+
+      final calendarEventId = await _calendarService.criarEventoPlantao(atualizado);
+      final plantaoFinal = calendarEventId != null ? atualizado.copyWith(calendarEventId: calendarEventId) : atualizado;
+
+      await _plantoesBox.put(plantaoFinal.id, plantaoFinal);
+
+      await _calendarService.criarEventoPagamento(
+        dataPagamento: plantaoFinal.previsaoPagamento,
+        valor: plantaoFinal.valor,
+        localNome: plantaoFinal.local.nome,
+        plantaoId: plantaoFinal.id,
+      );
+
+      await _syncService.syncAll().catchError((e) => null);
+    } catch (e, stack) {
+      FirebaseCrashlytics.instance.recordError(
+        e,
+        stack,
+        reason: 'Erro ao atualizar plantão',
+        information: [
+          'userId: ${_authService.userId}',
+          'plantaoId: ${plantao.id}',
+        ],
+      );
+      rethrow;
+    }
+  }
+
+  Future<void> deletePlantao(String id) async {
+    try {
+      final plantao = _plantoesBox.get(id);
+      if (plantao != null) {
+        final calendarEventId = plantao.calendarEventId;
+
+        final updated = plantao.copyWith(
+          ativo: false,
+          atualizadoEm: DateTime.now(),
+        );
+        await _plantoesBox.put(id, updated);
+
+        if (calendarEventId != null) {
+          await _calendarService.removerEventoPlantao(calendarEventId);
+        }
+
+        await _calendarService.criarEventoPagamento(
+          dataPagamento: plantao.previsaoPagamento,
+          valor: 0,
+          localNome: plantao.local.nome,
+          plantaoId: plantao.id,
+        );
+
+        await _syncService.syncAll().catchError((e) => null);
+      }
+    } catch (e, stack) {
+      // Log do erro no Crashlytics com contexto
+      FirebaseCrashlytics.instance.recordError(
+        e,
+        stack,
+        reason: 'Erro ao deletar plantão ID: $id',
+        information: [
+          'userId: ${_authService.userId}',
+          'plantaoId: $id',
+        ],
+      );
+      rethrow; // Re-lança o erro para o UI tratar
     }
   }
 

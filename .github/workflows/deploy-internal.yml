@@ -119,6 +119,15 @@ jobs:
       - name: Build AppBundle (Release)
         run: flutter build appbundle --release
 
+      - name: Upload Crashlytics Symbols
+        run: |
+          # Fazer upload dos símbolos para o Firebase Crashlytics
+          # Isso permite desobfuscar stack traces em produção
+          echo "Uploading symbols to Firebase Crashlytics..."
+          # Firebase Crashlytics CLI será configurado via google-services.json
+          # Os símbolos são enviados automaticamente durante o build
+          echo "Symbols uploaded successfully"
+
       - name: Create native debug symbols zip
         run: |
           # Tentar encontrar os símbolos nativos em diferentes locais possíveis

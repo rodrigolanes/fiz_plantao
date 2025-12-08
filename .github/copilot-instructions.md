@@ -10,6 +10,7 @@
 - **Banco de Dados Local:** Hive 2.2.3 (NoSQL cache/offline)
 - **Backend:** Supabase (PostgreSQL + Auth + Realtime)
 - **Autenticação:** Supabase Auth + Google Sign-In
+- **Error Tracking:** Firebase Crashlytics (captura automática de crashes)
 - **Internacionalização:** Intl (pt_BR)
 - **Design:** Material Design 3 com tema Teal (#00897B)
 - **Build Tools:** build_runner, hive_generator, flutter_launcher_icons
@@ -228,9 +229,10 @@ lib/
 
 5. **Tratamento de Erros**
    - NUNCA expor stack traces ou mensagens técnicas ao usuário
-   - Logging apropriado para debugging sem expor dados sensíveis
-   - Try-catch em operações de rede e banco de dados
+   - Firebase Crashlytics captura automaticamente todos os erros não tratados
+   - Try-catch em operações críticas (save, update, delete) com log no Crashlytics
    - Mensagens de erro amigáveis em português
+   - Use `FirebaseCrashlytics.instance.recordError(e, stack, reason: '...', information: [...])` para contexto adicional
 
 ## Performance
 

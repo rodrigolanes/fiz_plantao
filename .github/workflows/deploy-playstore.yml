@@ -159,6 +159,8 @@ jobs:
         
     - name: Build App Bundle
       run: flutter build appbundle --release
+      # Nota: Firebase Crashlytics automaticamente faz upload dos símbolos durante o build
+      # Os símbolos são enviados via google-services.json configurado
       
     - name: Create native debug symbols zip
       run: |
