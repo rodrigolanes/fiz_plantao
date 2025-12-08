@@ -167,17 +167,57 @@ class _CadastroPlantaoScreenState extends State<CadastroPlantaoScreen> {
           ),
           FilledButton(
             onPressed: () async {
-              await DatabaseService.instance.deletePlantao(widget.plantao!.id);
+              // Mostrar loading
+              navigator.pop(); // Fecha o dialog de confirmação
               if (!mounted) return;
-              navigator.pop(); // Fecha o dialog
-              navigator.pop(null); // Volta para lista
-              if (!mounted) return;
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Plantão excluído com sucesso!'),
-                  backgroundColor: Colors.green,
+
+              // Mostrar dialog de loading
+              showDialog(
+                context: context,
+                barrierDismissible: false,
+                builder: (_) => const Center(
+                  child: Card(
+                    child: Padding(
+                      padding: EdgeInsets.all(24),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          CircularProgressIndicator(),
+                          SizedBox(height: 16),
+                          Text('Excluindo plantão...'),
+                        ],
+                      ),
+                    ),
+                  ),
                 ),
               );
+
+              try {
+                await DatabaseService.instance.deletePlantao(widget.plantao!.id);
+                if (!mounted) return;
+
+                Navigator.of(context).pop(); // Fecha loading
+                Navigator.of(context).pop(null); // Volta para lista
+                if (!mounted) return;
+
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Plantão excluído com sucesso!'),
+                    backgroundColor: Colors.green,
+                  ),
+                );
+              } catch (e) {
+                if (!mounted) return;
+                Navigator.of(context).pop(); // Fecha loading
+                if (!mounted) return;
+
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('Erro ao excluir plantão: $e'),
+                    backgroundColor: Colors.red,
+                  ),
+                );
+              }
             },
             style: FilledButton.styleFrom(backgroundColor: Colors.red),
             child: const Text('Excluir'),

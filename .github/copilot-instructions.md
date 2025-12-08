@@ -412,14 +412,17 @@ flutter:
 **Processo:**
 
 1. **Atualizar versão no `pubspec.yaml`**
+
    - Editar manualmente a versão (ex: `1.9.0+39`)
    - Incrementar versionName e versionCode conforme o tipo de mudança
 
 2. **Atualizar `RELEASE_NOTES.md`**
+
    - Adicionar seção para a nova versão
    - Descrever novidades, melhorias e correções
 
 3. **Commit e Push**
+
    ```bash
    git add pubspec.yaml RELEASE_NOTES.md
    git commit -m "chore: bump version to 1.9.0"
@@ -463,6 +466,7 @@ Exemplo: `1.9.0+39` onde:
 **IMPORTANTE: Processo de Versionamento**
 
 1. **Atualizar manualmente o `pubspec.yaml`** antes de cada release
+
    - Incrementar versionName conforme o tipo de mudança:
      - PATCH: Bug fixes (ex: 1.9.0 → 1.9.1)
      - MINOR: New features (ex: 1.9.0 → 1.10.0)
@@ -470,6 +474,7 @@ Exemplo: `1.9.0+39` onde:
    - Incrementar versionCode (+1): `1.9.0+39` → `1.9.1+40`
 
 2. **Criar tag Git correspondente**
+
    ```bash
    git tag v1.9.0  # Deve corresponder ao versionName no pubspec.yaml
    git push origin v1.9.0

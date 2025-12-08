@@ -290,6 +290,87 @@ class _ListaPlantoesScreenState extends State<ListaPlantoesScreen> {
     }
   }
 
+  Future<void> _forcarSincronizacao() async {
+    final messenger = ScaffoldMessenger.of(context);
+    final navigator = Navigator.of(context);
+
+    // Mostrar dialog de loading
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => const AlertDialog(
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            CircularProgressIndicator(),
+            SizedBox(height: 16),
+            Text('Sincronizando...'),
+          ],
+        ),
+      ),
+    );
+
+    try {
+      final resultado = await DatabaseService.instance.forceSync();
+
+      if (!mounted) return;
+      navigator.pop(); // Fechar loading dialog
+
+      // Verificar resultados
+      final calendarSuccess = resultado['calendarSuccess'] as bool;
+      final syncSuccess = resultado['syncSuccess'] as bool;
+      final calendarError = resultado['calendarError'] as String?;
+      final syncError = resultado['syncError'] as String?;
+
+      if (calendarSuccess && syncSuccess) {
+        // Tudo OK
+        messenger.showSnackBar(
+          const SnackBar(
+            content: Text('Dados sincronizados remotamente com sucesso!'),
+            backgroundColor: Colors.green,
+            duration: Duration(seconds: 3),
+          ),
+        );
+      } else if (syncSuccess && !calendarSuccess) {
+        // Sync OK, Calendar falhou
+        messenger.showSnackBar(
+          SnackBar(
+            content: Text(
+              'Dados salvos remotamente.\n'
+              'Falha no Google Calendar: ${calendarError ?? "erro desconhecido"}',
+            ),
+            backgroundColor: Colors.orange,
+            duration: const Duration(seconds: 5),
+          ),
+        );
+      } else if (!syncSuccess) {
+        // Sync falhou (crítico)
+        messenger.showSnackBar(
+          SnackBar(
+            content: Text(
+              'Erro ao salvar dados remotamente: ${syncError ?? "erro desconhecido"}',
+            ),
+            backgroundColor: Colors.red,
+            duration: const Duration(seconds: 5),
+          ),
+        );
+      }
+
+      // Recarregar dados na tela
+      _carregarDados();
+    } catch (e) {
+      if (!mounted) return;
+      navigator.pop(); // Fechar loading dialog
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text('Erro inesperado: $e'),
+          backgroundColor: Colors.red,
+          duration: const Duration(seconds: 5),
+        ),
+      );
+    }
+  }
+
   @override
   void dispose() {
     _bannerAd?.dispose();
@@ -330,6 +411,8 @@ class _ListaPlantoesScreenState extends State<ListaPlantoesScreen> {
             onSelected: (value) async {
               if (value == 'calendar') {
                 _configurarGoogleCalendar();
+              } else if (value == 'sync') {
+                _forcarSincronizacao();
               } else if (value == 'logout') {
                 final navigator = Navigator.of(context);
                 final confirm = await showDialog<bool>(
@@ -373,6 +456,17 @@ class _ListaPlantoesScreenState extends State<ListaPlantoesScreen> {
                     ],
                   ),
                 ),
+              // Forçar sincronização
+              const PopupMenuItem(
+                value: 'sync',
+                child: Row(
+                  children: [
+                    Icon(Icons.sync),
+                    SizedBox(width: 8),
+                    Text('Forçar Sincronização'),
+                  ],
+                ),
+              ),
               const PopupMenuItem(
                 value: 'logout',
                 child: Row(

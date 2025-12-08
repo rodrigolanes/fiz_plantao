@@ -687,4 +687,48 @@ Criado via app Fiz Plantão
     await setSyncEnabled(false);
     // Não fazer signOut do GoogleSignIn para não afetar a autenticação do app
   }
+
+  /// Remove todos os eventos do calendário "Fiz Plantão"
+  /// Útil para forçar uma sincronização completa
+  Future<void> removerTodosEventos() async {
+    if (!await isSyncEnabled) {
+      LogService.calendar('Sync não habilitado, nenhum evento para remover');
+      return;
+    }
+
+    return _executeWithRetry<void>((client) async {
+      final calendarApi = CalendarApi(client);
+      final calendarId = await _ensureCalendarExists();
+
+      LogService.calendar('Removendo todos os eventos do calendário Fiz Plantão');
+
+      // Buscar todos os eventos do calendário Fiz Plantão
+      final eventos = await calendarApi.events.list(
+        calendarId,
+        privateExtendedProperty: ['app=fiz_plantao'],
+        maxResults: 2500, // Limite máximo da API
+      );
+
+      if (eventos.items == null || eventos.items!.isEmpty) {
+        LogService.calendar('Nenhum evento encontrado para remover');
+        return;
+      }
+
+      LogService.calendar('Removendo \${eventos.items!.length} eventos...');
+
+      // Deletar cada evento
+      for (final evento in eventos.items!) {
+        if (evento.id != null) {
+          try {
+            await calendarApi.events.delete(calendarId, evento.id!);
+          } catch (e) {
+            LogService.calendar('Erro ao deletar evento \${evento.id}', e);
+            // Continua removendo os outros eventos
+          }
+        }
+      }
+
+      LogService.calendar('Todos os eventos foram removidos');
+    });
+  }
 }

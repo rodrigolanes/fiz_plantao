@@ -323,6 +323,13 @@ class MockICalendarService extends Mock implements ICalendarService {
         returnValue: Future<void>.value(),
         returnValueForMissingStub: Future<void>.value(),
       );
+
+  @override
+  Future<void> removerTodosEventos() => super.noSuchMethod(
+        Invocation.method(#removerTodosEventos, []),
+        returnValue: Future<void>.value(),
+        returnValueForMissingStub: Future<void>.value(),
+      );
 }
 
 // ============================================================================

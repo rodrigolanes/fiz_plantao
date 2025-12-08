@@ -37,6 +37,7 @@ abstract class ICalendarService {
   Future<void> removerEventoPlantao(String? calendarEventId);
   Future<bool> requestCalendarPermission();
   Future<void> disconnect();
+  Future<void> removerTodosEventos();
 }
 
 // Implementações concretas que delegam para os services originais
@@ -107,6 +108,9 @@ class CalendarServiceImpl implements ICalendarService {
 
   @override
   Future<void> disconnect() => _service.disconnect();
+
+  @override
+  Future<void> removerTodosEventos() => _service.removerTodosEventos();
 }
 
 class DatabaseService {
@@ -292,18 +296,43 @@ class DatabaseService {
         );
         await _plantoesBox.put(id, updated);
 
+        // Remover evento do calendário com timeout de 10 segundos
         if (calendarEventId != null) {
-          await _calendarService.removerEventoPlantao(calendarEventId);
+          try {
+            await _calendarService.removerEventoPlantao(calendarEventId).timeout(const Duration(seconds: 10));
+          } catch (e, stack) {
+            // Registra erro mas continua (calendar é secundário)
+            FirebaseCrashlytics.instance.recordError(
+              e,
+              stack,
+              reason: 'Falha ao remover evento do calendário',
+              information: ['calendarEventId: $calendarEventId', 'plantaoId: $id'],
+            );
+          }
         }
 
-        await _calendarService.criarEventoPagamento(
-          dataPagamento: plantao.previsaoPagamento,
-          valor: 0,
-          localNome: plantao.local.nome,
-          plantaoId: plantao.id,
-        );
+        // Atualizar evento de pagamento com timeout
+        try {
+          await _calendarService
+              .criarEventoPagamento(
+                dataPagamento: plantao.previsaoPagamento,
+                valor: 0,
+                localNome: plantao.local.nome,
+                plantaoId: plantao.id,
+              )
+              .timeout(const Duration(seconds: 10));
+        } catch (e, stack) {
+          // Registra erro mas continua (calendar é secundário)
+          FirebaseCrashlytics.instance.recordError(
+            e,
+            stack,
+            reason: 'Falha ao atualizar evento de pagamento',
+            information: ['plantaoId: $id'],
+          );
+        }
 
-        await _syncService.syncAll().catchError((e) => null);
+        // Sync com timeout de 15 segundos - CRÍTICO, não ignora erro
+        await _syncService.syncAll().timeout(const Duration(seconds: 15));
       }
     } catch (e, stack) {
       // Log do erro no Crashlytics com contexto
@@ -322,5 +351,91 @@ class DatabaseService {
 
   List<Local> getLocaisParaDropdown() {
     return getLocaisAtivos();
+  }
+
+  /// Força sincronização completa:
+  /// 1. Se Google Calendar ativo: limpa e recria todos os eventos
+  /// 2. Sincroniza Hive <-> Supabase
+  /// Retorna mapa com resultado de cada etapa
+  Future<Map<String, dynamic>> forceSync() async {
+    final resultado = <String, dynamic>{
+      'calendarSuccess': true,
+      'calendarError': null,
+      'syncSuccess': false,
+      'syncError': null,
+    };
+
+    // 1. Calendar sync (se habilitado)
+    if (_calendarService.isGoogleIntegrationEnabled) {
+      final syncEnabled = await _calendarService.isSyncEnabled;
+      if (syncEnabled) {
+        try {
+          // Remover todos os eventos existentes
+          await _calendarService.removerTodosEventos().timeout(const Duration(seconds: 30));
+
+          // Recriar eventos de todos os plantões ativos
+          final plantoesAtivos = getPlantoesAtivos();
+          for (final plantao in plantoesAtivos) {
+            try {
+              final calendarEventId =
+                  await _calendarService.criarEventoPlantao(plantao).timeout(const Duration(seconds: 10));
+
+              // Atualizar plantão com novo calendarEventId se necessário
+              if (calendarEventId != null && plantao.calendarEventId != calendarEventId) {
+                final atualizado = plantao.copyWith(
+                  calendarEventId: calendarEventId,
+                  atualizadoEm: DateTime.now(),
+                );
+                await _plantoesBox.put(plantao.id, atualizado);
+              }
+
+              // Criar evento de pagamento
+              await _calendarService
+                  .criarEventoPagamento(
+                    dataPagamento: plantao.previsaoPagamento,
+                    valor: plantao.valor,
+                    localNome: plantao.local.nome,
+                    plantaoId: plantao.id,
+                  )
+                  .timeout(const Duration(seconds: 10));
+            } catch (e) {
+              // Log erro mas continua com próximo plantão
+              FirebaseCrashlytics.instance.recordError(
+                e,
+                StackTrace.current,
+                reason: 'Erro ao recriar evento do plantão durante forceSync',
+                information: ['plantaoId: ${plantao.id}'],
+              );
+            }
+          }
+
+          resultado['calendarSuccess'] = true;
+        } catch (e, stack) {
+          resultado['calendarSuccess'] = false;
+          resultado['calendarError'] = e.toString();
+          FirebaseCrashlytics.instance.recordError(
+            e,
+            stack,
+            reason: 'Erro durante sincronização do calendário',
+          );
+        }
+      }
+    }
+
+    // 2. Sync Hive <-> Supabase
+    try {
+      await _syncService.syncAll().timeout(const Duration(seconds: 30));
+      resultado['syncSuccess'] = true;
+    } catch (e, stack) {
+      resultado['syncSuccess'] = false;
+      resultado['syncError'] = e.toString();
+      FirebaseCrashlytics.instance.recordError(
+        e,
+        stack,
+        reason: 'Erro durante sincronização com Supabase',
+      );
+    }
+
+    return resultado;
   }
 }
