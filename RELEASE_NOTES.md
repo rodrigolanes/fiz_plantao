@@ -1,5 +1,22 @@
 # Notas de Versão - Fiz Plantão
 
+## Versão 1.11.1 (Build 42) - 8 de dezembro de 2025
+
+### 🐛 Correções Críticas
+
+**Ordem de Sincronização Corrigida**
+- Corrigida ordem de operações em `syncAll()`: Download → Upload
+- Previne sobrescrita de dados remotos mais recentes com dados locais antigos
+- Garante que Last-Write-Wins funcione corretamente em cenários multi-dispositivo
+
+**Impacto da Correção**
+- Edições offline antigas não sobrescrevem mais edições remotas recentes
+- Download primeiro garante merge local com versão mais recente
+- Upload depois só sobrescreve se local realmente for mais novo
+- Integridade de dados entre dispositivos totalmente garantida
+
+---
+
 ## Versão 1.11.0 (Build 41) - 8 de dezembro de 2025
 
 ### 🔄 Sincronização Multi-Dispositivo Aprimorada
