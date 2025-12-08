@@ -191,9 +191,11 @@ class DatabaseService {
   Future<void> deleteLocal(String id) async {
     final local = _locaisBox.get(id);
     if (local != null) {
+      final agora = DateTime.now();
       final updated = local.copyWith(
         ativo: false,
-        atualizadoEm: DateTime.now(),
+        deletadoEm: agora,
+        atualizadoEm: agora,
       );
       await _locaisBox.put(id, updated);
 
@@ -289,10 +291,12 @@ class DatabaseService {
       final plantao = _plantoesBox.get(id);
       if (plantao != null) {
         final calendarEventId = plantao.calendarEventId;
+        final agora = DateTime.now();
 
         final updated = plantao.copyWith(
           ativo: false,
-          atualizadoEm: DateTime.now(),
+          deletadoEm: agora,
+          atualizadoEm: agora,
         );
         await _plantoesBox.put(id, updated);
 

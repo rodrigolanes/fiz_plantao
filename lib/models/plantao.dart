@@ -43,6 +43,8 @@ class Plantao {
   final String? calendarEventId; // ID do evento do plantão no Google Calendar
   @HiveField(12)
   final String? calendarPaymentEventId; // ID do evento de pagamento no Google Calendar (obsoleto, agora é por data)
+  @HiveField(13)
+  final DateTime? deletadoEm; // Timestamp do soft delete
 
   Plantao({
     required this.id,
@@ -58,6 +60,7 @@ class Plantao {
     this.pago = false,
     this.calendarEventId,
     this.calendarPaymentEventId,
+    this.deletadoEm,
   });
 
   Plantao copyWith({
@@ -74,6 +77,7 @@ class Plantao {
     bool? pago,
     String? calendarEventId,
     String? calendarPaymentEventId,
+    DateTime? deletadoEm,
   }) {
     return Plantao(
       id: id ?? this.id,
@@ -89,6 +93,7 @@ class Plantao {
       pago: pago ?? this.pago,
       calendarEventId: calendarEventId ?? this.calendarEventId,
       calendarPaymentEventId: calendarPaymentEventId ?? this.calendarPaymentEventId,
+      deletadoEm: deletadoEm ?? this.deletadoEm,
     );
   }
 }

@@ -18,6 +18,8 @@ class Local {
   final bool ativo; // soft delete flag
   @HiveField(6)
   final String userId; // ID do usuário proprietário
+  @HiveField(7)
+  final DateTime? deletadoEm; // Timestamp do soft delete
 
   Local({
     required this.id,
@@ -27,6 +29,7 @@ class Local {
     required this.atualizadoEm,
     this.ativo = true,
     required this.userId,
+    this.deletadoEm,
   });
 
   Local copyWith({
@@ -37,6 +40,7 @@ class Local {
     DateTime? atualizadoEm,
     bool? ativo,
     String? userId,
+    DateTime? deletadoEm,
   }) {
     return Local(
       id: id ?? this.id,
@@ -46,6 +50,7 @@ class Local {
       atualizadoEm: atualizadoEm ?? this.atualizadoEm,
       ativo: ativo ?? this.ativo,
       userId: userId ?? this.userId,
+      deletadoEm: deletadoEm ?? this.deletadoEm,
     );
   }
 

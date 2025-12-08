@@ -226,6 +226,7 @@ class SyncService {
           'criado_em': local.criadoEm.toIso8601String(),
           'atualizado_em': local.atualizadoEm.toIso8601String(),
           'ativo': local.ativo,
+          'deletado_em': local.deletadoEm?.toIso8601String(),
         });
       } else {
         // Existe - verificar qual é mais recente
@@ -237,6 +238,7 @@ class SyncService {
             'nome': local.nome,
             'atualizado_em': local.atualizadoEm.toIso8601String(),
             'ativo': local.ativo,
+            'deletado_em': local.deletadoEm?.toIso8601String(),
           }).eq('id', local.id);
         }
       }
@@ -264,6 +266,7 @@ class SyncService {
           'criado_em': plantao.criadoEm.toIso8601String(),
           'atualizado_em': plantao.atualizadoEm.toIso8601String(),
           'ativo': plantao.ativo,
+          'deletado_em': plantao.deletadoEm?.toIso8601String(),
         });
       } else {
         // Existe - verificar qual é mais recente
@@ -281,6 +284,7 @@ class SyncService {
             'calendar_payment_event_id': plantao.calendarPaymentEventId,
             'atualizado_em': plantao.atualizadoEm.toIso8601String(),
             'ativo': plantao.ativo,
+            'deletado_em': plantao.deletadoEm?.toIso8601String(),
           }).eq('id', plantao.id);
         }
       }
@@ -296,6 +300,7 @@ class SyncService {
       final localId = remoteLocal['id'] as String;
       final localLocal = _hiveRepo.locaisBox.get(localId);
       final remoteUpdatedAt = DateTime.parse(remoteLocal['atualizado_em']);
+      final remoteDeletadoEm = remoteLocal['deletado_em'] != null ? DateTime.parse(remoteLocal['deletado_em']) : null;
 
       if (localLocal == null) {
         // Não existe localmente - criar novo
@@ -307,17 +312,44 @@ class SyncService {
           criadoEm: DateTime.parse(remoteLocal['criado_em']),
           atualizadoEm: remoteUpdatedAt,
           ativo: remoteLocal['ativo'] ?? true,
+          deletadoEm: remoteDeletadoEm,
         );
         await _hiveRepo.locaisBox.put(localId, novoLocal);
-      } else if (remoteUpdatedAt.isAfter(localLocal.atualizadoEm)) {
-        // Existe mas remoto é mais recente - atualizar
-        final localAtualizado = localLocal.copyWith(
-          apelido: remoteLocal['apelido'],
-          nome: remoteLocal['nome'],
-          atualizadoEm: remoteUpdatedAt,
-          ativo: remoteLocal['ativo'] ?? true,
-        );
-        await _hiveRepo.locaisBox.put(localId, localAtualizado);
+      } else {
+        // Existe - merge inteligente com prioridade para deletadoEm
+        // Se remoto tem deletadoEm e local não, aplicar delete
+        if (remoteDeletadoEm != null && localLocal.deletadoEm == null) {
+          // Remoto foi deletado, local ainda não sabia
+          if (localLocal.atualizadoEm.isBefore(remoteDeletadoEm)) {
+            // Edit local é anterior ao delete remoto, aplicar delete
+            final localAtualizado = localLocal.copyWith(
+              apelido: remoteLocal['apelido'],
+              nome: remoteLocal['nome'],
+              atualizadoEm: remoteUpdatedAt,
+              ativo: remoteLocal['ativo'] ?? true,
+              deletadoEm: remoteDeletadoEm,
+            );
+            await _hiveRepo.locaisBox.put(localId, localAtualizado);
+          } else {
+            // Edit local é posterior ao delete - priorizar delete (mais seguro)
+            final localAtualizado = localLocal.copyWith(
+              atualizadoEm: remoteUpdatedAt,
+              ativo: false,
+              deletadoEm: remoteDeletadoEm,
+            );
+            await _hiveRepo.locaisBox.put(localId, localAtualizado);
+          }
+        } else if (remoteUpdatedAt.isAfter(localLocal.atualizadoEm)) {
+          // Remoto é mais recente, atualizar local
+          final localAtualizado = localLocal.copyWith(
+            apelido: remoteLocal['apelido'],
+            nome: remoteLocal['nome'],
+            atualizadoEm: remoteUpdatedAt,
+            ativo: remoteLocal['ativo'] ?? true,
+            deletadoEm: remoteDeletadoEm,
+          );
+          await _hiveRepo.locaisBox.put(localId, localAtualizado);
+        }
       }
     }
 
@@ -328,6 +360,8 @@ class SyncService {
       final plantaoId = remotePlantao['id'] as String;
       final localPlantao = _hiveRepo.plantoesBox.get(plantaoId);
       final remoteUpdatedAt = DateTime.parse(remotePlantao['atualizado_em']);
+      final remoteDeletadoEm =
+          remotePlantao['deletado_em'] != null ? DateTime.parse(remotePlantao['deletado_em']) : null;
 
       // Local associado
       final localDoPlantao = _hiveRepo.locaisBox.get(remotePlantao['local_id']);
@@ -352,23 +386,56 @@ class SyncService {
           criadoEm: DateTime.parse(remotePlantao['criado_em']),
           atualizadoEm: remoteUpdatedAt,
           ativo: remotePlantao['ativo'] ?? true,
+          deletadoEm: remoteDeletadoEm,
         );
         await _hiveRepo.plantoesBox.put(plantaoId, novoPlantao);
-      } else if (remoteUpdatedAt.isAfter(localPlantao.atualizadoEm)) {
-        // Existe mas remoto é mais recente - atualizar
-        final plantaoAtualizado = localPlantao.copyWith(
-          local: localDoPlantao,
-          dataHora: DateTime.parse(remotePlantao['data_hora']),
-          duracao: Duracao.values.firstWhere((d) => d.name == remotePlantao['duracao']),
-          valor: (remotePlantao['valor'] as num).toDouble(),
-          previsaoPagamento: DateTime.parse(remotePlantao['previsao_pagamento']),
-          pago: remotePlantao['pago'] ?? false,
-          calendarEventId: remotePlantao['calendar_event_id'],
-          calendarPaymentEventId: remotePlantao['calendar_payment_event_id'],
-          atualizadoEm: remoteUpdatedAt,
-          ativo: remotePlantao['ativo'] ?? true,
-        );
-        await _hiveRepo.plantoesBox.put(plantaoId, plantaoAtualizado);
+      } else {
+        // Existe - merge inteligente com prioridade para deletadoEm
+        // Se remoto tem deletadoEm e local não, aplicar delete
+        if (remoteDeletadoEm != null && localPlantao.deletadoEm == null) {
+          // Remoto foi deletado, local ainda não sabia
+          if (localPlantao.atualizadoEm.isBefore(remoteDeletadoEm)) {
+            // Edit local é anterior ao delete remoto, aplicar delete
+            final plantaoAtualizado = localPlantao.copyWith(
+              local: localDoPlantao,
+              dataHora: DateTime.parse(remotePlantao['data_hora']),
+              duracao: Duracao.values.firstWhere((d) => d.name == remotePlantao['duracao']),
+              valor: (remotePlantao['valor'] as num).toDouble(),
+              previsaoPagamento: DateTime.parse(remotePlantao['previsao_pagamento']),
+              pago: remotePlantao['pago'] ?? false,
+              calendarEventId: remotePlantao['calendar_event_id'],
+              calendarPaymentEventId: remotePlantao['calendar_payment_event_id'],
+              atualizadoEm: remoteUpdatedAt,
+              ativo: remotePlantao['ativo'] ?? true,
+              deletadoEm: remoteDeletadoEm,
+            );
+            await _hiveRepo.plantoesBox.put(plantaoId, plantaoAtualizado);
+          } else {
+            // Edit local é posterior ao delete - priorizar delete (mais seguro)
+            final plantaoAtualizado = localPlantao.copyWith(
+              atualizadoEm: remoteUpdatedAt,
+              ativo: false,
+              deletadoEm: remoteDeletadoEm,
+            );
+            await _hiveRepo.plantoesBox.put(plantaoId, plantaoAtualizado);
+          }
+        } else if (remoteUpdatedAt.isAfter(localPlantao.atualizadoEm)) {
+          // Remoto é mais recente, atualizar local
+          final plantaoAtualizado = localPlantao.copyWith(
+            local: localDoPlantao,
+            dataHora: DateTime.parse(remotePlantao['data_hora']),
+            duracao: Duracao.values.firstWhere((d) => d.name == remotePlantao['duracao']),
+            valor: (remotePlantao['valor'] as num).toDouble(),
+            previsaoPagamento: DateTime.parse(remotePlantao['previsao_pagamento']),
+            pago: remotePlantao['pago'] ?? false,
+            calendarEventId: remotePlantao['calendar_event_id'],
+            calendarPaymentEventId: remotePlantao['calendar_payment_event_id'],
+            atualizadoEm: remoteUpdatedAt,
+            ativo: remotePlantao['ativo'] ?? true,
+            deletadoEm: remoteDeletadoEm,
+          );
+          await _hiveRepo.plantoesBox.put(plantaoId, plantaoAtualizado);
+        }
       }
     }
   }
@@ -395,12 +462,13 @@ class SyncService {
       for (final data in changes) {
         final id = data['id'] as String;
         final remoteUpdatedAt = DateTime.parse(data['atualizado_em'] as String);
+        final remoteDeletadoEm = data['deletado_em'] != null ? DateTime.parse(data['deletado_em'] as String) : null;
 
         // Buscar local existente no Hive
         final localExistente = box.get(id);
 
-        // Se não existe localmente ou remoto é mais recente, atualiza
-        if (localExistente == null || remoteUpdatedAt.isAfter(localExistente.atualizadoEm)) {
+        if (localExistente == null) {
+          // Não existe localmente - criar
           final local = Local(
             id: id,
             apelido: data['apelido'] as String,
@@ -409,9 +477,43 @@ class SyncService {
             atualizadoEm: remoteUpdatedAt,
             ativo: data['ativo'] as bool? ?? true,
             userId: data['user_id'] as String,
+            deletadoEm: remoteDeletadoEm,
           );
-
           box.put(id, local);
+        } else {
+          // Existe - merge com prioridade para deletadoEm
+          if (remoteDeletadoEm != null && localExistente.deletadoEm == null) {
+            // Remoto foi deletado, local ainda não sabia
+            if (localExistente.atualizadoEm.isBefore(remoteDeletadoEm)) {
+              // Edit local é anterior ao delete remoto, aplicar delete
+              final localAtualizado = localExistente.copyWith(
+                apelido: data['apelido'] as String,
+                nome: data['nome'] as String,
+                atualizadoEm: remoteUpdatedAt,
+                ativo: data['ativo'] as bool? ?? true,
+                deletadoEm: remoteDeletadoEm,
+              );
+              box.put(id, localAtualizado);
+            } else {
+              // Edit local é posterior ao delete - priorizar delete (mais seguro)
+              final localAtualizado = localExistente.copyWith(
+                atualizadoEm: remoteUpdatedAt,
+                ativo: false,
+                deletadoEm: remoteDeletadoEm,
+              );
+              box.put(id, localAtualizado);
+            }
+          } else if (remoteUpdatedAt.isAfter(localExistente.atualizadoEm)) {
+            // Remoto é mais recente, atualizar local
+            final localAtualizado = localExistente.copyWith(
+              apelido: data['apelido'] as String,
+              nome: data['nome'] as String,
+              atualizadoEm: remoteUpdatedAt,
+              ativo: data['ativo'] as bool? ?? true,
+              deletadoEm: remoteDeletadoEm,
+            );
+            box.put(id, localAtualizado);
+          }
         }
       }
 
@@ -431,25 +533,26 @@ class SyncService {
       for (final data in changes) {
         final id = data['id'] as String;
         final remoteUpdatedAt = DateTime.parse(data['atualizado_em'] as String);
+        final remoteDeletadoEm = data['deletado_em'] != null ? DateTime.parse(data['deletado_em'] as String) : null;
 
         // Buscar plantão existente no Hive
         final plantaoExistente = plantoesBox.get(id);
 
-        // Se não existe localmente ou remoto é mais recente, atualiza
-        if (plantaoExistente == null || remoteUpdatedAt.isAfter(plantaoExistente.atualizadoEm)) {
-          // Buscar o Local relacionado
-          final localId = data['local_id'] as String;
-          final local = locaisBox.get(localId);
+        // Buscar o Local relacionado
+        final localId = data['local_id'] as String;
+        final local = locaisBox.get(localId);
 
-          if (local == null) {
-            LogService.warning('Local $localId não encontrado para Plantão $id - pulando');
-            continue; // Pula este plantão se o local não existe
-          }
+        if (local == null) {
+          LogService.warning('Local $localId não encontrado para Plantão $id - pulando');
+          continue; // Pula este plantão se o local não existe
+        }
 
-          // Parse da duração
-          final duracaoStr = data['duracao'] as String;
-          final duracao = duracaoStr == '12h' ? Duracao.dozeHoras : Duracao.vinteQuatroHoras;
+        // Parse da duração
+        final duracaoStr = data['duracao'] as String;
+        final duracao = duracaoStr == '12h' ? Duracao.dozeHoras : Duracao.vinteQuatroHoras;
 
+        if (plantaoExistente == null) {
+          // Não existe localmente - criar
           final plantao = Plantao(
             id: id,
             local: local,
@@ -464,9 +567,55 @@ class SyncService {
             atualizadoEm: remoteUpdatedAt,
             ativo: data['ativo'] as bool? ?? true,
             userId: data['user_id'] as String,
+            deletadoEm: remoteDeletadoEm,
           );
-
           plantoesBox.put(id, plantao);
+        } else {
+          // Existe - merge com prioridade para deletadoEm
+          if (remoteDeletadoEm != null && plantaoExistente.deletadoEm == null) {
+            // Remoto foi deletado, local ainda não sabia
+            if (plantaoExistente.atualizadoEm.isBefore(remoteDeletadoEm)) {
+              // Edit local é anterior ao delete remoto, aplicar delete
+              final plantaoAtualizado = plantaoExistente.copyWith(
+                local: local,
+                dataHora: DateTime.parse(data['data_hora'] as String),
+                duracao: duracao,
+                valor: (data['valor'] as num).toDouble(),
+                previsaoPagamento: DateTime.parse(data['previsao_pagamento'] as String),
+                pago: _getRemoteBooleanField(data, 'pago'),
+                calendarEventId: data['calendar_event_id'] as String?,
+                calendarPaymentEventId: data['calendar_payment_event_id'] as String?,
+                atualizadoEm: remoteUpdatedAt,
+                ativo: data['ativo'] as bool? ?? true,
+                deletadoEm: remoteDeletadoEm,
+              );
+              plantoesBox.put(id, plantaoAtualizado);
+            } else {
+              // Edit local é posterior ao delete - priorizar delete (mais seguro)
+              final plantaoAtualizado = plantaoExistente.copyWith(
+                atualizadoEm: remoteUpdatedAt,
+                ativo: false,
+                deletadoEm: remoteDeletadoEm,
+              );
+              plantoesBox.put(id, plantaoAtualizado);
+            }
+          } else if (remoteUpdatedAt.isAfter(plantaoExistente.atualizadoEm)) {
+            // Remoto é mais recente, atualizar local
+            final plantaoAtualizado = plantaoExistente.copyWith(
+              local: local,
+              dataHora: DateTime.parse(data['data_hora'] as String),
+              duracao: duracao,
+              valor: (data['valor'] as num).toDouble(),
+              previsaoPagamento: DateTime.parse(data['previsao_pagamento'] as String),
+              pago: _getRemoteBooleanField(data, 'pago'),
+              calendarEventId: data['calendar_event_id'] as String?,
+              calendarPaymentEventId: data['calendar_payment_event_id'] as String?,
+              atualizadoEm: remoteUpdatedAt,
+              ativo: data['ativo'] as bool? ?? true,
+              deletadoEm: remoteDeletadoEm,
+            );
+            plantoesBox.put(id, plantaoAtualizado);
+          }
         }
       }
 

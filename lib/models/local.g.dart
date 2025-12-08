@@ -24,13 +24,14 @@ class LocalAdapter extends TypeAdapter<Local> {
       atualizadoEm: fields[4] as DateTime,
       ativo: fields[5] as bool,
       userId: fields[6] as String,
+      deletadoEm: fields[7] as DateTime?,
     );
   }
 
   @override
   void write(BinaryWriter writer, Local obj) {
     writer
-      ..writeByte(7)
+      ..writeByte(8)
       ..writeByte(0)
       ..write(obj.id)
       ..writeByte(1)
@@ -44,7 +45,9 @@ class LocalAdapter extends TypeAdapter<Local> {
       ..writeByte(5)
       ..write(obj.ativo)
       ..writeByte(6)
-      ..write(obj.userId);
+      ..write(obj.userId)
+      ..writeByte(7)
+      ..write(obj.deletadoEm);
   }
 
   @override
