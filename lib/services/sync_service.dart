@@ -141,6 +141,7 @@ class SyncService {
   }
 
   /// Sincronização bidirecional completa
+  /// IMPORTANTE: Ordem Download → Upload para evitar sobrescrita de dados mais recentes
   Future<void> syncAll() async {
     if (_currentStatus == SyncStatus.syncing) {
       return; // Já está sincronizando
@@ -158,11 +159,13 @@ class SyncService {
 
       final userId = _getCurrentUserId();
 
-      // 1. Upload de dados locais modificados
-      await _uploadLocalChanges(userId);
-
-      // 2. Download de dados remotos modificados
+      // 1. Download PRIMEIRO - traz mudanças remotas e faz merge local usando Last-Write-Wins
+      // Isso garante que temos a versão mais recente antes de enviar mudanças locais
       await _downloadRemoteChanges(userId);
+
+      // 2. Upload DEPOIS - envia mudanças locais que são mais recentes que o remoto
+      // O upload só sobrescreve se local.atualizadoEm > remoto.atualizadoEm
+      await _uploadLocalChanges(userId);
 
       _lastSyncTime = DateTime.now();
       _updateStatus(SyncStatus.synced);
