@@ -1,6 +1,46 @@
 # Notas de Versão - Fiz Plantão
 
-## Versão 1.9.0 (Build TBD) - 8 de dezembro de 2025
+## Versão 1.10.0 (Build 40) - 8 de dezembro de 2025
+
+### 🔄 Sincronização Forçada
+
+**Nova Funcionalidade: Forçar Sincronização**
+- Botão "Forçar Sincronização" no menu principal
+- Sincroniza dados locais com servidor remoto
+- Recria todos os eventos do Google Calendar (se ativo)
+- Útil para resolver inconsistências de dados
+- Feedback visual com loading durante o processo
+
+**Comportamento Inteligente**
+- Google Calendar: falhas são reportadas mas não impedem sync de dados
+- Sync remoto: crítico - falhas são mostradas ao usuário
+- Timeouts configurados (30s para operações longas, 10s para eventos)
+- Todos os erros registrados no Firebase Crashlytics
+
+**Mensagens ao Usuário**
+- ✅ Sucesso: "Dados sincronizados remotamente com sucesso!"
+- ⚠️ Parcial: "Dados salvos remotamente. Falha no Google Calendar: [erro]"
+- ❌ Falha: "Erro ao salvar dados remotamente: [erro]"
+- Interface amigável sem expor detalhes técnicos
+
+### 🐛 Correções de Bugs
+
+**Exclusão de Plantões**
+- Corrigido problema de exclusão travando indefinidamente
+- Adicionados timeouts em operações do Google Calendar (10s)
+- Timeout no sync remoto (15s)
+- Loading visual durante exclusão
+- Tratamento robusto de erros com mensagens claras
+- Erros registrados no Crashlytics com contexto completo
+
+**Segurança e Confiabilidade**
+- Sync remoto nunca é ignorado silenciosamente
+- Falhas em operações secundárias (Calendar) são logadas mas não travam
+- Stack traces completos no Crashlytics para diagnóstico
+
+---
+
+## Versão 1.9.0 (Build 39) - 8 de dezembro de 2025
 
 ### 🔥 Firebase Crashlytics
 
