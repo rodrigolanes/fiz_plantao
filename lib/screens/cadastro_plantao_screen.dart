@@ -288,7 +288,7 @@ class _CadastroPlantaoScreenState extends State<CadastroPlantaoScreen> {
                     items: _locaisDisponiveis.map((local) {
                       return DropdownMenuItem(
                         value: local.id,
-                        child: Text('${local.apelido} - ${local.nome}'),
+                        child: Text(local.apelido),
                       );
                     }).toList(),
                     onChanged: (value) {

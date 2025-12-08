@@ -82,11 +82,15 @@ class _CadastroLocalScreenState extends State<CadastroLocalScreen> {
                 labelText: 'Apelido',
                 border: OutlineInputBorder(),
                 prefixIcon: Icon(Icons.label),
-                helperText: 'Nome curto para identificação rápida',
+                helperText: 'Nome curto para identificação rápida (máx. 30 caracteres)',
               ),
+              maxLength: 30,
               validator: (value) {
                 if (value == null || value.isEmpty) {
                   return 'Por favor, informe o apelido';
+                }
+                if (value.length > 30) {
+                  return 'Apelido deve ter no máximo 30 caracteres';
                 }
                 return null;
               },

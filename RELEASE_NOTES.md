@@ -1,5 +1,39 @@
 # Notas de Versão - Fiz Plantão
 
+## Versão 1.9.0 (Build TBD) - 8 de dezembro de 2025
+
+### 🔥 Firebase Crashlytics
+
+**Error Tracking em Produção**
+- Implementado Firebase Crashlytics para captura automática de erros
+- Stack traces completos com contexto de usuário
+- Instrumentação em operações críticas (save, update, delete)
+- Informações detalhadas: userId, plantaoId, localNome
+- Captura de erros síncronos e assíncronos não tratados
+- Facilita diagnóstico de bugs reportados por usuários
+
+**Documentação**
+- Criado guia completo em `FIREBASE_CRASHLYTICS_SETUP.md`
+- Instruções de uso do console Firebase
+- Como interpretar crashes e stack traces
+- Configuração de alertas e monitoramento
+
+### ✨ Melhorias de Interface
+
+**Dropdown de Locais Otimizado**
+- Dropdown agora mostra apenas o apelido do local (sem nome completo)
+- Eliminado problema de texto estourando os limites do campo
+- Limite máximo de 30 caracteres para apelido
+- Contador visual de caracteres no formulário
+- Interface mais limpa e sem overflow
+
+**Validações**
+- Validação de tamanho máximo no cadastro de local
+- Mensagem de erro clara para apelidos muito longos
+- Helper text informativo sobre limite de caracteres
+
+---
+
 ## Versão 1.8.3 (Build TBD) - 1º de dezembro de 2025
 
 ### 🔄 Atualizações de Dependências
