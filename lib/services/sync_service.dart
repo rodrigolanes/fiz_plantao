@@ -124,10 +124,22 @@ class SyncService {
     });
 
     // Listener de mudanças remotas (Locais)
-    _supabase.from('locais').stream(primaryKey: ['id']).eq('user_id', user.id).listen(_handleRemoteLocaisChange);
+    _supabase.from('locais').stream(primaryKey: ['id']).eq('user_id', user.id).listen(
+          _handleRemoteLocaisChange,
+          onError: (error, stackTrace) {
+            LogService.sync('Erro no Realtime listener de Locais', error);
+            // Não rethrow - continua funcionando offline, será sincronizado no próximo sync manual
+          },
+        );
 
     // Listener de mudanças remotas (Plantões)
-    _supabase.from('plantoes').stream(primaryKey: ['id']).eq('user_id', user.id).listen(_handleRemotePlantoesChange);
+    _supabase.from('plantoes').stream(primaryKey: ['id']).eq('user_id', user.id).listen(
+          _handleRemotePlantoesChange,
+          onError: (error, stackTrace) {
+            LogService.sync('Erro no Realtime listener de Plantões', error);
+            // Não rethrow - continua funcionando offline, será sincronizado no próximo sync manual
+          },
+        );
   }
 
   // NOTA: Método estático removido para evitar conflito de nomes
@@ -161,15 +173,25 @@ class SyncService {
 
       // 1. Download PRIMEIRO - traz mudanças remotas e faz merge local usando Last-Write-Wins
       // Isso garante que temos a versão mais recente antes de enviar mudanças locais
-      await _downloadRemoteChanges(userId);
+      await _downloadRemoteChanges(userId).timeout(
+        const Duration(seconds: 20),
+        onTimeout: () => throw Exception('Timeout ao baixar mudanças remotas'),
+      );
 
       // 2. Upload DEPOIS - envia mudanças locais que são mais recentes que o remoto
       // O upload só sobrescreve se local.atualizadoEm > remoto.atualizadoEm
-      await _uploadLocalChanges(userId);
+      await _uploadLocalChanges(userId).timeout(
+        const Duration(seconds: 20),
+        onTimeout: () => throw Exception('Timeout ao enviar mudanças locais'),
+      );
 
       _lastSyncTime = DateTime.now();
       _updateStatus(SyncStatus.synced);
       LogService.sync('Sincronização completa realizada');
+    } on TimeoutException catch (e) {
+      LogService.sync('Timeout na sincronização - Realtime pode estar indisponível', e);
+      _updateStatus(SyncStatus.error, 'Timeout na sincronização');
+      // Não rethrow - app continua funcionando offline
     } catch (e) {
       LogService.sync('Erro na sincronização completa', e);
       _updateStatus(SyncStatus.error, e.toString());
@@ -185,7 +207,10 @@ class SyncService {
     try {
       _updateStatus(SyncStatus.syncing);
       final userId = _getCurrentUserId();
-      await _uploadLocalChanges(userId);
+      await _uploadLocalChanges(userId).timeout(
+        const Duration(seconds: 20),
+        onTimeout: () => throw Exception('Timeout ao enviar mudanças locais'),
+      );
       _updateStatus(SyncStatus.synced);
       LogService.sync('Upload de dados locais concluído');
     } catch (e) {
@@ -200,13 +225,41 @@ class SyncService {
     try {
       _updateStatus(SyncStatus.syncing);
       final userId = _getCurrentUserId();
-      await _downloadRemoteChanges(userId);
+      await _downloadRemoteChanges(userId).timeout(
+        const Duration(seconds: 20),
+        onTimeout: () => throw Exception('Timeout ao baixar mudanças remotas'),
+      );
       _updateStatus(SyncStatus.synced);
       LogService.sync('Download de dados remotos concluído');
     } catch (e) {
       LogService.sync('Erro no download de dados remotos', e);
       _updateStatus(SyncStatus.error, e.toString());
       rethrow;
+    }
+  }
+
+  /// Sincronização com retry automático e backoff exponencial
+  /// Útil para recuperação de falhas transitórias (Realtime indisponível, etc)
+  Future<void> syncWithRetry({int maxAttempts = 3}) async {
+    int attempt = 0;
+
+    while (attempt < maxAttempts) {
+      try {
+        await syncAll();
+        return; // Sucesso
+      } catch (e) {
+        attempt++;
+        if (attempt >= maxAttempts) {
+          LogService.sync('Falha na sincronização após $maxAttempts tentativas', e);
+          rethrow; // Falha final
+        }
+
+        // Backoff exponencial: 2s, 4s, 8s...
+        final delaySeconds = 2 * (1 << (attempt - 1));
+        LogService.sync(
+            'Sincronização falhou, tentando novamente em ${delaySeconds}s (tentativa $attempt/$maxAttempts)');
+        await Future.delayed(Duration(seconds: delaySeconds));
+      }
     }
   }
 
