@@ -1,5 +1,39 @@
 # Notas de Versão - Fiz Plantão
 
+## Versão 1.11.2 (Build 43) - 10 de dezembro de 2025
+
+### 🛡️ Resiliência e Tratamento de Erros Aprimorado
+
+**Realtime Listeners Robustos**
+- Adicionados error handlers em listeners do Supabase Realtime
+- Falhas de conexão não interrompem mais o funcionamento offline
+- App continua operacional mesmo se Realtime estiver indisponível
+
+**Timeouts em Operações de Sincronização**
+- Download remoto: timeout de 20 segundos
+- Upload local: timeout de 20 segundos
+- Sincronização completa: limite de tempo para evitar travamentos
+- Operações lentas/com conectividade ruim agora são abortadas corretamente
+
+**Novo Método: Sincronização com Retry**
+- `SyncService.instance.syncWithRetry(maxAttempts: 3)`
+- Backoff exponencial automático (2s → 4s → 8s)
+- Recupera-se automaticamente de falhas transitórias
+- Ideal para situações de rede instável ou Realtime temporariamente indisponível
+
+**Logs e Monitoramento**
+- Todos os erros de Realtime registrados no LogService
+- Falhas de timeout não geram exceções não tratadas
+- Crashlytics captura contexto completo de operações críticas
+
+**Comportamento Esperado**
+- Se Realtime falhar: app continua funcionando offline ✅
+- Se sync timeout: operação é abortada sem travar ✅
+- Se erro transitório: retry automático recupera conexão ✅
+- Logs disponíveis para debugging (flutter run -v)
+
+---
+
 ## Versão 1.11.1 (Build 42) - 8 de dezembro de 2025
 
 ### 🐛 Correções Críticas
