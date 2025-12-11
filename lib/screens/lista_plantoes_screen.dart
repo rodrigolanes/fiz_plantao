@@ -834,17 +834,9 @@ class _ListaPlantoesScreenState extends State<ListaPlantoesScreen> {
       ),
       bottomNavigationBar: _isBannerAdReady && _bannerAd != null
           ? SafeArea(
-              top: false,
-              child: Container(
-                width: double.infinity,
-                color: Colors.white,
-                alignment: Alignment.center,
-                padding: EdgeInsets.only(bottom: MediaQuery.of(context).padding.bottom),
-                child: SizedBox(
-                  width: _bannerAd!.size.width.toDouble(),
-                  height: _bannerAd!.size.height.toDouble(),
-                  child: AdWidget(ad: _bannerAd!),
-                ),
+              child: SizedBox(
+                height: _bannerAd!.size.height.toDouble(),
+                child: AdWidget(ad: _bannerAd!),
               ),
             )
           : null,

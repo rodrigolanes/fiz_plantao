@@ -1,5 +1,23 @@
 # Notas de Versão - Fiz Plantão
 
+## Versão 1.11.3 (Build 44) - 10 de dezembro de 2025
+
+### 🐛 Correções de Interface
+
+**Banner AdMob Corrigido**
+- Corrigido problema do banner tomando toda a tela
+- Banner agora tem apenas a altura do anúncio nativo (50-60dp)
+- Removido padding extra que estava causando espaço desnecessário
+- SafeArea configurado corretamente para não ficar atrás dos controles de navegação Android
+- Interface utilizável novamente com banner fixo no rodapé
+
+**Melhorias Técnicas**
+- Simplificada implementação do bottomNavigationBar
+- Uso correto de SafeArea sem parâmetros desnecessários
+- SizedBox com altura exata do banner para evitar overflow
+
+---
+
 ## Versão 1.11.2 (Build 43) - 10 de dezembro de 2025
 
 ### 🛡️ Resiliência e Tratamento de Erros Aprimorado
