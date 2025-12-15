@@ -1,5 +1,56 @@
 # Notas de Versão - Fiz Plantão
 
+## Versão 1.12.0 (Build 45) - 15 de dezembro de 2025
+
+### 🎉 Novas Funcionalidades
+
+**Duração de 6 Horas para Plantões**
+- Adicionada nova opção de duração: 6 horas (além de 12h e 24h)
+- Enum `Duracao` atualizado com valor `seisHoras` incluindo propriedade `.hours`
+- Interface de cadastro de plantão com seleção obrigatória de duração
+- Integração completa com Google Calendar usando duração em horas
+- Migration SQL criada para Supabase (`supabase_migration_add_seis_horas.sql`)
+
+**Campo de Duração Obrigatório**
+- Dropdown de duração agora exige seleção explícita (sem valor padrão)
+- Validação garante que o usuário escolha uma opção antes de salvar
+- Mensagem de hint clara: "Selecione a duração"
+- Melhora a qualidade dos dados evitando durações incorretas
+
+### 🐛 Correção Crítica
+
+**Bug de Sincronização de Duração Corrigido**
+- **Problema**: Plantões de 6h apareciam como 24h após sincronização remota
+- **Causa**: Parsing legado em `SyncService` só reconhecia '12h' e '24h', defaultando tudo mais para 24h
+- **Solução**: Criado método `_parseDuracao()` que:
+  - Tenta primeiro buscar pelo nome do enum (`seisHoras`, `dozeHoras`, `vinteQuatroHoras`)
+  - Fallback para formato legado ('6h', '12h', '24h') para compatibilidade
+  - Garante que todas as 3 durações sejam sincronizadas corretamente
+
+### 🧪 Qualidade e Testes
+
+**Cobertura de Testes Ampliada**
+- Testes do enum `Duracao` atualizados para validar 3 valores (antes 2)
+- Validação de propriedades `.label` e `.hours` para cada duração
+- Testes de busca por nome (`d.name == 'seisHoras'`)
+- Remoção de 13 warnings `@override` incorretos em `mock_interfaces.dart`
+- Todos os 65 testes unitários passando ✅
+
+### 📚 Documentação Atualizada
+
+- README.md: Seção de funcionalidades menciona "Duração (6h, 12h ou 24h)"
+- Copilot Instructions: Exemplos de enum incluem `seisHoras`
+- Migration SQL documentada para execução no Supabase
+
+### 🔧 Melhorias Técnicas
+
+- TypeAdapter do Hive regenerado via build_runner
+- CalendarService refatorado para usar `plantao.duracao.hours` ao invés de comparações hardcoded
+- Código mais manutenível e preparado para futuras durações
+- Compatibilidade com dados antigos preservada via fallback de parsing
+
+---
+
 ## Versão 1.11.3 (Build 44) - 10 de dezembro de 2025
 
 ### 🐛 Correções de Interface
@@ -481,7 +532,7 @@
 **Plantões de Teste**
 - Datas espalhadas entre outubro e dezembro de 2025
 - Mix de plantões pagos e pendentes
-- Diferentes valores e durações (12h e 24h)
+- Diferentes valores e durações (6h, 12h e 24h)
 - Datas de pagamento variadas para testar agrupamento
 
 ### 📚 Documentação
