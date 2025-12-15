@@ -603,9 +603,9 @@ class SyncService {
           continue; // Pula este plantão se o local não existe
         }
 
-        // Parse da duração
+        // Parse da duração (suporta formato antigo '12h' e novo 'seisHoras/dozeHoras/vinteQuatroHoras')
         final duracaoStr = data['duracao'] as String;
-        final duracao = duracaoStr == '12h' ? Duracao.dozeHoras : Duracao.vinteQuatroHoras;
+        final duracao = _parseDuracao(duracaoStr);
 
         if (plantaoExistente == null) {
           // Não existe localmente - criar
@@ -698,6 +698,22 @@ class SyncService {
   /// Limpa recursos
   void dispose() {
     _statusController.close();
+  }
+
+  /// Parse de duração, suportando formato legado ('12h', '24h') e novo ('seisHoras', 'dozeHoras', 'vinteQuatroHoras')
+  static Duracao _parseDuracao(String duracaoStr) {
+    // Tentar buscar pelo nome do enum primeiro (formato novo)
+    try {
+      return Duracao.values.firstWhere((d) => d.name == duracaoStr);
+    } catch (e) {
+      // Fallback para formato legado
+      if (duracaoStr == '12h') return Duracao.dozeHoras;
+      if (duracaoStr == '24h') return Duracao.vinteQuatroHoras;
+      if (duracaoStr == '6h') return Duracao.seisHoras;
+
+      // Default: 12 horas
+      return Duracao.dozeHoras;
+    }
   }
 
   /// Obtém um valor booleano de um campo remoto, lidando com nulos e diferentes tipos

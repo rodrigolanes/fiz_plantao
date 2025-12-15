@@ -31,7 +31,7 @@ class _CadastroPlantaoScreenState extends State<CadastroPlantaoScreen> {
 
   DateTime? _dataHoraSelecionada;
   DateTime? _previsaoPagamentoSelecionada;
-  Duracao _duracaoSelecionada = Duracao.dozeHoras;
+  Duracao? _duracaoSelecionada;
   String? _localIdSelecionado;
   late List<Local> _locaisDisponiveis;
   bool _pago = false;
@@ -276,7 +276,7 @@ class _CadastroPlantaoScreenState extends State<CadastroPlantaoScreen> {
         id: widget.plantao?.id ?? DateTime.now().millisecondsSinceEpoch.toString(),
         local: localSelecionado,
         dataHora: _dataHoraSelecionada!,
-        duracao: _duracaoSelecionada,
+        duracao: _duracaoSelecionada!,
         valor: valorDouble,
         previsaoPagamento: _previsaoPagamentoSelecionada!,
         pago: _pago,
@@ -376,6 +376,7 @@ class _CadastroPlantaoScreenState extends State<CadastroPlantaoScreen> {
                 border: OutlineInputBorder(),
                 prefixIcon: Icon(Icons.access_time),
               ),
+              hint: const Text('Selecione a duração'),
               items: Duracao.values.map((duracao) {
                 return DropdownMenuItem(
                   value: duracao,
@@ -383,11 +384,15 @@ class _CadastroPlantaoScreenState extends State<CadastroPlantaoScreen> {
                 );
               }).toList(),
               onChanged: (value) {
-                if (value != null) {
-                  setState(() {
-                    _duracaoSelecionada = value;
-                  });
+                setState(() {
+                  _duracaoSelecionada = value;
+                });
+              },
+              validator: (value) {
+                if (value == null) {
+                  return 'Por favor, selecione a duração';
                 }
+                return null;
               },
             ),
             const SizedBox(height: 16),

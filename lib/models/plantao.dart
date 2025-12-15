@@ -6,13 +6,16 @@ part 'plantao.g.dart';
 
 @HiveType(typeId: 2)
 enum Duracao {
+  @HiveField(2)
+  seisHoras('6h', 6),
   @HiveField(0)
-  dozeHoras('12h'),
+  dozeHoras('12h', 12),
   @HiveField(1)
-  vinteQuatroHoras('24h');
+  vinteQuatroHoras('24h', 24);
 
   final String label;
-  const Duracao(this.label);
+  final int hours;
+  const Duracao(this.label, this.hours);
 }
 
 @HiveType(typeId: 1)

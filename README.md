@@ -58,7 +58,7 @@ O **Fiz Plantão** é uma solução prática para médicos registrarem e acompan
 - [x] **Cadastro de Plantões**
   - [x] Seleção de local via dropdown
   - [x] Data e hora do plantão
-  - [x] Duração (12h ou 24h)
+  - [x] Duração (6h, 12h ou 24h)
   - [x] Valor e previsão de pagamento
 - [x] **Listagem de Plantões**
   - [x] Ordenação por data (mais recentes primeiro)

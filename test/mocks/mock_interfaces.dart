@@ -166,14 +166,12 @@ class MockISupabaseClient extends Mock implements ISupabaseClient {
         returnValueForMissingStub: FakeSupabaseQueryBuilder(),
       );
 
-  @override
   Future<void> upsert(String table, Map<String, dynamic> data) => super.noSuchMethod(
         Invocation.method(#upsert, [table, data]),
         returnValue: Future<void>.value(),
         returnValueForMissingStub: Future<void>.value(),
       );
 
-  @override
   Stream<Map<String, dynamic>> realtimeChannel(String table, String userId) => super.noSuchMethod(
         Invocation.method(#realtimeChannel, [table, userId]),
         returnValue: const Stream.empty(),
@@ -212,7 +210,6 @@ class MockIHiveRepository extends Mock implements IHiveRepository {
         returnValueForMissingStub: FakeBox<Plantao>(),
       );
 
-  @override
   Future<void> savePlantao(Plantao plantao) => super.noSuchMethod(
         Invocation.method(#savePlantao, [plantao]),
         returnValue: Future<void>.value(),
@@ -337,28 +334,24 @@ class MockICalendarService extends Mock implements ICalendarService {
 // ============================================================================
 
 class MockIGoogleCalendarAuth extends Mock implements IGoogleCalendarAuth {
-  @override
   Future<bool> isAuthorized() => super.noSuchMethod(
         Invocation.method(#isAuthorized, []),
         returnValue: Future.value(false),
         returnValueForMissingStub: Future.value(false),
       );
 
-  @override
   Future<bool> requestAuthorization() => super.noSuchMethod(
         Invocation.method(#requestAuthorization, []),
         returnValue: Future.value(false),
         returnValueForMissingStub: Future.value(false),
       );
 
-  @override
   Future<void> signOut() => super.noSuchMethod(
         Invocation.method(#signOut, []),
         returnValue: Future<void>.value(),
         returnValueForMissingStub: Future<void>.value(),
       );
 
-  @override
   Future<String?> createEvent({
     required String summary,
     required String description,
@@ -378,7 +371,6 @@ class MockIGoogleCalendarAuth extends Mock implements IGoogleCalendarAuth {
         returnValueForMissingStub: Future<String?>.value(),
       );
 
-  @override
   Future<void> updateEvent({
     required String eventId,
     String? summary,
@@ -400,7 +392,6 @@ class MockIGoogleCalendarAuth extends Mock implements IGoogleCalendarAuth {
         returnValueForMissingStub: Future<void>.value(),
       );
 
-  @override
   Future<void> deleteEvent(String eventId) => super.noSuchMethod(
         Invocation.method(#deleteEvent, [eventId]),
         returnValue: Future<void>.value(),
@@ -409,21 +400,18 @@ class MockIGoogleCalendarAuth extends Mock implements IGoogleCalendarAuth {
 }
 
 class MockIHiveCalendarCache extends Mock implements IHiveCalendarCache {
-  @override
   String? get(String key) => super.noSuchMethod(
         Invocation.method(#get, [key]),
         returnValue: null,
         returnValueForMissingStub: null,
       );
 
-  @override
   Future<void> put(String key, String value) => super.noSuchMethod(
         Invocation.method(#put, [key, value]),
         returnValue: Future<void>.value(),
         returnValueForMissingStub: Future<void>.value(),
       );
 
-  @override
   Future<void> delete(String key) => super.noSuchMethod(
         Invocation.method(#delete, [key]),
         returnValue: Future<void>.value(),
@@ -528,7 +516,6 @@ class FakePostgrestFilterBuilder extends Fake implements PostgrestFilterBuilder<
     }
   }
 
-  @override
   Future<List<Map<String, dynamic>>> call() async => _data;
 }
 

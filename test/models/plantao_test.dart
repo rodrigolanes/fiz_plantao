@@ -5,20 +5,30 @@ import 'package:flutter_test/flutter_test.dart';
 void main() {
   group('Duracao Enum', () {
     test('deve ter valores corretos', () {
-      expect(Duracao.values.length, 2);
+      expect(Duracao.values.length, 3);
+      expect(Duracao.values, contains(Duracao.seisHoras));
       expect(Duracao.values, contains(Duracao.dozeHoras));
       expect(Duracao.values, contains(Duracao.vinteQuatroHoras));
     });
 
     test('deve ter labels corretos', () {
+      expect(Duracao.seisHoras.label, '6h');
       expect(Duracao.dozeHoras.label, '12h');
       expect(Duracao.vinteQuatroHoras.label, '24h');
     });
 
+    test('deve ter hours corretos', () {
+      expect(Duracao.seisHoras.hours, 6);
+      expect(Duracao.dozeHoras.hours, 12);
+      expect(Duracao.vinteQuatroHoras.hours, 24);
+    });
+
     test('deve permitir busca por name', () {
+      final duracao6 = Duracao.values.firstWhere((d) => d.name == 'seisHoras');
       final duracao12 = Duracao.values.firstWhere((d) => d.name == 'dozeHoras');
       final duracao24 = Duracao.values.firstWhere((d) => d.name == 'vinteQuatroHoras');
 
+      expect(duracao6, Duracao.seisHoras);
       expect(duracao12, Duracao.dozeHoras);
       expect(duracao24, Duracao.vinteQuatroHoras);
     });

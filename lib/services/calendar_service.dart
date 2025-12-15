@@ -312,9 +312,7 @@ class CalendarService {
       final calendarApi = CalendarApi(client);
       final calendarId = await _ensureCalendarExists();
 
-      final dataFim = plantao.duracao == Duracao.dozeHoras
-          ? plantao.dataHora.add(const Duration(hours: 12))
-          : plantao.dataHora.add(const Duration(hours: 24));
+      final dataFim = plantao.dataHora.add(Duration(hours: plantao.duracao.hours));
 
       final dateFormatSemHora = DateFormat('dd/MM/yyyy', 'pt_BR');
       final currencyFormat = NumberFormat.currency(
@@ -327,7 +325,7 @@ class CalendarService {
         summary: 'Plantão - ${plantao.local.apelido}',
         description: '''
 📍 Local: ${plantao.local.nome}
-⏱️ Duração: ${plantao.duracao == Duracao.dozeHoras ? '12 horas' : '24 horas'}
+⏱️ Duração: ${plantao.duracao.hours} horas
 💰 Valor: ${currencyFormat.format(plantao.valor)}
 📅 Pagamento previsto: ${dateFormatSemHora.format(plantao.previsaoPagamento)}
 ${plantao.pago ? '✅ Pago' : '⏳ Pendente'}

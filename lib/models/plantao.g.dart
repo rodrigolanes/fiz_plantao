@@ -86,18 +86,23 @@ class DuracaoAdapter extends TypeAdapter<Duracao> {
   @override
   Duracao read(BinaryReader reader) {
     switch (reader.readByte()) {
+      case 2:
+        return Duracao.seisHoras;
       case 0:
         return Duracao.dozeHoras;
       case 1:
         return Duracao.vinteQuatroHoras;
       default:
-        return Duracao.dozeHoras;
+        return Duracao.seisHoras;
     }
   }
 
   @override
   void write(BinaryWriter writer, Duracao obj) {
     switch (obj) {
+      case Duracao.seisHoras:
+        writer.writeByte(2);
+        break;
       case Duracao.dozeHoras:
         writer.writeByte(0);
         break;

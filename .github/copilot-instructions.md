@@ -186,7 +186,7 @@ lib/
 
    - Usar PascalCase para enum names
    - Valores em lowercase sem separadores
-   - Exemplo: `enum Duracao { dozeHoras, vinteQuatroHoras }`
+   - Exemplo: `enum Duracao { seisHoras, dozeHoras, vinteQuatroHoras }`
    - Incluir Hive annotations: `@HiveType(typeId: X)` e `@HiveField(N)` em cada valor
 
 10. **Async Context Safety**
